@@ -1,11 +1,10 @@
-/* src/components/Map/MapContainer.jsx */
-
 import React, { useEffect, useRef } from "react";
 import WebMap from "@arcgis/core/WebMap";
 import MapView from "@arcgis/core/views/MapView";
 import Locate from "@arcgis/core/widgets/Locate";
 import GraphicsLayer from "@arcgis/core/layers/GraphicsLayer";
 import Graphic from "@arcgis/core/Graphic";
+import geometryEngine from "@arcgis/core/geometry/geometryEngine";
 import "./MapContainer.css";
 
 const MapContainer = () => {
@@ -25,8 +24,8 @@ const MapContainer = () => {
 
     // Create the MapView
     const view = new MapView({
-      container: mapRef.current, // Reference to the div element
-      map: webmap, // Pass the WebMap instance
+      container: mapRef.current,
+      map: webmap,
       popup: {
         dockEnabled: true,
         dockOptions: {
@@ -36,7 +35,7 @@ const MapContainer = () => {
       },
     });
 
-    // Add the Locate widget
+    // Locate Widget
     const locateWidget = new Locate({
       view: view,
       useHeadingEnabled: false,
@@ -60,26 +59,17 @@ const MapContainer = () => {
         latitude: position.coords.latitude,
       };
 
-      console.log("User Location:", userLocation);
-
-      // Smooth zoom and pan to the neighborhood scale
-      view.goTo(
-        {
-          center: [userLocation.longitude, userLocation.latitude],
-          scale: 5000, // Zoom level for neighborhood scale
-        },
-        {
-          duration: 2000, // Smooth animation over 2 seconds
-        }
-      );
-
       // Clear existing concentric circles
       graphicsLayer.removeAll();
 
-      // Draw concentric circles around the user location
+      // Draw concentric circles
       drawProximityCircles(userLocation, graphicsLayer);
+
+      // Find the nearest points
+      findNearestPoints(userLocation, webmap, view);
     });
 
+    // Draw concentric circles
     const drawProximityCircles = (location, layer) => {
       const radii = [500, 1000, 1500]; // Meters
       const colors = [
@@ -111,46 +101,71 @@ const MapContainer = () => {
       console.log("Concentric circles added.");
     };
 
-    // Add custom pop-up functionality
-    view.on("click", (event) => {
-      view.hitTest(event).then((response) => {
-        // Filter results to only include features with popupTemplate
-        const results = response.results.filter((result) => {
-          const popupTemplate = result.graphic.popupTemplate;
-          return popupTemplate && popupTemplate.title && popupTemplate.content;
-        });
+    // Find the 3 nearest points
+    const findNearestPoints = (userLocation, map, view) => {
+      const featureLayer = map.layers.find((layer) => layer.type === "feature");
 
-        if (results.length === 0) {
-          // If no features are found, prompt the user to toggle a higher proximity
-          view.popup.open({
-            title: "No Points Found",
-            content:
-              "No points available. Try clicking closer to populated areas.",
-            location: event.mapPoint,
+      if (!featureLayer) {
+        console.error("Feature layer not found in the WebMap.");
+        return;
+      }
+
+      // Query all features from the layer
+      featureLayer
+        .queryFeatures({
+          where: "1=1", // Fetch all features
+          outFields: ["*"],
+          returnGeometry: true,
+        })
+        .then((result) => {
+          const features = result.features;
+
+          // Calculate distances
+          const distances = features.map((feature) => {
+            const distance = geometryEngine.distance(
+              feature.geometry,
+              {
+                type: "point",
+                longitude: userLocation.longitude,
+                latitude: userLocation.latitude,
+              },
+              "meters"
+            );
+            return { feature, distance };
           });
-          return;
-        }
 
-        // If points are found, display the three closest points in a pop-up
-        const closestPoints = results.slice(0, 3);
-        const content = closestPoints
-          .map((result, index) => {
-            const attributes = result.graphic.attributes;
-            return `<strong>${index + 1}. ${
-              attributes.name || "No Name"
-            }</strong><br>${attributes.description || "No Description"}`;
-          })
-          .join("<br><br>");
+          // Sort by distance
+          distances.sort((a, b) => a.distance - b.distance);
 
-        view.popup.open({
-          title: "Closest Points",
-          content: content,
-          location: event.mapPoint,
+          // Get the 3 closest points
+          const closestPoints = distances.slice(0, 3);
+
+          // Build pop-up content
+          const content = closestPoints
+            .map((point, index) => {
+              const attributes = point.feature.attributes;
+              return `<strong>${index + 1}. ${
+                attributes.name || "No Name"
+              }</strong><br>Distance: ${Math.round(point.distance)} meters<br>${
+                attributes.description || "No Description"
+              }`;
+            })
+            .join("<br><br>");
+
+          // Open the pop-up
+          view.popup.open({
+            title: "3 Closest Points",
+            content: content,
+            location: {
+              type: "point",
+              longitude: userLocation.longitude,
+              latitude: userLocation.latitude,
+            },
+          });
+
+          console.log("Pop-up opened with 3 closest points.");
         });
-
-        console.log("Pop-up opened with closest points.");
-      });
-    });
+    };
 
     return () => {
       if (view) {
