@@ -1,18 +1,33 @@
-// src/App.jsx
-
-import React from "react";
-import ErrorBoundary from "./components/ErrorBoundary";
-import MapContainer from "./components/Map/MapContainer.jsx";
-import SceneContainer from "./components/Scene/SceneContainer.jsx";
+import React, { useState, useEffect } from "react";
 import Header from "./components/Header/Header.jsx";
-import "./styles/globals.css";
+import MapContainer from "./components/MapContainer/MapContainer.jsx";
+import SceneContainer from "./components/SceneContainer/SceneContainer.jsx";
+import Footer from "./components/Footer/Footer.jsx";
+import { auth } from "./firebase/firebase";
+import { onAuthStateChanged } from "firebase/auth";
+import "./App.css";
 
-const App = () => {
-  return;
-  <Header></Header>;
-  <SceneContainer></SceneContainer>;
-  <MapContainer></MapContainer>;
-  <ErrorBoundary></ErrorBoundary>;
-};
+function App() {
+  const [user, setUser] = useState(null); // State to track authenticated user
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser); // Set the user state whenever authentication state changes
+    });
+
+    return () => unsubscribe(); // Cleanup subscription on component unmount
+  }, []);
+
+  return (
+    <div className="App">
+      <Header user={user} setUser={setUser} />
+      <main className="main-content">
+        <MapContainer />
+        <SceneContainer />
+      </main>
+      <Footer />
+    </div>
+  );
+}
 
 export default App;

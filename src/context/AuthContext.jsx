@@ -1,23 +1,29 @@
-// src/context/AuthContext.jsx
-
 import React, { createContext, useState, useEffect } from "react";
 import PropTypes from "prop-types";
-import { auth } from "../services/firebase"; // Correct path
+import { auth } from "../services/firebase";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 
 // Create the Context
 export const AuthContext = createContext();
 
-// Create the Provider Component
+// Provider Component
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true); // New loading state
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-    });
+    const unsubscribe = onAuthStateChanged(
+      auth,
+      (currentUser) => {
+        setUser(currentUser);
+        setLoading(false); // Stop loading after determining the auth state
+      },
+      (error) => {
+        console.error("Error during auth state change:", error);
+        setLoading(false);
+      }
+    );
 
-    // Cleanup subscription on unmount
     return () => unsubscribe();
   }, []);
 
@@ -25,6 +31,7 @@ export const AuthProvider = ({ children }) => {
     signOut(auth)
       .then(() => {
         console.log("User signed out.");
+        setUser(null); // Ensure UI updates immediately
       })
       .catch((error) => {
         console.error("Error signing out:", error);
@@ -37,6 +44,7 @@ export const AuthProvider = ({ children }) => {
         user,
         auth,
         logout,
+        loading, // Expose loading state
       }}
     >
       {children}
