@@ -58,7 +58,11 @@ const MapContainer = () => {
 
     const drawProximityCircles = (location, layer) => {
       const radii = [500, 1000, 1500]; // Meters
-      const colors = ["rgba(255, 0, 0, 0.2)", "rgba(255, 165, 0, 0.2)", "rgba(0, 0, 255, 0.2)"];
+      const colors = [
+        "rgba(255, 0, 0, 0.2)",
+        "rgba(255, 165, 0, 0.2)",
+        "rgba(0, 0, 255, 0.2)",
+      ];
       const circleGraphics = radii.map((radius, index) => {
         return new Graphic({
           geometry: {

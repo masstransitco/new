@@ -1,6 +1,5 @@
 /* src/components/Map/MapContainer.jsx */
 
-
 import React, { useEffect, useRef } from "react";
 import WebMap from "@arcgis/core/WebMap";
 import MapView from "@arcgis/core/views/MapView";

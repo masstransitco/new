@@ -1,6 +1,5 @@
 /* src/components/Header/Header.jsx */
 
-
 import React, { useContext, useState, useEffect, useRef } from "react";
 import "./Header.css";
 import { AuthContext } from "../../context/AuthContext";
