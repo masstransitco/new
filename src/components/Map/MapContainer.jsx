@@ -6,7 +6,6 @@ import MapView from "@arcgis/core/views/MapView";
 import Locate from "@arcgis/core/widgets/Locate";
 import GraphicsLayer from "@arcgis/core/layers/GraphicsLayer";
 import Graphic from "@arcgis/core/Graphic";
-import PopupTemplate from "@arcgis/core/PopupTemplate";
 import "./MapContainer.css";
 
 const MapContainer = () => {
