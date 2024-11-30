@@ -2,8 +2,8 @@ import React from "react";
 import { useContext } from "react";
 import { AuthContext } from "./context/AuthContext"; // Use AuthContext for user state
 import Header from "./components/Header/Header.jsx";
-import MapContainer from "./components/MapContainer/MapContainer.jsx";
-import SceneContainer from "./components/SceneContainer/SceneContainer.jsx";
+import MapContainer from "./components/Map/MapContainer.jsx";
+import SceneContainer from "./components/Scene/SceneContainer.jsx";
 import Footer from "./components/Footer/Footer.jsx";
 import "./App.css";
 
