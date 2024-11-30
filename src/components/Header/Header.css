@@ -1,0 +1,39 @@
+/* src/components/Header/Header.css */
+
+.app-header {
+  display: flex;
+  height: 40px; /* Adjusted to 25% of original height */
+  justify-content: center; /* Center the toggle switch horizontally */
+  align-items: center;
+  background-color: var(--primary-black); /* Primary black background */
+  padding: 0.25rem 1rem; /* Reduced padding */
+  color: var(--white); /* White text */
+  position: relative;
+}
+
+.user-section {
+  position: absolute;
+  right: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.user-avatar img {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+}
+
+.logout-button {
+  background-color: var(--secondary-blue);
+  color: var(--white);
+  border: none;
+  padding: 5px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.logout-button:hover {
+  background-color: #1a5bb8; /* Darker shade on hover */
+}
