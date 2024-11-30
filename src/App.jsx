@@ -5,10 +5,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import "./styles/globals.css";
 
 const App = () => {
-  return (
-    <ErrorBoundary>
-    </ErrorBoundary>
-  );
+  return <ErrorBoundary></ErrorBoundary>;
 };
 
 export default App;
