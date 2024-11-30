@@ -1,9 +1,11 @@
 .header {
+  
   display: flex;
   justify-content: space-between;
   align-items: center;
+  min-height: 10%;
   padding: 10px 20px;
-  background-color: #fff;
+  background-color: #121212;
   border-bottom: 1px solid #ccc;
 }
 
@@ -50,8 +52,17 @@
   border: 1px solid #ccc;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   border-radius: 4px;
-  overflow: hidden;
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 0.3s, transform 0.3s;
   z-index: 100;
+  display: none;
+}
+
+.dropdown-menu.show {
+  opacity: 1;
+  transform: translateY(0);
+  display: block;
 }
 
 .dropdown-menu ul {
@@ -67,6 +78,13 @@
 
 .dropdown-menu li:hover {
   background-color: #f0f0f0;
+}
+
+.logout-button {
+  background: none;
+  border: none;
+  color: #880000;
+  cursor: pointer;
 }
 
 .loading {
