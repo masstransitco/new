@@ -22,6 +22,17 @@ const SceneContainer = () => {
       map: webScene, // Pass the WebScene instance
     });
 
+    // Once the WebScene and SceneView are loaded, set the initial view to Slide 1
+    view.when(() => {
+      webScene.when(() => {
+        const slides = webScene.presentation.slides;
+        if (slides.length > 0) {
+          const slide1 = slides.getItemAt(0); // Get Slide 1 (index 0)
+          slide1.applyTo(view); // Apply the slide's viewpoint to the view
+        }
+      });
+    });
+
     return () => {
       // Clean up the view when the component is unmounted
       if (view) {
