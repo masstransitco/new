@@ -83,7 +83,11 @@ const MapContainer = () => {
 
     const drawProximityCircles = (location, layer) => {
       const radii = [500, 1000, 1500]; // Meters
-      const colors = ["rgba(255, 0, 0, 0.2)", "rgba(255, 165, 0, 0.2)", "rgba(0, 0, 255, 0.2)"];
+      const colors = [
+        "rgba(255, 0, 0, 0.2)",
+        "rgba(255, 165, 0, 0.2)",
+        "rgba(0, 0, 255, 0.2)",
+      ];
 
       radii.forEach((radius, index) => {
         const circleGraphic = new Graphic({
@@ -121,7 +125,8 @@ const MapContainer = () => {
           // If no features are found, prompt the user to toggle a higher proximity
           view.popup.open({
             title: "No Points Found",
-            content: "No points available. Try clicking closer to populated areas.",
+            content:
+              "No points available. Try clicking closer to populated areas.",
             location: event.mapPoint,
           });
           return;
@@ -132,7 +137,9 @@ const MapContainer = () => {
         const content = closestPoints
           .map((result, index) => {
             const attributes = result.graphic.attributes;
-            return `<strong>${index + 1}. ${attributes.name || "No Name"}</strong><br>${attributes.description || "No Description"}`;
+            return `<strong>${index + 1}. ${
+              attributes.name || "No Name"
+            }</strong><br>${attributes.description || "No Description"}`;
           })
           .join("<br><br>");
 
