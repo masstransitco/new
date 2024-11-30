@@ -2,7 +2,7 @@
 
 import React from "react";
 import ErrorBoundary from "./components/ErrorBoundary";
-import "./styles/App.css";
+import "./styles/global.css";
 
 const App = () => {
   return (
