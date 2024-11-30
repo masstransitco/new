@@ -1,26 +1,23 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
+import { useContext } from "react";
+import { AuthContext } from "./context/AuthContext"; // Use AuthContext for user state
 import Header from "./components/Header/Header.jsx";
 import MapContainer from "./components/MapContainer/MapContainer.jsx";
 import SceneContainer from "./components/SceneContainer/SceneContainer.jsx";
 import Footer from "./components/Footer/Footer.jsx";
-import { auth } from "./firebase/firebase";
-import { onAuthStateChanged } from "firebase/auth";
 import "./App.css";
 
 function App() {
-  const [user, setUser] = useState(null); // State to track authenticated user
+  const { user, loading } = useContext(AuthContext); // Access AuthContext for user and loading states
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser); // Set the user state whenever authentication state changes
-    });
-
-    return () => unsubscribe(); // Cleanup subscription on component unmount
-  }, []);
+  if (loading) {
+    // Display loading state until auth is initialized
+    return <div className="loading">Initializing...</div>;
+  }
 
   return (
     <div className="App">
-      <Header user={user} setUser={setUser} />
+      <Header user={user} />
       <main className="main-content">
         <MapContainer />
         <SceneContainer />
