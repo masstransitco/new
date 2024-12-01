@@ -55,7 +55,10 @@ const MapContainer = () => {
   };
 
   return (
-    <LoadScript googleMapsApiKey="AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours" libraries={["places"]}>
+    <LoadScript
+      googleMapsApiKey="AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours"
+      libraries={["places"]}
+    >
       <GoogleMap
         mapContainerStyle={containerStyle}
         center={center}
