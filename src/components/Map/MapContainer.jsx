@@ -6,10 +6,8 @@ import GraphicsLayer from "@arcgis/core/layers/GraphicsLayer";
 import Graphic from "@arcgis/core/Graphic";
 import geometryEngine from "@arcgis/core/geometry/geometryEngine";
 
-import "./MapContainer.css";
-
 const MapContainer = () => {
-  const mapRef = useRef(null);
+  const mapRef = useRef(null); // Reference for the map container
 
   useEffect(() => {
     // Initialize the WebMap
@@ -38,18 +36,20 @@ const MapContainer = () => {
 
     // Locate Widget
     const locateWidget = new Locate({
-      view: view,
+      view,
       useHeadingEnabled: false,
       goToOverride: (view, options) => {
         options.target.scale = 5000; // Neighborhood scale
         return view.goTo(options.target);
       },
     });
+
     view.ui.add(locateWidget, "bottom-left");
 
-    // Event: When the Locate widget locates the user
+    // Event when the Locate widget locates the user
     locateWidget.on("locate", (event) => {
       const { position } = event;
+
       if (!position) {
         console.error("User location not available.");
         return;
@@ -70,9 +70,9 @@ const MapContainer = () => {
       findNearestPoints(userLocation, webmap, view);
     });
 
-    // Draw concentric circles
+    // Function: Draw concentric circles
     const drawProximityCircles = (location, layer) => {
-      const radii = [500, 1000, 1500]; // Meters
+      const radii = [500, 1000, 1500]; // Radii in meters
       const colors = [
         "rgba(255, 0, 0, 0.2)",
         "rgba(255, 165, 0, 0.2)",
@@ -84,7 +84,7 @@ const MapContainer = () => {
           geometry: {
             type: "circle",
             center: [location.longitude, location.latitude],
-            radius: radius,
+            radius,
             radiusUnit: "meters",
           },
           symbol: {
@@ -96,13 +96,14 @@ const MapContainer = () => {
             },
           },
         });
+
         layer.add(circleGraphic);
       });
 
       console.log("Concentric circles added.");
     };
 
-    // Find the 3 nearest points
+    // Function: Find the 3 nearest points
     const findNearestPoints = (userLocation, map, view) => {
       const featureLayer = map.layers.find((layer) => layer.type === "feature");
 
@@ -111,7 +112,6 @@ const MapContainer = () => {
         return;
       }
 
-      // Query all features from the layer
       featureLayer
         .queryFeatures({
           where: "1=1", // Fetch all features
@@ -145,11 +145,16 @@ const MapContainer = () => {
           const content = closestPoints
             .map((point, index) => {
               const attributes = point.feature.attributes;
-              return `<strong>${index + 1}. ${
-                attributes.name || "No Name"
-              }</strong><br>Distance: ${Math.round(point.distance)} meters<br>${
-                attributes.description || "No Description"
-              }`;
+              return `
+                <strong>${index + 1}. ${
+                attributes.name || "Unnamed Feature"
+              }</strong><br>
+                Distance: ${Math.round(point.distance)} meters<br>
+                ${
+                  attributes.description ||
+                  "No additional information available"
+                }
+              `;
             })
             .join("<br><br>");
 
@@ -165,17 +170,24 @@ const MapContainer = () => {
           });
 
           console.log("Pop-up opened with 3 closest points.");
+        })
+        .catch((error) => {
+          console.error("Error querying features:", error);
         });
     };
 
+    // Cleanup
     return () => {
       if (view) {
         view.destroy();
+        console.log("View destroyed.");
       }
     };
   }, []);
 
-  return <div ref={mapRef} className="map-container" />;
+  return (
+    <div ref={mapRef} className="map-container" style={{ height: "100vh" }} />
+  );
 };
 
 export default MapContainer;
