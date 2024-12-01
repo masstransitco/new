@@ -4,7 +4,8 @@ import MapView from "@arcgis/core/views/MapView";
 import Locate from "@arcgis/core/widgets/Locate";
 import GraphicsLayer from "@arcgis/core/layers/GraphicsLayer";
 import Graphic from "@arcgis/core/Graphic";
-import geometryEngine from "@arcgis/core/geometry/geometryEngine";
+import * as geometryEngine from "@arcgis/core/geometry/geometryEngine";
+
 
 const MapContainer = () => {
   const mapRef = useRef(null); // Reference for the map container
