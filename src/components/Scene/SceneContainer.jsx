@@ -1,9 +1,6 @@
-/* src/components/Scene/SceneContainer.jsx */
-
 import React, { useEffect, useRef, useState } from "react";
 import WebScene from "@arcgis/core/WebScene";
 import SceneView from "@arcgis/core/views/SceneView";
-import OrbitLocationCameraController from "@arcgis/core/views/3d/OrbitLocationCameraController.js";
 import Point from "@arcgis/core/geometry/Point";
 import Viewpoint from "@arcgis/core/Viewpoint";
 import "./SceneContainer.css";
@@ -104,30 +101,18 @@ const SceneContainer = () => {
     // Function to update camera position for spherical orbit
     const orbitCamera = (target) => {
       try {
+        const currentHeading = sceneView.camera.heading;
         sceneView
           .goTo(
             {
               target: target,
-              heading: sceneView.camera.heading, // Maintain current heading
-              tilt: sceneView.camera.tilt, // Maintain current tilt
+              heading: currentHeading + 45, // Rotate the camera 45 degrees
+              tilt: 45, // Fixed tilt for orbiting
             },
             { duration: 2000 } // Smooth transition in 2 seconds
           )
           .then(() => {
             console.log("Camera transition complete. Orbit enabled.");
-
-            // Create an OrbitLocationCameraController
-            const orbitController = new OrbitLocationCameraController(
-              target,
-              1000
-            ); // 1000 meters orbit distance
-
-            // Set camera properties
-            orbitController.headingOffset = 45; // degrees
-            orbitController.pitchOffset = 45; // degrees
-
-            // Apply the controller to the scene view
-            sceneView.cameraController = orbitController;
           })
           .catch((error) => {
             console.error("Error during camera transition:", error);
@@ -185,11 +170,7 @@ const SceneContainer = () => {
           duration: 1000, // Animate the transition over 1 second
         })
         .then(() => {
-          // Remove any custom camera controller
-          sceneView.cameraController = null;
-          console.log(
-            "Camera reset to initial viewpoint and orbit controller removed."
-          );
+          console.log("Camera reset to initial viewpoint.");
         })
         .catch((error) => {
           console.error("Error resetting camera viewpoint:", error);
