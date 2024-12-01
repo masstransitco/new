@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import WebScene from "@arcgis/core/WebScene";
 import SceneView from "@arcgis/core/views/SceneView";
-import OrbitLocationCameraController from "@arcgis/core/views/3d/OrbitLocationCameraController"; // Correct import for OrbitLocationCameraController
+import OrbitLocationCameraController from "@arcgis/core/views/3d/OrbitLocationCameraController.js";
 import Point from "@arcgis/core/geometry/Point";
 import Viewpoint from "@arcgis/core/Viewpoint";
 import "./SceneContainer.css";
