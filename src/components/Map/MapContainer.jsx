@@ -23,7 +23,6 @@ const MapContainer = () => {
   const [stations, setStations] = useState([]);
   const [selectedStation, setSelectedStation] = useState(null);
   const [searchBox, setSearchBox] = useState(null);
-  const [userLocation, setUserLocation] = useState(null);
   const [directions, setDirections] = useState(null);
   const [walkingTime, setWalkingTime] = useState("");
 
