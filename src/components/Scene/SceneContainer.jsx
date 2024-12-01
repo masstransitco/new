@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import WebScene from "@arcgis/core/WebScene";
 import SceneView from "@arcgis/core/views/SceneView";
-import "./SceneContainer.css/";
+import "./SceneContainer.css";
 
 const SceneContainer = () => {
   const sceneRef = useRef(null);
