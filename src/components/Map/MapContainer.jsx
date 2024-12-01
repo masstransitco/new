@@ -5,6 +5,7 @@ import {
   Marker,
   InfoWindow,
   Autocomplete,
+  DirectionsRenderer,
 } from "@react-google-maps/api";
 
 const containerStyle = {
@@ -22,11 +23,17 @@ const MapContainer = () => {
   const [stations, setStations] = useState([]);
   const [selectedStation, setSelectedStation] = useState(null);
   const [searchBox, setSearchBox] = useState(null);
+  const [userLocation, setUserLocation] = useState(null);
+  const [directions, setDirections] = useState(null);
+  const [walkingTime, setWalkingTime] = useState("");
 
   useEffect(() => {
     // Load GeoJSON data
     fetch("/stations.geojson") // Replace with your hosted GeoJSON file path
-      .then((response) => response.json())
+      .then((response) => {
+        if (!response.ok) throw new Error("Failed to load GeoJSON");
+        return response.json();
+      })
       .then((data) => {
         const features = data.features.map((feature) => ({
           id: feature.id,
@@ -37,7 +44,8 @@ const MapContainer = () => {
           ...feature.properties,
         }));
         setStations(features);
-      });
+      })
+      .catch((error) => console.error("Error loading GeoJSON:", error));
   }, []);
 
   const onMapLoad = (mapInstance) => {
@@ -51,6 +59,56 @@ const MapContainer = () => {
         map.panTo(place.geometry.location);
         map.setZoom(15);
       }
+    }
+  };
+
+  const handleMarkerClick = (station) => {
+    setSelectedStation(station);
+
+    // Trigger user geolocation
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const userPos = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          };
+          setUserLocation(userPos);
+
+          // Calculate and draw pedestrian route
+          const directionsService = new window.google.maps.DirectionsService();
+          directionsService.route(
+            {
+              origin: userPos,
+              destination: station.position,
+              travelMode: "WALKING",
+            },
+            (result, status) => {
+              if (status === "OK") {
+                setDirections(result);
+
+                // Calculate estimated walking time
+                const duration = result.routes[0].legs[0].duration.text;
+                setWalkingTime(duration);
+
+                // Center the map to fit the route
+                const bounds = new window.google.maps.LatLngBounds();
+                result.routes[0].overview_path.forEach((point) => {
+                  bounds.extend(point);
+                });
+                map.fitBounds(bounds);
+              } else {
+                console.error("Directions request failed:", status);
+              }
+            }
+          );
+        },
+        (error) => {
+          console.error("Error fetching user location:", error);
+        }
+      );
+    } else {
+      alert("Geolocation is not supported by your browser.");
     }
   };
 
@@ -90,7 +148,7 @@ const MapContainer = () => {
           <Marker
             key={station.id}
             position={station.position}
-            onClick={() => setSelectedStation(station)}
+            onClick={() => handleMarkerClick(station)}
           />
         ))}
 
@@ -103,9 +161,17 @@ const MapContainer = () => {
             <div>
               <h3>{selectedStation.PLace}</h3>
               <p>{selectedStation.Address}</p>
+              {walkingTime && (
+                <p>
+                  <strong>Walking Time:</strong> {walkingTime}
+                </p>
+              )}
             </div>
           </InfoWindow>
         )}
+
+        {/* Display Directions */}
+        {directions && <DirectionsRenderer directions={directions} />}
       </GoogleMap>
     </LoadScript>
   );
