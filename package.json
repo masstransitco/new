@@ -17,10 +17,11 @@
     "@esri/arcgis-rest-geocoding": "^4.0.3",
     "axios": "^1.0.0",
     "firebase": "^11.0.2",
+    "lint": "^0.8.19",
     "prop-types": "^15.8.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-router-dom": "^6.14.1",
+    "react-router-dom": "^6.28.0",
     "react-scripts": "5.0.1"
   },
   "devDependencies": {
@@ -31,8 +32,10 @@
     "eslint": "^8.57.1",
     "eslint-config-prettier": "^8.10.0",
     "eslint-plugin-prettier": "^4.2.1",
-    "eslint-plugin-react": "^7.32.2",
+    "eslint-plugin-react": "^7.37.2",
+    "globals": "^15.12.0",
     "prettier": "^2.8.8",
+    "typescript": "^4.9.5",
     "webpack": "^5.96.1",
     "webpack-cli": "^5.1.4"
   },
