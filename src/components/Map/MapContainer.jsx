@@ -1,123 +1,110 @@
-// src/MapContainer.jsx
+import React, { useState, useEffect } from "react";
+import {
+  GoogleMap,
+  LoadScript,
+  Marker,
+  InfoWindow,
+  Autocomplete,
+} from "@react-google-maps/api";
 
-import React, { useRef, useEffect } from "react";
-import WebMap from "@arcgis/core/WebMap";
-import MapView from "@arcgis/core/views/MapView";
-import Search from "@arcgis/core/widgets/Search";
-import Locate from "@arcgis/core/widgets/Locate";
-import GraphicsLayer from "@arcgis/core/layers/GraphicsLayer";
-import Graphic from "@arcgis/core/Graphic";
-import "./MapContainer.css";
+const containerStyle = {
+  width: "100%",
+  height: "100vh",
+};
+
+const center = {
+  lat: 22.3964, // Default center: Hong Kong
+  lng: 114.1095,
+};
 
 const MapContainer = () => {
-  const mapRef = useRef();
+  const [map, setMap] = useState(null);
+  const [stations, setStations] = useState([]);
+  const [selectedStation, setSelectedStation] = useState(null);
+  const [searchBox, setSearchBox] = useState(null);
 
   useEffect(() => {
-    if (!mapRef.current) return;
-
-    // Initialize the WebMap using the provided ID
-    const webMap = new WebMap({
-      portalItem: {
-        id: "2e977a0d176b4bb582b9d4d643dfcc4d", // Your WebMap ID
-      },
-    });
-
-    // Initialize the MapView
-    const view = new MapView({
-      container: mapRef.current,
-      map: webMap,
-      // Optionally set the initial extent or other view properties here
-    });
-
-    // Add Search widget
-    const searchWidget = new Search({
-      view: view,
-    });
-    view.ui.add(searchWidget, "top-right");
-
-    // Add Locate widget
-    const locateWidget = new Locate({
-      view: view,
-    });
-    view.ui.add(locateWidget, "top-left");
-
-    // Add a GraphicsLayer to display nearby results
-    const graphicsLayer = new GraphicsLayer();
-    webMap.add(graphicsLayer);
-
-    // Function to perform Nearby Search
-    const performNearbySearch = async (point, distance = 1000) => {
-      // Clear previous graphics
-      graphicsLayer.removeAll();
-
-      // Define the search parameters
-      const nearbyQuery = {
-        geometry: point,
-        distance: distance, // in meters
-        units: "meters",
-        outFields: ["*"],
-        returnGeometry: true,
-      };
-
-      // Assume there's a feature layer in the webmap to search against
-      // You might need to adjust this based on your actual layers
-      const featureLayer = webMap.allLayers.find(
-        (layer) => layer.type === "feature"
-      );
-
-      if (!featureLayer) {
-        console.error("No feature layer found in the WebMap.");
-        return;
-      }
-
-      // Perform the query
-      const results = await featureLayer.queryFeatures(nearbyQuery);
-
-      // Add results to the graphics layer
-      results.features.forEach((feature) => {
-        const graphic = new Graphic({
-          geometry: feature.geometry,
-          attributes: feature.attributes,
-          symbol: featureLayer.renderer
-            ? featureLayer.renderer.symbol
-            : undefined,
-        });
-        graphicsLayer.add(graphic);
+    // Load GeoJSON data
+    fetch("/stations.geojson") // Replace with your hosted GeoJSON file path
+      .then((response) => response.json())
+      .then((data) => {
+        const features = data.features.map((feature) => ({
+          id: feature.id,
+          position: {
+            lat: feature.geometry.coordinates[1],
+            lng: feature.geometry.coordinates[0],
+          },
+          ...feature.properties,
+        }));
+        setStations(features);
       });
-    };
-
-    // Listen for search completion to perform nearby search
-    searchWidget.on("search-complete", (event) => {
-      const { results } = event;
-      if (results.length > 0) {
-        const result = results[0];
-        const point = result.feature.geometry;
-        performNearbySearch(point, 1000); // 1 km radius
-      }
-    });
-
-    // Optionally, handle map click to perform nearby search
-    view.on("click", (event) => {
-      const point = event.mapPoint;
-      performNearbySearch(point, 1000); // 1 km radius
-    });
-
-    // Cleanup on unmount
-    return () => {
-      if (view) {
-        view.destroy();
-      }
-    };
   }, []);
 
+  const onMapLoad = (mapInstance) => {
+    setMap(mapInstance);
+  };
+
+  const onPlaceChanged = () => {
+    if (searchBox) {
+      const place = searchBox.getPlace();
+      if (place && place.geometry) {
+        map.panTo(place.geometry.location);
+        map.setZoom(15);
+      }
+    }
+  };
+
   return (
-    <div
-      style={{
-        width: "100%",
-        height: "100vh",
-      }}
-      ref={mapRef}
-    />
+    <LoadScript googleMapsApiKey="AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours" libraries={["places"]}>
+      <GoogleMap
+        mapContainerStyle={containerStyle}
+        center={center}
+        zoom={12}
+        onLoad={onMapLoad}
+      >
+        {/* Search Bar */}
+        <Autocomplete
+          onLoad={(autocomplete) => setSearchBox(autocomplete)}
+          onPlaceChanged={onPlaceChanged}
+        >
+          <input
+            type="text"
+            placeholder="Search for a location"
+            style={{
+              position: "absolute",
+              top: "10px",
+              left: "50%",
+              transform: "translateX(-50%)",
+              width: "300px",
+              padding: "10px",
+              zIndex: 10,
+            }}
+          />
+        </Autocomplete>
+
+        {/* Markers for Stations */}
+        {stations.map((station) => (
+          <Marker
+            key={station.id}
+            position={station.position}
+            onClick={() => setSelectedStation(station)}
+          />
+        ))}
+
+        {/* Info Window for Selected Station */}
+        {selectedStation && (
+          <InfoWindow
+            position={selectedStation.position}
+            onCloseClick={() => setSelectedStation(null)}
+          >
+            <div>
+              <h3>{selectedStation.PLace}</h3>
+              <p>{selectedStation.Address}</p>
+            </div>
+          </InfoWindow>
+        )}
+      </GoogleMap>
+    </LoadScript>
   );
 };
 
