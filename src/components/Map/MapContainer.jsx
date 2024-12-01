@@ -1,13 +1,13 @@
 // src/MapContainer.jsx
 
-import React, { useRef, useEffect } from 'react';
-import WebMap from '@arcgis/core/WebMap';
-import MapView from '@arcgis/core/views/MapView';
-import Search from '@arcgis/core/widgets/Search';
-import Locate from '@arcgis/core/widgets/Locate';
-import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
-import Graphic from '@arcgis/core/Graphic';
-import "./MapContainer.css"
+import React, { useRef, useEffect } from "react";
+import WebMap from "@arcgis/core/WebMap";
+import MapView from "@arcgis/core/views/MapView";
+import Search from "@arcgis/core/widgets/Search";
+import Locate from "@arcgis/core/widgets/Locate";
+import GraphicsLayer from "@arcgis/core/layers/GraphicsLayer";
+import Graphic from "@arcgis/core/Graphic";
+import "./MapContainer.css";
 
 const MapContainer = () => {
   const mapRef = useRef();
@@ -18,7 +18,7 @@ const MapContainer = () => {
     // Initialize the WebMap using the provided ID
     const webMap = new WebMap({
       portalItem: {
-        id: '2e977a0d176b4bb582b9d4d643dfcc4d', // Your WebMap ID
+        id: "2e977a0d176b4bb582b9d4d643dfcc4d", // Your WebMap ID
       },
     });
 
@@ -33,13 +33,13 @@ const MapContainer = () => {
     const searchWidget = new Search({
       view: view,
     });
-    view.ui.add(searchWidget, 'top-right');
+    view.ui.add(searchWidget, "top-right");
 
     // Add Locate widget
     const locateWidget = new Locate({
       view: view,
     });
-    view.ui.add(locateWidget, 'top-left');
+    view.ui.add(locateWidget, "top-left");
 
     // Add a GraphicsLayer to display nearby results
     const graphicsLayer = new GraphicsLayer();
@@ -54,19 +54,19 @@ const MapContainer = () => {
       const nearbyQuery = {
         geometry: point,
         distance: distance, // in meters
-        units: 'meters',
-        outFields: ['*'],
+        units: "meters",
+        outFields: ["*"],
         returnGeometry: true,
       };
 
       // Assume there's a feature layer in the webmap to search against
       // You might need to adjust this based on your actual layers
       const featureLayer = webMap.allLayers.find(
-        (layer) => layer.type === 'feature'
+        (layer) => layer.type === "feature"
       );
 
       if (!featureLayer) {
-        console.error('No feature layer found in the WebMap.');
+        console.error("No feature layer found in the WebMap.");
         return;
       }
 
@@ -87,7 +87,7 @@ const MapContainer = () => {
     };
 
     // Listen for search completion to perform nearby search
-    searchWidget.on('search-complete', (event) => {
+    searchWidget.on("search-complete", (event) => {
       const { results } = event;
       if (results.length > 0) {
         const result = results[0];
@@ -97,7 +97,7 @@ const MapContainer = () => {
     });
 
     // Optionally, handle map click to perform nearby search
-    view.on('click', (event) => {
+    view.on("click", (event) => {
       const point = event.mapPoint;
       performNearbySearch(point, 1000); // 1 km radius
     });
@@ -113,8 +113,8 @@ const MapContainer = () => {
   return (
     <div
       style={{
-        width: '100%',
-        height: '100vh',
+        width: "100%",
+        height: "100vh",
       }}
       ref={mapRef}
     />
