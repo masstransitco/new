@@ -140,7 +140,7 @@ const MapContainer = () => {
 
       // Listen for clustering events to toggle labels
       clusterer.addListener("clusteringend", () => {
-        const clusters = clusterer.getClusters();
+        const clusters = clusterer.clusters; // Access clusters directly
         const clustersVisible = clusters.some(
           (cluster) => cluster.getSize() > 1
         );
@@ -192,7 +192,7 @@ const MapContainer = () => {
   // Handle Map Clicks
   const handleMapClick = (event) => {
     if (markerClusterer) {
-      const clusters = markerClusterer.getClusters();
+      const clusters = markerClusterer.clusters; // Access clusters directly
       const clickedLatLng = event.latLng;
       const closestCluster = findClosestCluster(clickedLatLng, clusters);
 
@@ -281,7 +281,7 @@ const MapContainer = () => {
 
   return (
     <LoadScript
-      googleMapsApiKey="AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours" // Replace with your API key
+      googleMapsApiKey="YOUR_GOOGLE_MAPS_API_KEY" // Replace with your API key
       libraries={["places", "geometry"]}
     >
       <GoogleMap
