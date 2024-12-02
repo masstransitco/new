@@ -10,6 +10,7 @@ import {
   Circle,
   MarkerClusterer,
 } from "@react-google-maps/api";
+import "./MapContainer.css"; // Ensure this path is correct based on your project structure
 
 const containerStyle = {
   width: "100%",
@@ -21,7 +22,7 @@ const center = {
   lng: 114.1095,
 };
 
-// Custom Map Styles (Dark Gray)
+// Uber-Inspired Dark Gray Map Styles
 const darkGrayMapStyle = [
   {
     featureType: "all",
@@ -78,7 +79,7 @@ const MapContainer = () => {
 
   // Load the Google Maps script
   const { isLoaded } = useJsApiLoader({
-    googleMapsApiKey: "AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours", // Replace with your API key
+    googleMapsApiKey: "AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours", // Replace with your actual API key
     libraries: ["geometry"],
   });
 
@@ -138,8 +139,12 @@ const MapContainer = () => {
     [userLocation, map, isLoaded]
   );
 
-  // Locate User
+  // Locate User (Renamed to "Near Me" and adjusted functionality)
   const locateMe = useCallback(() => {
+    // Task 2: Clear existing directions and selected station
+    setDirections(null);
+    setSelectedStation(null);
+
     if (!map) {
       alert("Map is not initialized yet.");
       return;
@@ -169,14 +174,14 @@ const MapContainer = () => {
     }
   }, [map]);
 
-  // Handle Map Clicks
+  // Handle Map Clicks (Clears selections and directions)
   const handleMapClick = useCallback(() => {
     setSelectedStation(null);
     setShowCircles(false);
     setDirections(null);
   }, []);
 
-  // Marker Icon
+  // Marker Icon Configuration
   const markerIcon = isLoaded
     ? {
         path: window.google.maps.SymbolPath.CIRCLE,
@@ -203,19 +208,22 @@ const MapContainer = () => {
         mapTypeControl: false,
         fullscreenControl: false,
         zoomControl: true, // Enable zoom buttons
+        zoomControlOptions: {
+          position: window.google.maps.ControlPosition.LEFT_TOP, // Task 5: Reposition zoom controls
+        },
         gestureHandling: "auto", // Enable user gestures
         rotateControl: false, // Disable rotation
       }}
       onLoad={(mapInstance) => setMap(mapInstance)}
       onClick={handleMapClick}
     >
-      {/* Locate Me Button */}
+      {/* Task 3 & 4: "Near Me" Button */}
       <button onClick={locateMe} className="locate-me-button">
-        Locate Me
+        Near Me
       </button>
 
-      {/* User Location Marker */}
-      {userLocation && (
+      {/* Task 1: User Location Marker (Hidden when directions are active) */}
+      {!directions && userLocation && (
         <>
           <Marker
             position={userLocation}
@@ -271,15 +279,27 @@ const MapContainer = () => {
           position={selectedStation.position}
           onCloseClick={() => setSelectedStation(null)}
         >
-          <div>
+          <div className="info-window">
             <h3>{selectedStation?.Place || "Unnamed Station"}</h3>
             <p>{selectedStation?.Address || "No address available"}</p>
           </div>
         </InfoWindow>
       )}
 
-      {/* Directions */}
-      {directions && <DirectionsRenderer directions={directions} />}
+      {/* Directions Renderer (Hides user marker) */}
+      {directions && (
+        <DirectionsRenderer
+          directions={directions}
+          options={{
+            suppressMarkers: true, // Task 1: Prevents default markers from DirectionsRenderer
+            polylineOptions: {
+              strokeColor: "#276ef1", // Uber's blue for the route
+              strokeOpacity: 0.8,
+              strokeWeight: 4,
+            },
+          }}
+        />
+      )}
     </GoogleMap>
   );
 };
