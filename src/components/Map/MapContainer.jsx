@@ -217,34 +217,6 @@ const MapContainer = () => {
       onLoad={(mapInstance) => setMap(mapInstance)}
       onClick={handleMapClick}
     >
-      <button
-        onClick={locateMe}
-        style={{
-          position: "absolute",
-          left: "10px",
-          bottom: "10px",
-          padding: "10px 16px",
-          backgroundColor: "#276ef1",
-          color: "#ffffff",
-          border: "none",
-          borderRadius: "25px",
-          fontSize: "0.95rem",
-          fontWeight: "600",
-          cursor: "pointer",
-          zIndex: 1100,
-          transition:
-            "background-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out",
-          boxShadow: "0 2px 6px rgba(0, 0, 0, 0.1)",
-          whiteSpace: "nowrap",
-          display: "inline-flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-        className="locate-me-button"
-      >
-        Near Me
-      </button>
-
       {/* Task 1: User Location Marker (Hidden when directions are active) */}
       {!directions && userLocation && (
         <>
@@ -325,6 +297,34 @@ const MapContainer = () => {
       )}
     </GoogleMap>
   );
+
+  <button
+    onClick={locateMe}
+    style={{
+      position: "absolute",
+      left: "10px",
+      bottom: "10px",
+      padding: "10px 16px",
+      backgroundColor: "#276ef1",
+      color: "#ffffff",
+      border: "none",
+      borderRadius: "25px",
+      fontSize: "0.95rem",
+      fontWeight: "600",
+      cursor: "pointer",
+      zIndex: 1100,
+      transition:
+        "background-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out",
+      boxShadow: "0 2px 6px rgba(0, 0, 0, 0.1)",
+      whiteSpace: "nowrap",
+      alignItems: "center",
+      justifyContent: "center",
+      /* Removed display property */
+    }}
+    className="locate-me-button"
+  >
+    Near Me
+  </button>;
 };
 
 export default MapContainer;
