@@ -4,6 +4,7 @@ import { AuthContext } from "./context/AuthContext"; // Use AuthContext for user
 import Header from "./components/Header/Header.jsx";
 import MapContainer from "./components/Map/MapContainer.jsx";
 import SceneContainer from "./components/Scene/SceneContainer.jsx";
+import MapScene from "./components/MapScene/MapScene.jsx";
 import Footer from "./components/Footer/Footer.jsx";
 import "./App.css";
 
@@ -21,6 +22,7 @@ function App() {
       <main className="main-content">
         <MapContainer />
         <SceneContainer />
+        <MapScene />
       </main>
       <Footer />
     </div>
