@@ -8,13 +8,13 @@ const MapScene = () => {
   useEffect(() => {
     const loadGoogleMaps = () => {
       // Check if the Google Maps script is already loaded
-      if (window.google && window.google.maps) {
+      if (google && google.maps) {
         initMap();
         return;
       }
 
       const script = document.createElement("script");
-      script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours&client=880316754524-m88cmb6dla3pf3i51p3ph26ecnv49ja7.apps.googleusercontent.com&libraries=places`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours&libraries=places`;
       script.async = true;
       script.defer = true;
       script.onload = initMap;
@@ -25,7 +25,7 @@ const MapScene = () => {
     };
 
     const initMap = () => {
-      if (!window.google || !window.google.maps) {
+      if (!google || !google.maps) {
         console.error("Google Maps JavaScript API failed to load.");
         return;
       }
@@ -45,7 +45,7 @@ const MapScene = () => {
             east: 114.423,
           };
 
-          const map = new window.google.maps.Map(mapRef.current, {
+          const map = new google.maps.Map(mapRef.current, {
             center: { lat: 22.3964, lng: 114.1095 }, // Hong Kong center
             zoom: 12,
             tilt: 45,
@@ -82,12 +82,11 @@ const MapScene = () => {
           });
 
           // Verify if PhotoRealistic3DTilesLayer exists
-          if (window.google.maps.PhotoRealistic3DTilesLayer) {
+          if (google.maps.PhotoRealistic3DTilesLayer) {
             // Add the photorealistic 3D Tiles Layer
-            const tilesLayer =
-              new window.google.maps.PhotoRealistic3DTilesLayer({
-                map: map,
-              });
+            const tilesLayer = new google.maps.PhotoRealistic3DTilesLayer({
+              map: map,
+            });
 
             const stationLocations = geojsonData.features.map(
               (feature) => feature.geometry.coordinates
