@@ -4,6 +4,7 @@ import React, { useContext, useState, useEffect, useRef } from "react";
 import "./Header.css";
 import { AuthContext } from "../../context/AuthContext";
 import GoogleSignIn from "../GoogleSignIn";
+import classNames from "classnames";
 
 const Header = () => {
   const { user, loading, logout } = useContext(AuthContext);
@@ -14,23 +15,39 @@ const Header = () => {
     setDropdownVisible((prev) => !prev);
   };
 
-  // Close the dropdown when clicking outside
   const handleClickOutside = (event) => {
     if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
       setDropdownVisible(false);
     }
   };
 
+  const handleKeyDown = (event) => {
+    if (event.key === "Escape") {
+      setDropdownVisible(false);
+    }
+  };
+
   useEffect(() => {
     document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
     };
   }, []);
 
   if (loading) {
-    return <div className="loading">Loading...</div>;
+    return (
+      <div className="loading">
+        <div className="spinner"></div>
+      </div>
+    );
   }
+
+  const avatarSrc =
+    typeof user?.photoURL === "string" ? user.photoURL : "/default-avatar.png";
+  const displayName =
+    typeof user?.displayName === "string" ? user.displayName : "User";
 
   return (
     <header className="header">
@@ -49,40 +66,48 @@ const Header = () => {
                 onClick={toggleDropdown}
                 role="button"
                 tabIndex={0}
+                aria-expanded={dropdownVisible}
+                aria-controls="user-dropdown"
               >
-                <img
-                  src={user.photoURL || "/default-avatar.png"} // Fallback for missing avatar
-                  alt="User Avatar"
-                />
-                <span className="user-name">{user.displayName || "User"}</span>
+                <img src={avatarSrc} alt="User Avatar" />
+                <span className="user-name">{displayName}</span>
               </div>
-              {dropdownVisible && (
-                <div className="dropdown-menu show">
-                  <ul>
-                    <li>
-                      <a href="/account">Account</a>
-                    </li>
-                    <li>
-                      <a href="/activity">Activity</a>
-                    </li>
-                    <li>
-                      <a href="/payment">Payment</a>
-                    </li>
-                    <li>
-                      <button
-                        onClick={logout}
-                        className="logout-button"
-                        aria-label="Logout"
-                      >
-                        Logout
-                      </button>
-                    </li>
-                  </ul>
-                </div>
-              )}
+              <div
+                id="user-dropdown"
+                className={classNames("dropdown-menu", {
+                  show: dropdownVisible,
+                })}
+              >
+                <ul>
+                  <li>
+                    <a href="/account">Account</a>
+                  </li>
+                  <li>
+                    <a href="/activity">Activity</a>
+                  </li>
+                  <li>
+                    <a href="/payment">Payment</a>
+                  </li>
+                  <li>
+                    <a
+                      href="#logout"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        logout();
+                      }}
+                      className="logout-button"
+                      aria-label="Logout"
+                    >
+                      Logout
+                    </a>
+                  </li>
+                </ul>
+              </div>
             </div>
           ) : (
-            <GoogleSignIn />
+            <div className="google-signin-wrapper">
+              <GoogleSignIn />
+            </div>
           )}
         </div>
       </div>
