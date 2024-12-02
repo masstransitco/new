@@ -1,6 +1,12 @@
 /* src/components/Header/Header.jsx */
 
-import React, { useContext, useState, useEffect, useRef } from "react";
+import React, {
+  useContext,
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+} from "react";
 import "./Header.css";
 import { AuthContext } from "../../context/AuthContext";
 import GoogleSignIn from "../GoogleSignIn";
@@ -10,22 +16,36 @@ const Header = () => {
   const { user, loading, logout } = useContext(AuthContext);
   const [dropdownVisible, setDropdownVisible] = useState(false);
   const dropdownRef = useRef(null);
+  const firstDropdownItemRef = useRef(null);
 
-  const toggleDropdown = () => {
+  const toggleDropdown = useCallback(() => {
     setDropdownVisible((prev) => !prev);
-  };
+  }, []);
 
-  const handleClickOutside = (event) => {
-    if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-      setDropdownVisible(false);
-    }
-  };
+  const handleClickOutside = useCallback(
+    (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setDropdownVisible(false);
+      }
+    },
+    [dropdownRef]
+  );
 
-  const handleKeyDown = (event) => {
+  const handleKeyDown = useCallback((event) => {
     if (event.key === "Escape") {
       setDropdownVisible(false);
     }
-  };
+  }, []);
+
+  const handleAvatarKeyDown = useCallback(
+    (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        toggleDropdown();
+      }
+    },
+    [toggleDropdown]
+  );
 
   useEffect(() => {
     document.addEventListener("mousedown", handleClickOutside);
@@ -34,12 +54,18 @@ const Header = () => {
       document.removeEventListener("mousedown", handleClickOutside);
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, []);
+  }, [handleClickOutside, handleKeyDown]);
+
+  useEffect(() => {
+    if (dropdownVisible && firstDropdownItemRef.current) {
+      firstDropdownItemRef.current.focus();
+    }
+  }, [dropdownVisible]);
 
   if (loading) {
     return (
       <div className="loading">
-        <div className="spinner"></div>
+        <div className="spinner" aria-label="Loading"></div>
       </div>
     );
   }
@@ -54,41 +80,53 @@ const Header = () => {
       <div className="header-content">
         {/* Logo Section */}
         <div className="logo">
-          <img src="logo.png" alt="ReactMTC Logo" className="logo-image" />
+          <img src="/logo.png" alt="ReactMTC Logo" className="logo-image" />
         </div>
 
         {/* User Section */}
         <div className="user-section">
           {user ? (
             <div className="user-info" ref={dropdownRef}>
-              <div
-                className="user-avatar"
+              <button
+                className="user-avatar-button"
                 onClick={toggleDropdown}
-                role="button"
-                tabIndex={0}
+                onKeyDown={handleAvatarKeyDown}
                 aria-expanded={dropdownVisible}
                 aria-controls="user-dropdown"
+                aria-haspopup="true"
               >
                 <img src={avatarSrc} alt="User Avatar" />
                 <span className="user-name">{displayName}</span>
-              </div>
+              </button>
               <div
                 id="user-dropdown"
                 className={classNames("dropdown-menu", {
                   show: dropdownVisible,
                 })}
+                role="menu"
+                aria-labelledby="user-avatar-button"
               >
                 <ul>
-                  <li>
-                    <a href="/account">Account</a>
+                  <li role="none">
+                    <a
+                      href="/account"
+                      role="menuitem"
+                      ref={firstDropdownItemRef}
+                    >
+                      Account
+                    </a>
                   </li>
-                  <li>
-                    <a href="/activity">Activity</a>
+                  <li role="none">
+                    <a href="/activity" role="menuitem">
+                      Activity
+                    </a>
                   </li>
-                  <li>
-                    <a href="/payment">Payment</a>
+                  <li role="none">
+                    <a href="/payment" role="menuitem">
+                      Payment
+                    </a>
                   </li>
-                  <li>
+                  <li role="none">
                     <a
                       href="#logout"
                       onClick={(e) => {
@@ -97,6 +135,7 @@ const Header = () => {
                       }}
                       className="logout-button"
                       aria-label="Logout"
+                      role="menuitem"
                     >
                       Logout
                     </a>

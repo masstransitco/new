@@ -1,3 +1,5 @@
+/* src/components/MapContainer.jsx */
+
 import React, { useState, useEffect, useCallback } from "react";
 import {
   GoogleMap,
@@ -6,7 +8,6 @@ import {
   InfoWindow,
   DirectionsRenderer,
   Circle,
-  Autocomplete,
 } from "@react-google-maps/api";
 import { MarkerClusterer } from "@googlemaps/markerclusterer";
 
@@ -46,7 +47,7 @@ const darkGrayMapStyle = [
 
 // Custom Cluster Icon Creation
 const createClusterIcon = (cluster) => {
-  const count = cluster.getMarkers().length; // Replace getSize() with getMarkers().length
+  const count = cluster.getMarkers().length; // Replaced getSize() with getMarkers().length
   const div = document.createElement("div");
   div.style.background = "white";
   div.style.borderRadius = "50%";
@@ -66,12 +67,11 @@ const MapContainer = () => {
   const [map, setMap] = useState(null);
   const [stations, setStations] = useState([]);
   const [selectedStation, setSelectedStation] = useState(null);
-  const [searchBox, setSearchBox] = useState(null);
   const [userLocation, setUserLocation] = useState(null);
   const [directions, setDirections] = useState(null);
   const [showCircles, setShowCircles] = useState(false);
   const [markerClusterer, setMarkerClusterer] = useState(null);
-  const [clustersVisible, setClustersVisible] = useState(false); // New state to track cluster visibility
+  const [clustersVisible, setClustersVisible] = useState(false); // Tracks cluster visibility
 
   // Fetch Stations Data
   useEffect(() => {
@@ -99,6 +99,7 @@ const MapContainer = () => {
 
   // Helper Function to Check Cluster Visibility
   const isClusterVisible = (cluster) => {
+    if (!map) return false;
     const mapBounds = map.getBounds();
     if (!mapBounds) return false;
     return mapBounds.contains(cluster.getCenter());
@@ -108,6 +109,9 @@ const MapContainer = () => {
   const onMapLoad = useCallback(
     (mapInstance) => {
       setMap(mapInstance);
+
+      if (stations.length === 0) return;
+
       // Fit bounds to show all markers
       const bounds = new window.google.maps.LatLngBounds();
       stations.forEach((station) => bounds.extend(station.position));
@@ -148,7 +152,8 @@ const MapContainer = () => {
 
       // Listen for clustering events to toggle labels
       clusterer.addListener("clusteringend", () => {
-        const clusters = markerClusterer.clusters; // Access clusters directly
+        if (!clusterer) return; // Ensure clusterer exists
+        const clusters = clusterer.clusters || [];
         const anyClusterHasMultipleMarkers = clusters.some(
           (cluster) =>
             cluster.getMarkers().length > 1 && isClusterVisible(cluster)
@@ -171,11 +176,16 @@ const MapContainer = () => {
         });
       });
     },
-    [stations, map, markerClusterer]
+    [stations, map, isClusterVisible]
   );
 
   // Locate User
   const locateMe = () => {
+    if (!map) {
+      alert("Map is not initialized yet.");
+      return;
+    }
+
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -202,30 +212,29 @@ const MapContainer = () => {
 
   // Handle Map Clicks
   const handleMapClick = (event) => {
-    if (markerClusterer) {
-      const clusters = markerClusterer.clusters; // Access clusters directly
-      const clickedLatLng = event.latLng;
-      const closestCluster = findClosestCluster(clickedLatLng, clusters);
+    if (!markerClusterer) return; // Ensure markerClusterer exists
 
-      if (
-        closestCluster &&
-        isWithinClusterVisibility(closestCluster, clickedLatLng)
-      ) {
-        // Snap to the closest cluster
-        map.panTo(closestCluster.getCenter());
-        map.setZoom(map.getZoom() + 2); // Adjust zoom as needed
-      } else if (!clustersVisible) {
-        // Use the updated state
-        // If only individual markers are visible, re-center to initial view
-        const bounds = new window.google.maps.LatLngBounds();
-        stations.forEach((station) => bounds.extend(station.position));
-        map.fitBounds(bounds);
-      }
+    const clusters = markerClusterer.clusters || [];
+    const clickedLatLng = event.latLng;
+    const closestCluster = findClosestCluster(clickedLatLng, clusters);
 
-      setSelectedStation(null);
-      setShowCircles(false);
-      setDirections(null);
+    if (
+      closestCluster &&
+      isWithinClusterVisibility(closestCluster, clickedLatLng)
+    ) {
+      // Snap to the closest cluster
+      map.panTo(closestCluster.getCenter());
+      map.setZoom(map.getZoom() + 2); // Adjust zoom as needed
+    } else if (!clustersVisible) {
+      // If only individual markers are visible, re-center to initial view
+      const bounds = new window.google.maps.LatLngBounds();
+      stations.forEach((station) => bounds.extend(station.position));
+      map.fitBounds(bounds);
     }
+
+    setSelectedStation(null);
+    setShowCircles(false);
+    setDirections(null);
   };
 
   // Find the closest cluster to the clicked position
@@ -248,8 +257,7 @@ const MapContainer = () => {
 
   // Determine if the clicked position is within a cluster's bounds
   const isWithinClusterVisibility = (cluster, latLng) => {
-    // Since cluster objects do not have a getBounds method, we'll approximate
-    // by checking if the clicked position is within a certain distance from the cluster center
+    if (!cluster || !latLng) return false;
     const distance =
       window.google.maps.geometry.spherical.computeDistanceBetween(
         cluster.getCenter(),
@@ -286,22 +294,10 @@ const MapContainer = () => {
     map.setZoom(15);
   };
 
-  // Handle Search
-  const handleSearch = () => {
-    if (searchBox) {
-      const place = searchBox.getPlace();
-      if (place && place.geometry) {
-        const location = place.geometry.location;
-        map.panTo(location);
-        map.setZoom(15);
-      }
-    }
-  };
-
   return (
     <LoadScript
-      googleMapsApiKey="AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours" // Replace with your API key
-      libraries={["places", "geometry"]}
+      googleMapsApiKey="AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours" // Replace with your actual API key
+      libraries={["geometry"]} // Removed "places" as search bar is removed
     >
       <GoogleMap
         mapContainerStyle={containerStyle}
@@ -337,27 +333,6 @@ const MapContainer = () => {
         >
           Locate Me
         </button>
-
-        {/* Search Bar */}
-        <Autocomplete
-          onLoad={(autocomplete) => setSearchBox(autocomplete)}
-          onPlaceChanged={handleSearch}
-        >
-          <input
-            type="text"
-            placeholder="Search for a location"
-            aria-label="Location search"
-            style={{
-              position: "absolute",
-              top: "10px",
-              left: "50%",
-              transform: "translateX(-50%)",
-              width: "300px",
-              padding: "10px",
-              zIndex: 10,
-            }}
-          />
-        </Autocomplete>
 
         {/* User Location Marker */}
         {userLocation && (

@@ -1,5 +1,6 @@
 /* src/components/Header/Header.css */
 
+/* Header Container */
 .header {
   display: flex;
   justify-content: space-between;
@@ -10,6 +11,7 @@
   border-bottom: 1px solid #ccc;
 }
 
+/* Header Content Wrapper */
 .header-content {
   display: flex;
   justify-content: space-between;
@@ -17,6 +19,7 @@
   width: 100%;
 }
 
+/* Logo Section */
 .logo {
   display: flex;
   align-items: center;
@@ -27,6 +30,7 @@
   object-fit: contain; /* Ensures proper scaling without distortion */
 }
 
+/* User Section */
 .user-section {
   display: flex;
   align-items: center;
@@ -39,7 +43,22 @@
   cursor: pointer;
 }
 
-.user-avatar img {
+/* User Avatar Button */
+.user-avatar-button {
+  display: flex;
+  align-items: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.user-avatar-button:focus {
+  outline: 2px solid #007bff;
+  outline-offset: 2px;
+}
+
+.user-avatar-button img {
   width: 40px;
   height: 40px;
   border-radius: 50%;
@@ -52,6 +71,7 @@
   color: #fff;
 }
 
+/* Dropdown Menu */
 .dropdown-menu {
   position: absolute;
   top: calc(100% + 10px); /* Space below avatar for dropdown */
@@ -90,18 +110,21 @@
   background-color: #f0f0f0;
 }
 
+/* Logout Button */
 .logout-button {
   background: none;
   border: none;
   color: #880000;
   cursor: pointer;
   font-size: 0.9rem;
+  text-decoration: none;
 }
 
 .logout-button:hover {
   text-decoration: underline;
 }
 
+/* Loading Spinner */
 .loading {
   text-align: center;
   font-size: 1.2rem;
@@ -121,4 +144,31 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+/* Google Sign-In Wrapper */
+.google-signin-wrapper {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  /* Add any additional styles as needed */
+}
+
+/* Locate Me Button */
+.locate-me-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 10;
+  padding: 10px 15px;
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.locate-me-button:hover {
+  background-color: #0056b3;
 }
