@@ -141,7 +141,7 @@ const MapContainer = () => {
 
   // Locate User (Renamed to "Near Me" and adjusted functionality)
   const locateMe = useCallback(() => {
-    // Task 2: Clear existing directions and selected station
+    // Clear existing directions and selected station
     setDirections(null);
     setSelectedStation(null);
 
@@ -198,133 +198,136 @@ const MapContainer = () => {
   }
 
   return (
-    <GoogleMap
-      mapContainerStyle={containerStyle}
-      center={center}
-      zoom={12}
-      options={{
-        styles: darkGrayMapStyle,
-        streetViewControl: false,
-        mapTypeControl: false,
-        fullscreenControl: false,
-        zoomControl: true, // Enable zoom buttons
-        zoomControlOptions: {
-          position: window.google.maps.ControlPosition.LEFT_TOP, // Task 5: Reposition zoom controls
-        },
-        gestureHandling: "auto", // Enable user gestures
-        rotateControl: false, // Disable rotation
-      }}
-      onLoad={(mapInstance) => setMap(mapInstance)}
-      onClick={handleMapClick}
-    >
-      {/* Task 1: User Location Marker (Hidden when directions are active) */}
-      {!directions && userLocation && (
-        <>
-          <Marker
-            position={userLocation}
-            icon={{
-              url: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png",
+    <div className="map-container" style={{ position: "relative" }}>
+      <GoogleMap
+        mapContainerStyle={containerStyle}
+        center={center}
+        zoom={12}
+        options={{
+          styles: darkGrayMapStyle,
+          streetViewControl: false,
+          mapTypeControl: false,
+          fullscreenControl: false,
+          zoomControl: true, // Enable zoom buttons
+          zoomControlOptions: {
+            position: window.google.maps.ControlPosition.LEFT_TOP, // Reposition zoom controls
+          },
+          gestureHandling: "auto", // Enable user gestures
+          rotateControl: false, // Disable rotation
+        }}
+        onLoad={(mapInstance) => setMap(mapInstance)}
+        onClick={handleMapClick}
+      >
+        {/* User Location Marker (Hidden when directions are active) */}
+        {!directions && userLocation && (
+          <>
+            <Marker
+              position={userLocation}
+              icon={{
+                url: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png",
+              }}
+            />
+            {showCircles && (
+              <>
+                <Circle
+                  center={userLocation}
+                  radius={500}
+                  options={{
+                    strokeColor: "#FFFFFF",
+                    strokeOpacity: 0.8,
+                    strokeWeight: 2,
+                    fillOpacity: 0,
+                  }}
+                />
+                <Circle
+                  center={userLocation}
+                  radius={1000}
+                  options={{
+                    strokeColor: "#FFFFFF",
+                    strokeOpacity: 0.8,
+                    strokeWeight: 2,
+                    fillOpacity: 0,
+                  }}
+                />
+              </>
+            )}
+          </>
+        )}
+
+        {/* Station Markers with MarkerClusterer */}
+        <MarkerClusterer>
+          {(clusterer) =>
+            stations.map((station) => (
+              <Marker
+                key={station.id}
+                position={station.position}
+                clusterer={clusterer}
+                onClick={() => handleMarkerClick(station)}
+                icon={markerIcon}
+              />
+            ))
+          }
+        </MarkerClusterer>
+
+        {/* Selected Station InfoWindow */}
+        {selectedStation && (
+          <InfoWindow
+            position={selectedStation.position}
+            onCloseClick={() => setSelectedStation(null)}
+          >
+            <div className="info-window">
+              <h3>{selectedStation?.Place || "Unnamed Station"}</h3>
+              <p>{selectedStation?.Address || "No address available"}</p>
+            </div>
+          </InfoWindow>
+        )}
+
+        {/* Directions Renderer (Hides user marker) */}
+        {directions && (
+          <DirectionsRenderer
+            directions={directions}
+            options={{
+              suppressMarkers: true, // Prevents default markers from DirectionsRenderer
+              polylineOptions: {
+                strokeColor: "#276ef1", // Uber's blue for the route
+                strokeOpacity: 0.8,
+                strokeWeight: 4,
+              },
             }}
           />
-          {showCircles && (
-            <>
-              <Circle
-                center={userLocation}
-                radius={500}
-                options={{
-                  strokeColor: "#FFFFFF",
-                  strokeOpacity: 0.8,
-                  strokeWeight: 2,
-                  fillOpacity: 0,
-                }}
-              />
-              <Circle
-                center={userLocation}
-                radius={1000}
-                options={{
-                  strokeColor: "#FFFFFF",
-                  strokeOpacity: 0.8,
-                  strokeWeight: 2,
-                  fillOpacity: 0,
-                }}
-              />
-            </>
-          )}
-        </>
-      )}
+        )}
+      </GoogleMap>
 
-      {/* Station Markers with MarkerClusterer */}
-      <MarkerClusterer>
-        {(clusterer) =>
-          stations.map((station) => (
-            <Marker
-              key={station.id}
-              position={station.position}
-              clusterer={clusterer}
-              onClick={() => handleMarkerClick(station)}
-              icon={markerIcon}
-            />
-          ))
-        }
-      </MarkerClusterer>
-
-      {/* Selected Station InfoWindow */}
-      {selectedStation && (
-        <InfoWindow
-          position={selectedStation.position}
-          onCloseClick={() => setSelectedStation(null)}
-        >
-          <div className="info-window">
-            <h3>{selectedStation?.Place || "Unnamed Station"}</h3>
-            <p>{selectedStation?.Address || "No address available"}</p>
-          </div>
-        </InfoWindow>
-      )}
-
-      {/* Directions Renderer (Hides user marker) */}
-      {directions && (
-        <DirectionsRenderer
-          directions={directions}
-          options={{
-            suppressMarkers: true, // Task 1: Prevents default markers from DirectionsRenderer
-            polylineOptions: {
-              strokeColor: "#276ef1", // Uber's blue for the route
-              strokeOpacity: 0.8,
-              strokeWeight: 4,
-            },
-          }}
-        />
-      )}
-    </GoogleMap>
+      {/* "Near Me" Button */}
+      <button
+        onClick={locateMe}
+        style={{
+          position: "absolute",
+          left: "10px",
+          bottom: "10px",
+          padding: "10px 16px",
+          backgroundColor: "#276ef1",
+          color: "#ffffff",
+          border: "none",
+          borderRadius: "25px",
+          fontSize: "0.95rem",
+          fontWeight: "600",
+          cursor: "pointer",
+          zIndex: 1100,
+          transition:
+            "background-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out",
+          boxShadow: "0 2px 6px rgba(0, 0, 0, 0.1)",
+          whiteSpace: "nowrap",
+          display: "flex", // Added to align items properly
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+        className="locate-me-button"
+      >
+        Near Me
+      </button>
+    </div>
   );
-
-  <button
-    onClick={locateMe}
-    style={{
-      position: "absolute",
-      left: "10px",
-      bottom: "10px",
-      padding: "10px 16px",
-      backgroundColor: "#276ef1",
-      color: "#ffffff",
-      border: "none",
-      borderRadius: "25px",
-      fontSize: "0.95rem",
-      fontWeight: "600",
-      cursor: "pointer",
-      zIndex: 1100,
-      transition:
-        "background-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out",
-      boxShadow: "0 2px 6px rgba(0, 0, 0, 0.1)",
-      whiteSpace: "nowrap",
-      alignItems: "center",
-      justifyContent: "center",
-      /* Removed display property */
-    }}
-    className="locate-me-button"
-  >
-    Near Me
-  </button>;
 };
 
 export default MapContainer;
