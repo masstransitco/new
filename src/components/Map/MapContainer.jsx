@@ -10,7 +10,7 @@ import {
 
 const containerStyle = {
   width: "100%",
-  height: "100vh",
+  height: "50vh",
 };
 
 const center = {
@@ -26,10 +26,11 @@ const MapContainer = () => {
   const [userLocation, setUserLocation] = useState(null);
   const [directions, setDirections] = useState(null);
   const [walkingTime, setWalkingTime] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Load GeoJSON data
-    fetch("./stations.geojson") // Replace with your hosted GeoJSON file path
+    // Load GeoJSON data with error handling
+    fetch("/stations.geojson")
       .then((response) => {
         if (!response.ok) throw new Error("Failed to load GeoJSON");
         return response.json();
@@ -44,15 +45,24 @@ const MapContainer = () => {
           ...feature.properties,
         }));
         setStations(features);
+        setIsLoading(false);
       })
-      .catch((error) => console.error("Error loading GeoJSON:", error));
+      .catch((error) => {
+        console.error("Error loading GeoJSON:", error);
+        alert("Failed to load station data. Please try again later.");
+        setIsLoading(false);
+      });
   }, []);
 
-  const onMapLoad = (mapInstance) => {
-    setMap(mapInstance);
+  const debounce = (func, delay) => {
+    let timer;
+    return (...args) => {
+      clearTimeout(timer);
+      timer = setTimeout(() => func(...args), delay);
+    };
   };
 
-  const onPlaceChanged = () => {
+  const onPlaceChanged = debounce(() => {
     if (searchBox) {
       const place = searchBox.getPlace();
       if (place && place.geometry) {
@@ -60,12 +70,15 @@ const MapContainer = () => {
         map.setZoom(15);
       }
     }
+  }, 300);
+
+  const onMapLoad = (mapInstance) => {
+    setMap(mapInstance);
   };
 
   const handleMarkerClick = (station) => {
     setSelectedStation(station);
 
-    // Trigger user geolocation
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -75,7 +88,6 @@ const MapContainer = () => {
           };
           setUserLocation(userPos);
 
-          // Calculate and draw pedestrian route
           const directionsService = new window.google.maps.DirectionsService();
           directionsService.route(
             {
@@ -84,27 +96,27 @@ const MapContainer = () => {
               travelMode: "WALKING",
             },
             (result, status) => {
-              if (status === "OK") {
+              if (status === "OK" && result?.routes?.[0]?.legs?.[0]) {
                 setDirections(result);
+                setWalkingTime(result.routes[0].legs[0].duration.text);
 
-                // Calculate estimated walking time
-                const duration = result.routes[0].legs[0].duration.text;
-                setWalkingTime(duration);
-
-                // Center the map to fit the route
                 const bounds = new window.google.maps.LatLngBounds();
-                result.routes[0].overview_path.forEach((point) => {
-                  bounds.extend(point);
-                });
+                result.routes[0].overview_path.forEach((point) =>
+                  bounds.extend(point)
+                );
                 map.fitBounds(bounds);
               } else {
                 console.error("Directions request failed:", status);
+                alert("Could not calculate walking route.");
               }
             }
           );
         },
         (error) => {
           console.error("Error fetching user location:", error);
+          alert(
+            "Unable to access your location. Please ensure location services are enabled."
+          );
         }
       );
     } else {
@@ -112,11 +124,22 @@ const MapContainer = () => {
     }
   };
 
+  useEffect(() => {
+    // Center map dynamically based on stations and user location
+    if (map && stations.length > 0) {
+      const bounds = new window.google.maps.LatLngBounds();
+      stations.forEach((station) => bounds.extend(station.position));
+      if (userLocation) bounds.extend(userLocation);
+      map.fitBounds(bounds);
+    }
+  }, [map, stations, userLocation]);
+
   return (
     <LoadScript
-      googleMapsApiKey="AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours"
+      googleMapsApiKey={process.env.REACT_APP_GOOGLE_MAPS_API_KEY}
       libraries={["places"]}
     >
+      {isLoading && <div className="loading-indicator">Loading Map...</div>}
       <GoogleMap
         mapContainerStyle={containerStyle}
         center={center}
@@ -131,6 +154,7 @@ const MapContainer = () => {
           <input
             type="text"
             placeholder="Search for a location"
+            aria-label="Location search"
             style={{
               position: "absolute",
               top: "10px",
@@ -169,8 +193,8 @@ const MapContainer = () => {
             onCloseClick={() => setSelectedStation(null)}
           >
             <div>
-              <h3>{selectedStation.PLace}</h3>
-              <p>{selectedStation.Address}</p>
+              <h3>{selectedStation?.Place || "Unnamed Station"}</h3>
+              <p>{selectedStation?.Address || "No address available"}</p>
               {walkingTime && (
                 <p>
                   <strong>Walking Time:</strong> {walkingTime}
