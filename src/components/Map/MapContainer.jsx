@@ -140,7 +140,7 @@ const MapContainer = () => {
 
   const createClusterer = (mapInstance) => {
     const markers = stations.map((station) => {
-      return new window.google.maps.Marker({
+      const marker = new window.google.maps.Marker({
         position: station.position,
         icon: {
           path: window.google.maps.SymbolPath.BACKWARD_CLOSED_ARROW,
@@ -150,8 +150,11 @@ const MapContainer = () => {
           fillColor: "white",
           fillOpacity: 1,
         },
-        map: mapInstance,
       });
+
+      marker.addListener("click", () => handleMarkerClick(station)); // Attach handleMarkerClick to marker
+
+      return marker;
     });
 
     new MarkerClusterer({ markers, map: mapInstance });
