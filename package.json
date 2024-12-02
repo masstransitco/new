@@ -15,6 +15,8 @@
   "dependencies": {
     "@arcgis/core": "^4.31.6",
     "@esri/arcgis-rest-geocoding": "^4.0.3",
+    "@googlemaps/markerclusterer": "^2.5.3",
+    "@googlemaps/markerclustererplus": "^1.2.10",
     "@react-google-maps/api": "^2.20.3",
     "axios": "^1.0.0",
     "firebase": "^11.0.2",
