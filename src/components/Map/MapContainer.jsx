@@ -23,6 +23,7 @@ const MapContainer = () => {
   const [stations, setStations] = useState([]);
   const [selectedStation, setSelectedStation] = useState(null);
   const [searchBox, setSearchBox] = useState(null);
+  const [userLocation, setUserLocation] = useState(null);
   const [directions, setDirections] = useState(null);
   const [walkingTime, setWalkingTime] = useState("");
 
@@ -150,6 +151,16 @@ const MapContainer = () => {
             onClick={() => handleMarkerClick(station)}
           />
         ))}
+
+        {/* Marker for User Location */}
+        {userLocation && (
+          <Marker
+            position={userLocation}
+            icon={{
+              url: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png",
+            }}
+          />
+        )}
 
         {/* Info Window for Selected Station */}
         {selectedStation && (
