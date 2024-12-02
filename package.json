@@ -19,6 +19,7 @@
     "@googlemaps/markerclustererplus": "^1.2.10",
     "@react-google-maps/api": "^2.20.3",
     "axios": "^1.0.0",
+    "classnames": "^2.5.1",
     "firebase": "^11.0.2",
     "lint": "^0.8.19",
     "prop-types": "^15.8.1",
