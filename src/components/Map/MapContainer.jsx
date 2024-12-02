@@ -18,6 +18,29 @@ const center = {
   lng: 114.1095,
 };
 
+const darkGrayMapStyle = [
+  {
+    featureType: "all",
+    elementType: "labels",
+    stylers: [{ visibility: "off" }],
+  },
+  {
+    featureType: "road",
+    elementType: "geometry",
+    stylers: [{ visibility: "simplified" }, { color: "#2c2c2c" }],
+  },
+  {
+    featureType: "landscape",
+    elementType: "geometry",
+    stylers: [{ color: "#1f1f1f" }],
+  },
+  {
+    featureType: "water",
+    elementType: "geometry",
+    stylers: [{ color: "#0e0e0e" }],
+  },
+];
+
 const MapContainer = () => {
   const [map, setMap] = useState(null);
   const [stations, setStations] = useState([]);
@@ -76,9 +99,7 @@ const MapContainer = () => {
     setMap(mapInstance);
   };
 
-  const handleMarkerClick = (station) => {
-    setSelectedStation(station);
-
+  const locateMe = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -87,30 +108,8 @@ const MapContainer = () => {
             lng: position.coords.longitude,
           };
           setUserLocation(userPos);
-
-          const directionsService = new window.google.maps.DirectionsService();
-          directionsService.route(
-            {
-              origin: userPos,
-              destination: station.position,
-              travelMode: "WALKING",
-            },
-            (result, status) => {
-              if (status === "OK" && result?.routes?.[0]?.legs?.[0]) {
-                setDirections(result);
-                setWalkingTime(result.routes[0].legs[0].duration.text);
-
-                const bounds = new window.google.maps.LatLngBounds();
-                result.routes[0].overview_path.forEach((point) =>
-                  bounds.extend(point)
-                );
-                map.fitBounds(bounds);
-              } else {
-                console.error("Directions request failed:", status);
-                alert("Could not calculate walking route.");
-              }
-            }
-          );
+          map.panTo(userPos);
+          map.setZoom(15);
         },
         (error) => {
           console.error("Error fetching user location:", error);
@@ -136,7 +135,7 @@ const MapContainer = () => {
 
   return (
     <LoadScript
-      googleMapsApiKey={process.env.REACT_APP_GOOGLE_MAPS_API_KEY}
+      googleMapsApiKey="AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours"
       libraries={["places"]}
     >
       {isLoading && <div className="loading-indicator">Loading Map...</div>}
@@ -144,8 +143,32 @@ const MapContainer = () => {
         mapContainerStyle={containerStyle}
         center={center}
         zoom={12}
+        options={{
+          styles: darkGrayMapStyle,
+          streetViewControl: false,
+          mapTypeControl: false,
+        }}
         onLoad={onMapLoad}
       >
+        {/* Locate Me Button */}
+        <button
+          onClick={locateMe}
+          style={{
+            position: "absolute",
+            top: "10px",
+            right: "10px",
+            zIndex: 10,
+            padding: "10px 15px",
+            backgroundColor: "#007bff",
+            color: "#fff",
+            border: "none",
+            borderRadius: "5px",
+            cursor: "pointer",
+          }}
+        >
+          Locate Me
+        </button>
+
         {/* Search Bar */}
         <Autocomplete
           onLoad={(autocomplete) => setSearchBox(autocomplete)}
@@ -172,7 +195,7 @@ const MapContainer = () => {
           <Marker
             key={station.id}
             position={station.position}
-            onClick={() => handleMarkerClick(station)}
+            onClick={() => setSelectedStation(station)}
           />
         ))}
 
@@ -195,11 +218,6 @@ const MapContainer = () => {
             <div>
               <h3>{selectedStation?.Place || "Unnamed Station"}</h3>
               <p>{selectedStation?.Address || "No address available"}</p>
-              {walkingTime && (
-                <p>
-                  <strong>Walking Time:</strong> {walkingTime}
-                </p>
-              )}
             </div>
           </InfoWindow>
         )}
