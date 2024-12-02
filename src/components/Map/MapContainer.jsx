@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   GoogleMap,
   LoadScript,
@@ -20,6 +20,7 @@ const center = {
   lng: 114.1095,
 };
 
+// Custom Map Styles (Dark Gray)
 const darkGrayMapStyle = [
   {
     featureType: "all",
@@ -43,6 +44,24 @@ const darkGrayMapStyle = [
   },
 ];
 
+// Custom Cluster Icon Creation
+const createClusterIcon = (cluster) => {
+  const count = cluster.getSize();
+  const div = document.createElement("div");
+  div.style.background = "white";
+  div.style.borderRadius = "50%";
+  div.style.width = "40px";
+  div.style.height = "40px";
+  div.style.display = "flex";
+  div.style.justifyContent = "center";
+  div.style.alignItems = "center";
+  div.style.color = "#000";
+  div.style.fontSize = "14px";
+  div.style.fontWeight = "bold";
+  div.textContent = count.toString();
+  return div;
+};
+
 const MapContainer = () => {
   const [map, setMap] = useState(null);
   const [stations, setStations] = useState([]);
@@ -51,7 +70,9 @@ const MapContainer = () => {
   const [userLocation, setUserLocation] = useState(null);
   const [directions, setDirections] = useState(null);
   const [showCircles, setShowCircles] = useState(false);
+  const [markerClusterer, setMarkerClusterer] = useState(null);
 
+  // Fetch Stations Data
   useEffect(() => {
     fetch("/stations.geojson")
       .then((response) => {
@@ -75,10 +96,46 @@ const MapContainer = () => {
       });
   }, []);
 
-  const onMapLoad = (mapInstance) => {
-    setMap(mapInstance);
-  };
+  // Initialize Map
+  const onMapLoad = useCallback(
+    (mapInstance) => {
+      setMap(mapInstance);
+      // Fit bounds to show all markers
+      const bounds = new window.google.maps.LatLngBounds();
+      stations.forEach((station) => bounds.extend(station.position));
+      mapInstance.fitBounds(bounds);
 
+      // Initialize MarkerClusterer with custom icons
+      const clusterer = new MarkerClusterer({
+        map: mapInstance,
+        markers: [],
+        renderer: {
+          render: (cluster) => {
+            return createClusterIcon(cluster);
+          },
+        },
+      });
+
+      // Create Markers
+      const markers = stations.map((station) => {
+        const marker = new window.google.maps.Marker({
+          position: station.position,
+          label: "1",
+          // Only show label when clusters are visible
+          labelVisible: false,
+        });
+
+        marker.addListener("click", () => handleMarkerClick(station));
+        return marker;
+      });
+
+      clusterer.addMarkers(markers);
+      setMarkerClusterer(clusterer);
+    },
+    [stations]
+  );
+
+  // Locate User
   const locateMe = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -104,14 +161,60 @@ const MapContainer = () => {
     }
   };
 
-  const handleMapClick = () => {
-    setSelectedStation(null);
-    setShowCircles(false);
-    setDirections(null); // Clear directions
-    map.panTo(center);
-    map.setZoom(12);
+  // Handle Map Clicks
+  const handleMapClick = (event) => {
+    if (markerClusterer) {
+      const clusters = markerClusterer.getClusters();
+      const clickedLatLng = event.latLng;
+      const closestCluster = findClosestCluster(clickedLatLng, clusters);
+
+      if (
+        closestCluster &&
+        isWithinClusterVisibility(closestCluster, clickedLatLng)
+      ) {
+        // Snap to the closest cluster
+        map.panTo(closestCluster.getCenter());
+        map.setZoom(map.getZoom() + 2); // Adjust zoom as needed
+      } else if (
+        !markerClusterer.getClusters().some((cluster) => cluster.isShowing())
+      ) {
+        // If only individual markers are visible, re-center to initial view
+        const bounds = new window.google.maps.LatLngBounds();
+        stations.forEach((station) => bounds.extend(station.position));
+        map.fitBounds(bounds);
+      }
+
+      setSelectedStation(null);
+      setShowCircles(false);
+      setDirections(null);
+    }
   };
 
+  // Find the closest cluster to the clicked position
+  const findClosestCluster = (latLng, clusters) => {
+    let closest = null;
+    let minDistance = Infinity;
+    clusters.forEach((cluster) => {
+      const distance =
+        window.google.maps.geometry.spherical.computeDistanceBetween(
+          cluster.getCenter(),
+          latLng
+        );
+      if (distance < minDistance) {
+        minDistance = distance;
+        closest = cluster;
+      }
+    });
+    return closest;
+  };
+
+  // Determine if the clicked position is within a cluster's bounds
+  const isWithinClusterVisibility = (cluster, latLng) => {
+    const bounds = cluster.getBounds();
+    return bounds.contains(latLng);
+  };
+
+  // Handle Marker Click
   const handleMarkerClick = (station) => {
     setSelectedStation(station);
     setShowCircles(false);
@@ -138,28 +241,36 @@ const MapContainer = () => {
     map.setZoom(15);
   };
 
+  // Create Clusterer with Customized Behavior
   const createClusterer = (mapInstance) => {
+    const clusterer = new MarkerClusterer({
+      map: mapInstance,
+      markers: [],
+      renderer: {
+        render: (cluster) => {
+          return createClusterIcon(cluster);
+        },
+      },
+    });
+
+    // Add markers to clusterer
     const markers = stations.map((station) => {
       const marker = new window.google.maps.Marker({
         position: station.position,
-        icon: {
-          path: window.google.maps.SymbolPath.BACKWARD_CLOSED_ARROW,
-          scale: 6,
-          strokeWeight: 2,
-          strokeColor: "black",
-          fillColor: "white",
-          fillOpacity: 1,
-        },
+        label: "1",
+        // Initially hide labels; they'll be shown when clusters are visible
+        labelVisible: false,
       });
 
-      marker.addListener("click", () => handleMarkerClick(station)); // Attach handleMarkerClick to marker
-
+      marker.addListener("click", () => handleMarkerClick(station));
       return marker;
     });
 
-    new MarkerClusterer({ markers, map: mapInstance });
+    clusterer.addMarkers(markers);
+    setMarkerClusterer(clusterer);
   };
 
+  // Handle Search
   const handleSearch = () => {
     if (searchBox) {
       const place = searchBox.getPlace();
@@ -171,16 +282,28 @@ const MapContainer = () => {
     }
   };
 
+  // Toggle Marker Labels Based on Cluster Visibility
   useEffect(() => {
-    if (map && stations.length > 0) {
-      createClusterer(map);
+    if (markerClusterer) {
+      window.google.maps.event.addListener(
+        markerClusterer,
+        "clusteringend",
+        () => {
+          const isClusterVisible = markerClusterer
+            .getClusters()
+            .some((cluster) => cluster.getSize() > 1);
+          markerClusterer.getMarkers().forEach((marker) => {
+            marker.setLabel(isClusterVisible ? "1" : "");
+          });
+        }
+      );
     }
-  }, [map, stations]);
+  }, [markerClusterer]);
 
   return (
     <LoadScript
-      googleMapsApiKey="AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours"
-      libraries={["places"]}
+      googleMapsApiKey="AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours" // Replace with your API key
+      libraries={["places", "geometry"]}
     >
       <GoogleMap
         mapContainerStyle={containerStyle}
@@ -191,6 +314,9 @@ const MapContainer = () => {
           streetViewControl: false,
           mapTypeControl: false,
           fullscreenControl: false,
+          zoomControl: false, // Remove zoom buttons
+          gestureHandling: "none", // Disable all user gestures
+          rotateControl: false, // Disable rotation
         }}
         onLoad={onMapLoad}
         onClick={handleMapClick}
