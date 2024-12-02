@@ -46,7 +46,7 @@ const darkGrayMapStyle = [
 
 // Custom Cluster Icon Creation
 const createClusterIcon = (cluster) => {
-  const count = cluster.getSize();
+  const count = cluster.getMarkers().length; // Replace getSize() with getMarkers().length
   const div = document.createElement("div");
   div.style.background = "white";
   div.style.borderRadius = "50%";
@@ -71,6 +71,7 @@ const MapContainer = () => {
   const [directions, setDirections] = useState(null);
   const [showCircles, setShowCircles] = useState(false);
   const [markerClusterer, setMarkerClusterer] = useState(null);
+  const [clustersVisible, setClustersVisible] = useState(false); // New state to track cluster visibility
 
   // Fetch Stations Data
   useEffect(() => {
@@ -95,6 +96,13 @@ const MapContainer = () => {
         alert("Failed to load station data. Please try again later.");
       });
   }, []);
+
+  // Helper Function to Check Cluster Visibility
+  const isClusterVisible = (cluster) => {
+    const mapBounds = map.getBounds();
+    if (!mapBounds) return false;
+    return mapBounds.contains(cluster.getCenter());
+  };
 
   // Initialize Map and Clusterer
   const onMapLoad = useCallback(
@@ -140,14 +148,17 @@ const MapContainer = () => {
 
       // Listen for clustering events to toggle labels
       clusterer.addListener("clusteringend", () => {
-        const clusters = clusterer.clusters; // Access clusters directly
-        const clustersVisible = clusters.some(
-          (cluster) => cluster.getSize() > 1
+        const clusters = markerClusterer.clusters; // Access clusters directly
+        const anyClusterHasMultipleMarkers = clusters.some(
+          (cluster) =>
+            cluster.getMarkers().length > 1 && isClusterVisible(cluster)
         );
+
+        setClustersVisible(anyClusterHasMultipleMarkers); // Update state
 
         markers.forEach((marker) => {
           // Show "1" label only if clusters are visible
-          if (clustersVisible) {
+          if (anyClusterHasMultipleMarkers) {
             marker.setLabel({
               text: "1",
               color: "#000",
@@ -160,7 +171,7 @@ const MapContainer = () => {
         });
       });
     },
-    [stations]
+    [stations, map, markerClusterer]
   );
 
   // Locate User
@@ -203,7 +214,8 @@ const MapContainer = () => {
         // Snap to the closest cluster
         map.panTo(closestCluster.getCenter());
         map.setZoom(map.getZoom() + 2); // Adjust zoom as needed
-      } else if (!clusters.some((cluster) => cluster.isShowing())) {
+      } else if (!clustersVisible) {
+        // Use the updated state
         // If only individual markers are visible, re-center to initial view
         const bounds = new window.google.maps.LatLngBounds();
         stations.forEach((station) => bounds.extend(station.position));
@@ -236,8 +248,15 @@ const MapContainer = () => {
 
   // Determine if the clicked position is within a cluster's bounds
   const isWithinClusterVisibility = (cluster, latLng) => {
-    const bounds = cluster.getBounds();
-    return bounds.contains(latLng);
+    // Since cluster objects do not have a getBounds method, we'll approximate
+    // by checking if the clicked position is within a certain distance from the cluster center
+    const distance =
+      window.google.maps.geometry.spherical.computeDistanceBetween(
+        cluster.getCenter(),
+        latLng
+      );
+    const clusterRadius = 50; // Define an appropriate radius in meters
+    return distance <= clusterRadius;
   };
 
   // Handle Marker Click
@@ -281,7 +300,7 @@ const MapContainer = () => {
 
   return (
     <LoadScript
-      googleMapsApiKey="YOUR_GOOGLE_MAPS_API_KEY" // Replace with your API key
+      googleMapsApiKey="AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours" // Replace with your API key
       libraries={["places", "geometry"]}
     >
       <GoogleMap
