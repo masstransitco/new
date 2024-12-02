@@ -29,7 +29,7 @@ const MapContainer = () => {
 
   useEffect(() => {
     // Load GeoJSON data
-    fetch("/stations.geojson") // Replace with your hosted GeoJSON file path
+    fetch("./stations.geojson") // Replace with your hosted GeoJSON file path
       .then((response) => {
         if (!response.ok) throw new Error("Failed to load GeoJSON");
         return response.json();
