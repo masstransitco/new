@@ -4,9 +4,11 @@ import {
   LoadScript,
   Marker,
   InfoWindow,
-  Autocomplete,
   DirectionsRenderer,
+  Circle,
+  Autocomplete,
 } from "@react-google-maps/api";
+import { MarkerClusterer } from "@googlemaps/markerclusterer";
 
 const containerStyle = {
   width: "100%",
@@ -14,7 +16,7 @@ const containerStyle = {
 };
 
 const center = {
-  lat: 22.3964, // Default center: Hong Kong
+  lat: 22.3964,
   lng: 114.1095,
 };
 
@@ -48,11 +50,9 @@ const MapContainer = () => {
   const [searchBox, setSearchBox] = useState(null);
   const [userLocation, setUserLocation] = useState(null);
   const [directions, setDirections] = useState(null);
-  const [walkingTime, setWalkingTime] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
+  const [showCircles, setShowCircles] = useState(false);
 
   useEffect(() => {
-    // Load GeoJSON data with error handling
     fetch("/stations.geojson")
       .then((response) => {
         if (!response.ok) throw new Error("Failed to load GeoJSON");
@@ -68,32 +68,12 @@ const MapContainer = () => {
           ...feature.properties,
         }));
         setStations(features);
-        setIsLoading(false);
       })
       .catch((error) => {
         console.error("Error loading GeoJSON:", error);
         alert("Failed to load station data. Please try again later.");
-        setIsLoading(false);
       });
   }, []);
-
-  const debounce = (func, delay) => {
-    let timer;
-    return (...args) => {
-      clearTimeout(timer);
-      timer = setTimeout(() => func(...args), delay);
-    };
-  };
-
-  const onPlaceChanged = debounce(() => {
-    if (searchBox) {
-      const place = searchBox.getPlace();
-      if (place && place.geometry) {
-        map.panTo(place.geometry.location);
-        map.setZoom(15);
-      }
-    }
-  }, 300);
 
   const onMapLoad = (mapInstance) => {
     setMap(mapInstance);
@@ -110,6 +90,7 @@ const MapContainer = () => {
           setUserLocation(userPos);
           map.panTo(userPos);
           map.setZoom(15);
+          setShowCircles(true);
         },
         (error) => {
           console.error("Error fetching user location:", error);
@@ -123,68 +104,81 @@ const MapContainer = () => {
     }
   };
 
+  const handleMapClick = () => {
+    setSelectedStation(null);
+    setShowCircles(false);
+    setDirections(null); // Clear directions
+    map.panTo(center);
+    map.setZoom(12);
+  };
+
   const handleMarkerClick = (station) => {
     setSelectedStation(station);
+    setShowCircles(false);
 
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const userPos = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          };
-          setUserLocation(userPos);
-
-          const directionsService = new window.google.maps.DirectionsService();
-          directionsService.route(
-            {
-              origin: userPos,
-              destination: station.position,
-              travelMode: "WALKING",
-            },
-            (result, status) => {
-              if (status === "OK" && result?.routes?.[0]?.legs?.[0]) {
-                setDirections(result);
-                setWalkingTime(result.routes[0].legs[0].duration.text);
-
-                const bounds = new window.google.maps.LatLngBounds();
-                result.routes[0].overview_path.forEach((point) =>
-                  bounds.extend(point)
-                );
-                map.fitBounds(bounds);
-              } else {
-                console.error("Directions request failed:", status);
-                alert("Could not calculate walking route.");
-              }
-            }
-          );
+    if (userLocation) {
+      const directionsService = new window.google.maps.DirectionsService();
+      directionsService.route(
+        {
+          origin: userLocation,
+          destination: station.position,
+          travelMode: "WALKING",
         },
-        (error) => {
-          console.error("Error fetching user location:", error);
-          alert(
-            "Unable to access your location. Please ensure location services are enabled."
-          );
+        (result, status) => {
+          if (status === "OK") {
+            setDirections(result);
+          } else {
+            console.error("Directions request failed:", status);
+          }
         }
       );
+    }
+
+    map.panTo(station.position);
+    map.setZoom(15);
+  };
+
+  const createClusterer = (mapInstance) => {
+    const markers = stations.map((station) => {
+      return new window.google.maps.Marker({
+        position: station.position,
+        icon: {
+          path: window.google.maps.SymbolPath.BACKWARD_CLOSED_ARROW,
+          scale: 6,
+          strokeWeight: 2,
+          strokeColor: "black",
+          fillColor: "white",
+          fillOpacity: 1,
+        },
+        map: mapInstance,
+      });
+    });
+
+    new MarkerClusterer({ markers, map: mapInstance });
+  };
+
+  const handleSearch = () => {
+    if (searchBox) {
+      const place = searchBox.getPlace();
+      if (place && place.geometry) {
+        const location = place.geometry.location;
+        map.panTo(location);
+        map.setZoom(15);
+      }
     }
   };
 
   useEffect(() => {
-    // Center map dynamically based on stations and user location
     if (map && stations.length > 0) {
-      const bounds = new window.google.maps.LatLngBounds();
-      stations.forEach((station) => bounds.extend(station.position));
-      if (userLocation) bounds.extend(userLocation);
-      map.fitBounds(bounds);
+      createClusterer(map);
     }
-  }, [map, stations, userLocation]);
+  }, [map, stations]);
 
   return (
     <LoadScript
       googleMapsApiKey="AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours"
       libraries={["places"]}
     >
-      {isLoading && <div className="loading-indicator">Loading Map...</div>}
       <GoogleMap
         mapContainerStyle={containerStyle}
         center={center}
@@ -193,8 +187,10 @@ const MapContainer = () => {
           styles: darkGrayMapStyle,
           streetViewControl: false,
           mapTypeControl: false,
+          fullscreenControl: false,
         }}
         onLoad={onMapLoad}
+        onClick={handleMapClick}
       >
         {/* Locate Me Button */}
         <button
@@ -218,7 +214,7 @@ const MapContainer = () => {
         {/* Search Bar */}
         <Autocomplete
           onLoad={(autocomplete) => setSearchBox(autocomplete)}
-          onPlaceChanged={onPlaceChanged}
+          onPlaceChanged={handleSearch}
         >
           <input
             type="text"
@@ -236,26 +232,43 @@ const MapContainer = () => {
           />
         </Autocomplete>
 
-        {/* Markers for Stations */}
-        {stations.map((station) => (
-          <Marker
-            key={station.id}
-            position={station.position}
-            onClick={() => handleMarkerClick(station)}
-          />
-        ))}
-
-        {/* Marker for User Location */}
+        {/* User Location Marker */}
         {userLocation && (
-          <Marker
-            position={userLocation}
-            icon={{
-              url: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png",
-            }}
-          />
+          <>
+            <Marker
+              position={userLocation}
+              icon={{
+                url: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png",
+              }}
+            />
+            {showCircles && (
+              <>
+                <Circle
+                  center={userLocation}
+                  radius={500}
+                  options={{
+                    strokeColor: "#FFFFFF",
+                    strokeOpacity: 0.8,
+                    strokeWeight: 2,
+                    fillOpacity: 0,
+                  }}
+                />
+                <Circle
+                  center={userLocation}
+                  radius={1000}
+                  options={{
+                    strokeColor: "#FFFFFF",
+                    strokeOpacity: 0.8,
+                    strokeWeight: 2,
+                    fillOpacity: 0,
+                  }}
+                />
+              </>
+            )}
+          </>
         )}
 
-        {/* Info Window for Selected Station */}
+        {/* Selected Station InfoWindow */}
         {selectedStation && (
           <InfoWindow
             position={selectedStation.position}
@@ -264,16 +277,11 @@ const MapContainer = () => {
             <div>
               <h3>{selectedStation?.Place || "Unnamed Station"}</h3>
               <p>{selectedStation?.Address || "No address available"}</p>
-              {walkingTime && (
-                <p>
-                  <strong>Walking Time:</strong> {walkingTime}
-                </p>
-              )}
             </div>
           </InfoWindow>
         )}
 
-        {/* Display Directions */}
+        {/* Directions */}
         {directions && <DirectionsRenderer directions={directions} />}
       </GoogleMap>
     </LoadScript>
