@@ -96,7 +96,7 @@ const MapContainer = () => {
       });
   }, []);
 
-  // Initialize Map
+  // Initialize Map and Clusterer
   const onMapLoad = useCallback(
     (mapInstance) => {
       setMap(mapInstance);
@@ -120,9 +120,15 @@ const MapContainer = () => {
       const markers = stations.map((station) => {
         const marker = new window.google.maps.Marker({
           position: station.position,
-          label: "1",
-          // Only show label when clusters are visible
-          labelVisible: false,
+          label: "", // Start with no label
+          icon: {
+            path: window.google.maps.SymbolPath.CIRCLE,
+            scale: 8,
+            fillColor: "#ffffff",
+            fillOpacity: 1,
+            strokeWeight: 2,
+            strokeColor: "#000000",
+          },
         });
 
         marker.addListener("click", () => handleMarkerClick(station));
@@ -131,6 +137,28 @@ const MapContainer = () => {
 
       clusterer.addMarkers(markers);
       setMarkerClusterer(clusterer);
+
+      // Listen for clustering events to toggle labels
+      clusterer.addListener("clusteringend", () => {
+        const clusters = clusterer.getClusters();
+        const clustersVisible = clusters.some(
+          (cluster) => cluster.getSize() > 1
+        );
+
+        markers.forEach((marker) => {
+          // Show "1" label only if clusters are visible
+          if (clustersVisible) {
+            marker.setLabel({
+              text: "1",
+              color: "#000",
+              fontSize: "12px",
+              fontWeight: "bold",
+            });
+          } else {
+            marker.setLabel("");
+          }
+        });
+      });
     },
     [stations]
   );
@@ -175,9 +203,7 @@ const MapContainer = () => {
         // Snap to the closest cluster
         map.panTo(closestCluster.getCenter());
         map.setZoom(map.getZoom() + 2); // Adjust zoom as needed
-      } else if (
-        !markerClusterer.getClusters().some((cluster) => cluster.isShowing())
-      ) {
+      } else if (!clusters.some((cluster) => cluster.isShowing())) {
         // If only individual markers are visible, re-center to initial view
         const bounds = new window.google.maps.LatLngBounds();
         stations.forEach((station) => bounds.extend(station.position));
@@ -241,35 +267,6 @@ const MapContainer = () => {
     map.setZoom(15);
   };
 
-  // Create Clusterer with Customized Behavior
-  const createClusterer = (mapInstance) => {
-    const clusterer = new MarkerClusterer({
-      map: mapInstance,
-      markers: [],
-      renderer: {
-        render: (cluster) => {
-          return createClusterIcon(cluster);
-        },
-      },
-    });
-
-    // Add markers to clusterer
-    const markers = stations.map((station) => {
-      const marker = new window.google.maps.Marker({
-        position: station.position,
-        label: "1",
-        // Initially hide labels; they'll be shown when clusters are visible
-        labelVisible: false,
-      });
-
-      marker.addListener("click", () => handleMarkerClick(station));
-      return marker;
-    });
-
-    clusterer.addMarkers(markers);
-    setMarkerClusterer(clusterer);
-  };
-
   // Handle Search
   const handleSearch = () => {
     if (searchBox) {
@@ -282,27 +279,9 @@ const MapContainer = () => {
     }
   };
 
-  // Toggle Marker Labels Based on Cluster Visibility
-  useEffect(() => {
-    if (markerClusterer) {
-      window.google.maps.event.addListener(
-        markerClusterer,
-        "clusteringend",
-        () => {
-          const isClusterVisible = markerClusterer
-            .getClusters()
-            .some((cluster) => cluster.getSize() > 1);
-          markerClusterer.getMarkers().forEach((marker) => {
-            marker.setLabel(isClusterVisible ? "1" : "");
-          });
-        }
-      );
-    }
-  }, [markerClusterer]);
-
   return (
     <LoadScript
-      googleMapsApiKey="AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours" // Replace with your API key
+      googleMapsApiKey="YOUR_GOOGLE_MAPS_API_KEY" // Replace with your API key
       libraries={["places", "geometry"]}
     >
       <GoogleMap
