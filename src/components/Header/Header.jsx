@@ -37,7 +37,7 @@ const Header = () => {
       <div className="header-content">
         {/* Logo Section */}
         <div className="logo">
-          <h1>ReactMTC</h1>
+        <img src="logo.png" alt="ReactMTC Logo" className="logo-image" />
         </div>
 
         {/* User Section */}
