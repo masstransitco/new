@@ -281,7 +281,7 @@ const MapContainer = () => {
 
   return (
     <LoadScript
-      googleMapsApiKey="YOUR_GOOGLE_MAPS_API_KEY" // Replace with your API key
+      googleMapsApiKey="AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours" // Replace with your API key
       libraries={["places", "geometry"]}
     >
       <GoogleMap
