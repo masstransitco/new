@@ -3,13 +3,13 @@
 import React, { useState, useEffect, useCallback } from "react";
 import {
   GoogleMap,
-  LoadScript,
+  useJsApiLoader,
   Marker,
   InfoWindow,
   DirectionsRenderer,
   Circle,
+  MarkerClusterer,
 } from "@react-google-maps/api";
-import { MarkerClusterer } from "@googlemaps/markerclusterer";
 
 const containerStyle = {
   width: "100%",
@@ -23,45 +23,8 @@ const center = {
 
 // Custom Map Styles (Dark Gray)
 const darkGrayMapStyle = [
-  {
-    featureType: "all",
-    elementType: "labels",
-    stylers: [{ visibility: "off" }],
-  },
-  {
-    featureType: "road",
-    elementType: "geometry",
-    stylers: [{ visibility: "simplified" }, { color: "#2c2c2c" }],
-  },
-  {
-    featureType: "landscape",
-    elementType: "geometry",
-    stylers: [{ color: "#1f1f1f" }],
-  },
-  {
-    featureType: "water",
-    elementType: "geometry",
-    stylers: [{ color: "#0e0e0e" }],
-  },
+  // ... your map styles
 ];
-
-// Custom Cluster Icon Creation
-const createClusterIcon = (cluster) => {
-  const count = cluster.getMarkers().length;
-  const div = document.createElement("div");
-  div.style.background = "white";
-  div.style.borderRadius = "50%";
-  div.style.width = "40px";
-  div.style.height = "40px";
-  div.style.display = "flex";
-  div.style.justifyContent = "center";
-  div.style.alignItems = "center";
-  div.style.color = "#000";
-  div.style.fontSize = "14px";
-  div.style.fontWeight = "bold";
-  div.textContent = count.toString();
-  return div;
-};
 
 const MapContainer = () => {
   const [map, setMap] = useState(null);
@@ -70,8 +33,12 @@ const MapContainer = () => {
   const [userLocation, setUserLocation] = useState(null);
   const [directions, setDirections] = useState(null);
   const [showCircles, setShowCircles] = useState(false);
-  const [markerClusterer, setMarkerClusterer] = useState(null);
-  const [clustersVisible, setClustersVisible] = useState(false);
+
+  // Load the Google Maps script
+  const { isLoaded } = useJsApiLoader({
+    googleMapsApiKey: "AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours", // Replace with your API key
+    libraries: ["geometry"],
+  });
 
   // Fetch Stations Data
   useEffect(() => {
@@ -103,7 +70,7 @@ const MapContainer = () => {
       setSelectedStation(station);
       setShowCircles(false);
 
-      if (userLocation) {
+      if (userLocation && isLoaded) {
         const directionsService = new window.google.maps.DirectionsService();
         directionsService.route(
           {
@@ -126,85 +93,8 @@ const MapContainer = () => {
         map.setZoom(15);
       }
     },
-    [userLocation, map]
+    [userLocation, map, isLoaded]
   );
-
-  // Initialize Map and Clusterer when map and stations are ready
-  useEffect(() => {
-    if (!map || stations.length === 0) return;
-
-    // Fit bounds to show all markers
-    const bounds = new window.google.maps.LatLngBounds();
-    stations.forEach((station) => bounds.extend(station.position));
-    map.fitBounds(bounds);
-
-    // Initialize MarkerClusterer with custom icons
-    const clusterer = new MarkerClusterer({
-      map: map,
-      markers: [],
-      renderer: {
-        render: (cluster) => {
-          return createClusterIcon(cluster);
-        },
-      },
-    });
-
-    // Create Markers
-    const markers = stations.map((station) => {
-      const marker = new window.google.maps.Marker({
-        position: station.position,
-        label: "", // Start with no label
-        icon: {
-          path: window.google.maps.SymbolPath.CIRCLE,
-          scale: 8,
-          fillColor: "#ffffff",
-          fillOpacity: 1,
-          strokeWeight: 2,
-          strokeColor: "#000000",
-        },
-      });
-
-      marker.addListener("click", () => handleMarkerClick(station));
-      return marker;
-    });
-
-    clusterer.addMarkers(markers);
-    setMarkerClusterer(clusterer);
-
-    // Helper Function to Check Cluster Visibility
-    const isClusterVisible = (cluster) => {
-      if (!map) return false;
-      const mapBounds = map.getBounds();
-      if (!mapBounds) return false;
-      return mapBounds.contains(cluster.getCenter());
-    };
-
-    // Listen for clustering events to toggle labels
-    clusterer.addListener("clusteringend", () => {
-      if (!clusterer) return; // Ensure clusterer exists
-      const clusters = clusterer.clusters || [];
-      const anyClusterHasMultipleMarkers = clusters.some(
-        (cluster) =>
-          cluster.getMarkers().length > 1 && isClusterVisible(cluster)
-      );
-
-      setClustersVisible(anyClusterHasMultipleMarkers); // Update state
-
-      markers.forEach((marker) => {
-        // Show "1" label only if clusters are visible
-        if (anyClusterHasMultipleMarkers) {
-          marker.setLabel({
-            text: "1",
-            color: "#000",
-            fontSize: "12px",
-            fontWeight: "bold",
-          });
-        } else {
-          marker.setLabel("");
-        }
-      });
-    });
-  }, [map, stations, handleMarkerClick]);
 
   // Locate User
   const locateMe = useCallback(() => {
@@ -238,148 +128,117 @@ const MapContainer = () => {
   }, [map]);
 
   // Handle Map Clicks
-  const handleMapClick = useCallback(
-    (event) => {
-      if (!markerClusterer || !map) return; // Ensure markerClusterer and map exist
-
-      const clusters = markerClusterer.clusters || [];
-      const clickedLatLng = event.latLng;
-      const closestCluster = findClosestCluster(clickedLatLng, clusters);
-
-      if (
-        closestCluster &&
-        isWithinClusterVisibility(closestCluster, clickedLatLng)
-      ) {
-        // Snap to the closest cluster
-        map.panTo(closestCluster.getCenter());
-        map.setZoom(map.getZoom() + 2); // Adjust zoom as needed
-      } else if (!clustersVisible) {
-        // If only individual markers are visible, re-center to initial view
-        const bounds = new window.google.maps.LatLngBounds();
-        stations.forEach((station) => bounds.extend(station.position));
-        map.fitBounds(bounds);
-      }
-
-      setSelectedStation(null);
-      setShowCircles(false);
-      setDirections(null);
-    },
-    [markerClusterer, clustersVisible, map, stations]
-  );
-
-  // Find the closest cluster to the clicked position
-  const findClosestCluster = (latLng, clusters) => {
-    let closest = null;
-    let minDistance = Infinity;
-    clusters.forEach((cluster) => {
-      const distance =
-        window.google.maps.geometry.spherical.computeDistanceBetween(
-          cluster.getCenter(),
-          latLng
-        );
-      if (distance < minDistance) {
-        minDistance = distance;
-        closest = cluster;
-      }
-    });
-    return closest;
-  };
-
-  // Determine if the clicked position is within a cluster's bounds
-  const isWithinClusterVisibility = (cluster, latLng) => {
-    if (!cluster || !latLng) return false;
-    const distance =
-      window.google.maps.geometry.spherical.computeDistanceBetween(
-        cluster.getCenter(),
-        latLng
-      );
-    const clusterRadius = 50; // Define an appropriate radius in meters
-    return distance <= clusterRadius;
-  };
-
-  const onMapLoad = useCallback((mapInstance) => {
-    setMap(mapInstance);
+  const handleMapClick = useCallback(() => {
+    setSelectedStation(null);
+    setShowCircles(false);
+    setDirections(null);
   }, []);
 
+  // Marker Icon
+  const markerIcon = isLoaded
+    ? {
+        path: window.google.maps.SymbolPath.CIRCLE,
+        scale: 8,
+        fillColor: "#ffffff",
+        fillOpacity: 1,
+        strokeWeight: 2,
+        strokeColor: "#000000",
+      }
+    : null;
+
+  if (!isLoaded) {
+    return <div>Loading...</div>;
+  }
+
   return (
-    <LoadScript
-      googleMapsApiKey="AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours" // Replace with your actual API key
-      libraries={["geometry"]}
+    <GoogleMap
+      mapContainerStyle={containerStyle}
+      center={center}
+      zoom={12}
+      options={{
+        styles: darkGrayMapStyle,
+        streetViewControl: false,
+        mapTypeControl: false,
+        fullscreenControl: false,
+        zoomControl: true, // Enable zoom buttons
+        gestureHandling: "auto", // Enable user gestures
+        rotateControl: false, // Disable rotation
+      }}
+      onLoad={(mapInstance) => setMap(mapInstance)}
+      onClick={handleMapClick}
     >
-      <GoogleMap
-        mapContainerStyle={containerStyle}
-        center={center}
-        zoom={12}
-        options={{
-          styles: darkGrayMapStyle,
-          streetViewControl: false,
-          mapTypeControl: false,
-          fullscreenControl: false,
-          zoomControl: true, // Enable zoom buttons
-          gestureHandling: "auto", // Enable user gestures
-          rotateControl: false, // Disable rotation
-        }}
-        onLoad={onMapLoad}
-        onClick={handleMapClick}
-      >
-        {/* Locate Me Button */}
-        <button onClick={locateMe} className="locate-me-button">
-          Locate Me
-        </button>
+      {/* Locate Me Button */}
+      <button onClick={locateMe} className="locate-me-button">
+        Locate Me
+      </button>
 
-        {/* User Location Marker */}
-        {userLocation && (
-          <>
+      {/* User Location Marker */}
+      {userLocation && (
+        <>
+          <Marker
+            position={userLocation}
+            icon={{
+              url: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png",
+            }}
+          />
+          {showCircles && (
+            <>
+              <Circle
+                center={userLocation}
+                radius={500}
+                options={{
+                  strokeColor: "#FFFFFF",
+                  strokeOpacity: 0.8,
+                  strokeWeight: 2,
+                  fillOpacity: 0,
+                }}
+              />
+              <Circle
+                center={userLocation}
+                radius={1000}
+                options={{
+                  strokeColor: "#FFFFFF",
+                  strokeOpacity: 0.8,
+                  strokeWeight: 2,
+                  fillOpacity: 0,
+                }}
+              />
+            </>
+          )}
+        </>
+      )}
+
+      {/* Station Markers with MarkerClusterer */}
+      <MarkerClusterer>
+        {(clusterer) =>
+          stations.map((station) => (
             <Marker
-              position={userLocation}
-              icon={{
-                url: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png",
-              }}
+              key={station.id}
+              position={station.position}
+              clusterer={clusterer}
+              onClick={() => handleMarkerClick(station)}
+              icon={markerIcon}
             />
-            {showCircles && (
-              <>
-                <Circle
-                  center={userLocation}
-                  radius={500}
-                  options={{
-                    strokeColor: "#FFFFFF",
-                    strokeOpacity: 0.8,
-                    strokeWeight: 2,
-                    fillOpacity: 0,
-                  }}
-                />
-                <Circle
-                  center={userLocation}
-                  radius={1000}
-                  options={{
-                    strokeColor: "#FFFFFF",
-                    strokeOpacity: 0.8,
-                    strokeWeight: 2,
-                    fillOpacity: 0,
-                  }}
-                />
-              </>
-            )}
-          </>
-        )}
+          ))
+        }
+      </MarkerClusterer>
 
-        {/* Selected Station InfoWindow */}
-        {selectedStation && (
-          <InfoWindow
-            position={selectedStation.position}
-            onCloseClick={() => setSelectedStation(null)}
-          >
-            <div>
-              <h3>{selectedStation?.Place || "Unnamed Station"}</h3>
-              <p>{selectedStation?.Address || "No address available"}</p>
-            </div>
-          </InfoWindow>
-        )}
+      {/* Selected Station InfoWindow */}
+      {selectedStation && (
+        <InfoWindow
+          position={selectedStation.position}
+          onCloseClick={() => setSelectedStation(null)}
+        >
+          <div>
+            <h3>{selectedStation?.Place || "Unnamed Station"}</h3>
+            <p>{selectedStation?.Address || "No address available"}</p>
+          </div>
+        </InfoWindow>
+      )}
 
-        {/* Directions */}
-        {directions && <DirectionsRenderer directions={directions} />}
-      </GoogleMap>
-    </LoadScript>
+      {/* Directions */}
+      {directions && <DirectionsRenderer directions={directions} />}
+    </GoogleMap>
   );
 };
 
