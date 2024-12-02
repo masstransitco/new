@@ -1,3 +1,5 @@
+/* global google */
+
 import React, { useEffect, useRef } from "react";
 
 const MapScene = () => {
@@ -5,16 +7,36 @@ const MapScene = () => {
 
   useEffect(() => {
     const loadGoogleMaps = () => {
+      // Check if the Google Maps script is already loaded
+      if (window.google && window.google.maps) {
+        initMap();
+        return;
+      }
+
       const script = document.createElement("script");
-      script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours&client=880316754524-m88cmb6dla3pf3i51p3ph26ecnv49ja7.apps.googleusercontent.com&libraries=maps`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours&client=880316754524-m88cmb6dla3pf3i51p3ph26ecnv49ja7.apps.googleusercontent.com&libraries=places`;
       script.async = true;
+      script.defer = true;
       script.onload = initMap;
+      script.onerror = () => {
+        console.error("Failed to load the Google Maps script.");
+      };
       document.body.appendChild(script);
     };
 
     const initMap = () => {
+      if (!window.google || !window.google.maps) {
+        console.error("Google Maps JavaScript API failed to load.");
+        return;
+      }
+
       fetch("/stations.geojson")
-        .then((response) => response.json())
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error("Failed to load GeoJSON");
+          }
+          return response.json();
+        })
         .then((geojsonData) => {
           const hongKongBounds = {
             north: 22.568,
@@ -25,41 +47,15 @@ const MapScene = () => {
 
           const map = new window.google.maps.Map(mapRef.current, {
             center: { lat: 22.3964, lng: 114.1095 }, // Hong Kong center
-            zoom: 17,
+            zoom: 12,
             tilt: 45,
             heading: 0,
             restriction: {
               latLngBounds: hongKongBounds,
-              strictBounds: false, // Allows some movement outside bounds but not zoom out beyond it
+              strictBounds: true, // Prevents any movement outside bounds
             },
             minZoom: 10, // Minimum zoom level to show all of Hong Kong
             maxZoom: 20, // Maximum zoom for details
-          });
-
-          // Add the photorealistic 3D Tiles Layer
-          const tilesLayer = new google.maps.PhotoRealistic3DTilesLayer({
-            map: map,
-          });
-
-          const stationLocations = geojsonData.features.map(
-            (feature) => feature.geometry.coordinates
-          );
-
-          // Mask buildings not matching station locations
-          tilesLayer.setOptions({
-            featureFilter: (feature) => {
-              const { lat, lng } = feature.position || {};
-              return stationLocations.some(([stationLng, stationLat]) =>
-                isSameLocation(
-                  { lat, lng },
-                  { lat: stationLat, lng: stationLng }
-                )
-              );
-            },
-          });
-
-          // Hide labels for city, district, and streets
-          map.setOptions({
             styles: [
               {
                 featureType: "poi",
@@ -81,8 +77,40 @@ const MapScene = () => {
                 elementType: "labels",
                 stylers: [{ visibility: "off" }],
               },
+              // Add any additional styles as needed
             ],
           });
+
+          // Verify if PhotoRealistic3DTilesLayer exists
+          if (window.google.maps.PhotoRealistic3DTilesLayer) {
+            // Add the photorealistic 3D Tiles Layer
+            const tilesLayer =
+              new window.google.maps.PhotoRealistic3DTilesLayer({
+                map: map,
+              });
+
+            const stationLocations = geojsonData.features.map(
+              (feature) => feature.geometry.coordinates
+            );
+
+            // Mask buildings not matching station locations
+            tilesLayer.setOptions({
+              featureFilter: (feature) => {
+                const { lat, lng } = feature.position || {};
+                return stationLocations.some(([stationLng, stationLat]) =>
+                  isSameLocation(
+                    { lat, lng },
+                    { lat: stationLat, lng: stationLng }
+                  )
+                );
+              },
+            });
+          } else {
+            console.warn(
+              "PhotoRealistic3DTilesLayer is not available in the Google Maps API."
+            );
+            // Optionally, implement alternative 3D features or fallback
+          }
         })
         .catch((err) => console.error("Error loading GeoJSON data:", err));
     };
