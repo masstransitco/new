@@ -23,7 +23,49 @@ const center = {
 
 // Custom Map Styles (Dark Gray)
 const darkGrayMapStyle = [
-  // ... your map styles
+  {
+    featureType: "all",
+    elementType: "labels",
+    stylers: [{ visibility: "off" }], // Hides all labels
+  },
+  {
+    featureType: "administrative",
+    elementType: "geometry",
+    stylers: [{ color: "#242424" }], // Subtle dark gray for administrative boundaries
+  },
+  {
+    featureType: "landscape",
+    elementType: "geometry",
+    stylers: [{ color: "#1c1c1c" }], // Darker background for landscape
+  },
+  {
+    featureType: "poi",
+    elementType: "geometry",
+    stylers: [{ color: "#2a2a2a" }], // Darker gray for points of interest
+  },
+  {
+    featureType: "road",
+    elementType: "geometry",
+    stylers: [
+      { color: "#383838" }, // Subtle contrast for roads
+      { visibility: "simplified" },
+    ],
+  },
+  {
+    featureType: "road",
+    elementType: "labels",
+    stylers: [{ visibility: "off" }], // Hides road labels
+  },
+  {
+    featureType: "transit",
+    elementType: "geometry",
+    stylers: [{ color: "#333333" }], // Slightly lighter for transit lines
+  },
+  {
+    featureType: "water",
+    elementType: "geometry",
+    stylers: [{ color: "#1a1a1a" }], // Dark tone for water
+  },
 ];
 
 const MapContainer = () => {
