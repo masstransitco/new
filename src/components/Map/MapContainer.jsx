@@ -123,6 +123,52 @@ const MapContainer = () => {
     }
   };
 
+  const handleMarkerClick = (station) => {
+    setSelectedStation(station);
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const userPos = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          };
+          setUserLocation(userPos);
+
+          const directionsService = new window.google.maps.DirectionsService();
+          directionsService.route(
+            {
+              origin: userPos,
+              destination: station.position,
+              travelMode: "WALKING",
+            },
+            (result, status) => {
+              if (status === "OK" && result?.routes?.[0]?.legs?.[0]) {
+                setDirections(result);
+                setWalkingTime(result.routes[0].legs[0].duration.text);
+
+                const bounds = new window.google.maps.LatLngBounds();
+                result.routes[0].overview_path.forEach((point) =>
+                  bounds.extend(point)
+                );
+                map.fitBounds(bounds);
+              } else {
+                console.error("Directions request failed:", status);
+                alert("Could not calculate walking route.");
+              }
+            }
+          );
+        },
+        (error) => {
+          console.error("Error fetching user location:", error);
+          alert(
+            "Unable to access your location. Please ensure location services are enabled."
+          );
+        }
+      );
+    }
+  };
+
   useEffect(() => {
     // Center map dynamically based on stations and user location
     if (map && stations.length > 0) {
@@ -195,7 +241,7 @@ const MapContainer = () => {
           <Marker
             key={station.id}
             position={station.position}
-            onClick={() => setSelectedStation(station)}
+            onClick={() => handleMarkerClick(station)}
           />
         ))}
 
@@ -218,6 +264,11 @@ const MapContainer = () => {
             <div>
               <h3>{selectedStation?.Place || "Unnamed Station"}</h3>
               <p>{selectedStation?.Address || "No address available"}</p>
+              {walkingTime && (
+                <p>
+                  <strong>Walking Time:</strong> {walkingTime}
+                </p>
+              )}
             </div>
           </InfoWindow>
         )}
