@@ -47,7 +47,7 @@ const darkGrayMapStyle = [
 
 // Custom Cluster Icon Creation
 const createClusterIcon = (cluster) => {
-  const count = cluster.getMarkers().length; // Replaced getSize() with getMarkers().length
+  const count = cluster.getMarkers().length;
   const div = document.createElement("div");
   div.style.background = "white";
   div.style.borderRadius = "50%";
@@ -71,7 +71,7 @@ const MapContainer = () => {
   const [directions, setDirections] = useState(null);
   const [showCircles, setShowCircles] = useState(false);
   const [markerClusterer, setMarkerClusterer] = useState(null);
-  const [clustersVisible, setClustersVisible] = useState(false); // Tracks cluster visibility
+  const [clustersVisible, setClustersVisible] = useState(false);
 
   // Fetch Stations Data
   useEffect(() => {
@@ -97,90 +97,117 @@ const MapContainer = () => {
       });
   }, []);
 
-  // Helper Function to Check Cluster Visibility
-  const isClusterVisible = (cluster) => {
-    if (!map) return false;
-    const mapBounds = map.getBounds();
-    if (!mapBounds) return false;
-    return mapBounds.contains(cluster.getCenter());
-  };
+  // Handle Marker Click
+  const handleMarkerClick = useCallback(
+    (station) => {
+      setSelectedStation(station);
+      setShowCircles(false);
 
-  // Initialize Map and Clusterer
-  const onMapLoad = useCallback(
-    (mapInstance) => {
-      setMap(mapInstance);
-
-      if (stations.length === 0) return;
-
-      // Fit bounds to show all markers
-      const bounds = new window.google.maps.LatLngBounds();
-      stations.forEach((station) => bounds.extend(station.position));
-      mapInstance.fitBounds(bounds);
-
-      // Initialize MarkerClusterer with custom icons
-      const clusterer = new MarkerClusterer({
-        map: mapInstance,
-        markers: [],
-        renderer: {
-          render: (cluster) => {
-            return createClusterIcon(cluster);
+      if (userLocation) {
+        const directionsService = new window.google.maps.DirectionsService();
+        directionsService.route(
+          {
+            origin: userLocation,
+            destination: station.position,
+            travelMode: "WALKING",
           },
+          (result, status) => {
+            if (status === "OK") {
+              setDirections(result);
+            } else {
+              console.error("Directions request failed:", status);
+            }
+          }
+        );
+      }
+
+      if (map) {
+        map.panTo(station.position);
+        map.setZoom(15);
+      }
+    },
+    [userLocation, map]
+  );
+
+  // Initialize Map and Clusterer when map and stations are ready
+  useEffect(() => {
+    if (!map || stations.length === 0) return;
+
+    // Fit bounds to show all markers
+    const bounds = new window.google.maps.LatLngBounds();
+    stations.forEach((station) => bounds.extend(station.position));
+    map.fitBounds(bounds);
+
+    // Initialize MarkerClusterer with custom icons
+    const clusterer = new MarkerClusterer({
+      map: map,
+      markers: [],
+      renderer: {
+        render: (cluster) => {
+          return createClusterIcon(cluster);
+        },
+      },
+    });
+
+    // Create Markers
+    const markers = stations.map((station) => {
+      const marker = new window.google.maps.Marker({
+        position: station.position,
+        label: "", // Start with no label
+        icon: {
+          path: window.google.maps.SymbolPath.CIRCLE,
+          scale: 8,
+          fillColor: "#ffffff",
+          fillOpacity: 1,
+          strokeWeight: 2,
+          strokeColor: "#000000",
         },
       });
 
-      // Create Markers
-      const markers = stations.map((station) => {
-        const marker = new window.google.maps.Marker({
-          position: station.position,
-          label: "", // Start with no label
-          icon: {
-            path: window.google.maps.SymbolPath.CIRCLE,
-            scale: 8,
-            fillColor: "#ffffff",
-            fillOpacity: 1,
-            strokeWeight: 2,
-            strokeColor: "#000000",
-          },
-        });
+      marker.addListener("click", () => handleMarkerClick(station));
+      return marker;
+    });
 
-        marker.addListener("click", () => handleMarkerClick(station));
-        return marker;
+    clusterer.addMarkers(markers);
+    setMarkerClusterer(clusterer);
+
+    // Helper Function to Check Cluster Visibility
+    const isClusterVisible = (cluster) => {
+      if (!map) return false;
+      const mapBounds = map.getBounds();
+      if (!mapBounds) return false;
+      return mapBounds.contains(cluster.getCenter());
+    };
+
+    // Listen for clustering events to toggle labels
+    clusterer.addListener("clusteringend", () => {
+      if (!clusterer) return; // Ensure clusterer exists
+      const clusters = clusterer.clusters || [];
+      const anyClusterHasMultipleMarkers = clusters.some(
+        (cluster) =>
+          cluster.getMarkers().length > 1 && isClusterVisible(cluster)
+      );
+
+      setClustersVisible(anyClusterHasMultipleMarkers); // Update state
+
+      markers.forEach((marker) => {
+        // Show "1" label only if clusters are visible
+        if (anyClusterHasMultipleMarkers) {
+          marker.setLabel({
+            text: "1",
+            color: "#000",
+            fontSize: "12px",
+            fontWeight: "bold",
+          });
+        } else {
+          marker.setLabel("");
+        }
       });
-
-      clusterer.addMarkers(markers);
-      setMarkerClusterer(clusterer);
-
-      // Listen for clustering events to toggle labels
-      clusterer.addListener("clusteringend", () => {
-        if (!clusterer) return; // Ensure clusterer exists
-        const clusters = clusterer.clusters || [];
-        const anyClusterHasMultipleMarkers = clusters.some(
-          (cluster) =>
-            cluster.getMarkers().length > 1 && isClusterVisible(cluster)
-        );
-
-        setClustersVisible(anyClusterHasMultipleMarkers); // Update state
-
-        markers.forEach((marker) => {
-          // Show "1" label only if clusters are visible
-          if (anyClusterHasMultipleMarkers) {
-            marker.setLabel({
-              text: "1",
-              color: "#000",
-              fontSize: "12px",
-              fontWeight: "bold",
-            });
-          } else {
-            marker.setLabel("");
-          }
-        });
-      });
-    },
-    [stations, map, isClusterVisible]
-  );
+    });
+  }, [map, stations, handleMarkerClick]);
 
   // Locate User
-  const locateMe = () => {
+  const locateMe = useCallback(() => {
     if (!map) {
       alert("Map is not initialized yet.");
       return;
@@ -208,34 +235,37 @@ const MapContainer = () => {
     } else {
       alert("Geolocation is not supported by your browser.");
     }
-  };
+  }, [map]);
 
   // Handle Map Clicks
-  const handleMapClick = (event) => {
-    if (!markerClusterer) return; // Ensure markerClusterer exists
+  const handleMapClick = useCallback(
+    (event) => {
+      if (!markerClusterer || !map) return; // Ensure markerClusterer and map exist
 
-    const clusters = markerClusterer.clusters || [];
-    const clickedLatLng = event.latLng;
-    const closestCluster = findClosestCluster(clickedLatLng, clusters);
+      const clusters = markerClusterer.clusters || [];
+      const clickedLatLng = event.latLng;
+      const closestCluster = findClosestCluster(clickedLatLng, clusters);
 
-    if (
-      closestCluster &&
-      isWithinClusterVisibility(closestCluster, clickedLatLng)
-    ) {
-      // Snap to the closest cluster
-      map.panTo(closestCluster.getCenter());
-      map.setZoom(map.getZoom() + 2); // Adjust zoom as needed
-    } else if (!clustersVisible) {
-      // If only individual markers are visible, re-center to initial view
-      const bounds = new window.google.maps.LatLngBounds();
-      stations.forEach((station) => bounds.extend(station.position));
-      map.fitBounds(bounds);
-    }
+      if (
+        closestCluster &&
+        isWithinClusterVisibility(closestCluster, clickedLatLng)
+      ) {
+        // Snap to the closest cluster
+        map.panTo(closestCluster.getCenter());
+        map.setZoom(map.getZoom() + 2); // Adjust zoom as needed
+      } else if (!clustersVisible) {
+        // If only individual markers are visible, re-center to initial view
+        const bounds = new window.google.maps.LatLngBounds();
+        stations.forEach((station) => bounds.extend(station.position));
+        map.fitBounds(bounds);
+      }
 
-    setSelectedStation(null);
-    setShowCircles(false);
-    setDirections(null);
-  };
+      setSelectedStation(null);
+      setShowCircles(false);
+      setDirections(null);
+    },
+    [markerClusterer, clustersVisible, map, stations]
+  );
 
   // Find the closest cluster to the clicked position
   const findClosestCluster = (latLng, clusters) => {
@@ -267,37 +297,14 @@ const MapContainer = () => {
     return distance <= clusterRadius;
   };
 
-  // Handle Marker Click
-  const handleMarkerClick = (station) => {
-    setSelectedStation(station);
-    setShowCircles(false);
-
-    if (userLocation) {
-      const directionsService = new window.google.maps.DirectionsService();
-      directionsService.route(
-        {
-          origin: userLocation,
-          destination: station.position,
-          travelMode: "WALKING",
-        },
-        (result, status) => {
-          if (status === "OK") {
-            setDirections(result);
-          } else {
-            console.error("Directions request failed:", status);
-          }
-        }
-      );
-    }
-
-    map.panTo(station.position);
-    map.setZoom(15);
-  };
+  const onMapLoad = useCallback((mapInstance) => {
+    setMap(mapInstance);
+  }, []);
 
   return (
     <LoadScript
       googleMapsApiKey="AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours" // Replace with your actual API key
-      libraries={["geometry"]} // Removed "places" as search bar is removed
+      libraries={["geometry"]}
     >
       <GoogleMap
         mapContainerStyle={containerStyle}
@@ -308,29 +315,15 @@ const MapContainer = () => {
           streetViewControl: false,
           mapTypeControl: false,
           fullscreenControl: false,
-          zoomControl: false, // Remove zoom buttons
-          gestureHandling: "none", // Disable all user gestures
+          zoomControl: true, // Enable zoom buttons
+          gestureHandling: "auto", // Enable user gestures
           rotateControl: false, // Disable rotation
         }}
         onLoad={onMapLoad}
         onClick={handleMapClick}
       >
         {/* Locate Me Button */}
-        <button
-          onClick={locateMe}
-          style={{
-            position: "absolute",
-            top: "10px",
-            right: "10px",
-            zIndex: 10,
-            padding: "10px 15px",
-            backgroundColor: "#007bff",
-            color: "#fff",
-            border: "none",
-            borderRadius: "5px",
-            cursor: "pointer",
-          }}
-        >
+        <button onClick={locateMe} className="locate-me-button">
           Locate Me
         </button>
 
