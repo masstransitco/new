@@ -47,7 +47,7 @@ const MapContainer = () => {
 
   // Hardcoded API key for testing (replace this with an environment variable in production)
   const { isLoaded } = useJsApiLoader({
-    googleMapsApiKey: "YOUR_API_KEY_HERE", // Replace with your actual API key or use an environment variable
+    googleMapsApiKey: "AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours", // Replace with your actual API key or use an environment variable
     libraries: ["geometry"],
   });
 
