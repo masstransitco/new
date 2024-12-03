@@ -202,8 +202,10 @@ const MapContainer = () => {
       <GoogleMap
         mapContainerStyle={containerStyle}
         center={center}
-        zoom={12}
+        zoom={12}     
         options={{
+          mapTypeId: 'satellite',
+          tilt: 45
           styles: darkGrayMapStyle,
           streetViewControl: false,
           mapTypeControl: false,
