@@ -20,7 +20,7 @@ main {
 /* Map Container */
 .map-container {
   width: 100%;
-  height: 60vh; /* Occupies 60% of viewport height */
+  height: 50vh; /* Occupies 60% of viewport height */
   border: 1px solid #555555;
   border-radius: 8px;
   overflow: hidden;
