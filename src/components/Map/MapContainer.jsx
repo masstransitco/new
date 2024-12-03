@@ -304,13 +304,13 @@ const MapContainer = () => {
         style={{
           position: "absolute",
           left: "10px",
-          bottom: "10%",
-          width: "50px", // Fixed width
+          bottom: "40%",
+          width: "40px", // Fixed width
           height: "50px", // Fixed height
           backgroundColor: "#e7e8ec",
           color: "#ffffff",
           border: "none",
-          borderRadius: "5%", // Rounded Square
+          borderRadius: "1%", // Rounded Square
           fontSize: "1rem",
           fontWeight: "600",
           cursor: "pointer",
