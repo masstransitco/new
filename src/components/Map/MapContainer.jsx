@@ -304,9 +304,8 @@ const MapContainer = () => {
         style={{
           position: "absolute",
           left: "10px",
-          bottom: "40%",
           width: "40px", // Fixed width
-          height: "50px", // Fixed height
+          height: "40px", // Fixed height
           backgroundColor: "#e7e8ec",
           color: "#ffffff",
           border: "none",
