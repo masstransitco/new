@@ -178,7 +178,7 @@ const MapContainer = () => {
           fullscreenControl: false,
           zoomControl: true,
           gestureHandling: "auto",
-          rotateControl: false,
+          rotateControl: true,
         }}
         onLoad={(mapInstance) => setMap(mapInstance)}
         onClick={handleMapClick}
