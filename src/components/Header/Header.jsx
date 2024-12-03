@@ -127,8 +127,7 @@ const Header = () => {
                     </a>
                   </li>
                   <li role="none">
-                    <a
-                      href="#logout"
+                    <button
                       onClick={(e) => {
                         e.preventDefault();
                         logout();
@@ -138,14 +137,17 @@ const Header = () => {
                       role="menuitem"
                     >
                       Logout
-                    </a>
+                    </button>
                   </li>
                 </ul>
               </div>
             </div>
           ) : (
             <div className="google-signin-wrapper">
-              <GoogleSignIn />
+              {/* Updated Google Sign-In Button */}
+              <button className="google-signin-button" onClick={GoogleSignIn}>
+                Sign In
+              </button>
             </div>
           )}
         </div>
