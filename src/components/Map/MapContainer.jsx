@@ -11,7 +11,6 @@ import {
   Circle,
   MarkerClusterer,
 } from "@react-google-maps/api";
-import "./MapContainer.css"; // Ensure this path is correct based on your project structure
 
 const containerStyle = {
   width: "100%",
@@ -23,51 +22,19 @@ const center = {
   lng: 114.1095,
 };
 
-// Uber-Inspired Dark Gray Map Styles
+// Custom map styles
 const darkGrayMapStyle = [
   {
     featureType: "all",
     elementType: "labels",
-    stylers: [{ visibility: "off" }], // Hides all labels
-  },
-  {
-    featureType: "administrative",
-    elementType: "geometry",
-    stylers: [{ color: "#242424" }], // Subtle dark gray for administrative boundaries
+    stylers: [{ visibility: "off" }],
   },
   {
     featureType: "landscape",
     elementType: "geometry",
-    stylers: [{ color: "#1c1c1c" }], // Darker background for landscape
+    stylers: [{ color: "#1c1c1c" }],
   },
-  {
-    featureType: "poi",
-    elementType: "geometry",
-    stylers: [{ color: "#2a2a2a" }], // Darker gray for points of interest
-  },
-  {
-    featureType: "road",
-    elementType: "geometry",
-    stylers: [
-      { color: "#383838" }, // Subtle contrast for roads
-      { visibility: "simplified" },
-    ],
-  },
-  {
-    featureType: "road",
-    elementType: "labels",
-    stylers: [{ visibility: "off" }], // Hides road labels
-  },
-  {
-    featureType: "transit",
-    elementType: "geometry",
-    stylers: [{ color: "#333333" }], // Slightly lighter for transit lines
-  },
-  {
-    featureType: "water",
-    elementType: "geometry",
-    stylers: [{ color: "#1a1a1a" }], // Dark tone for water
-  },
+  // Add more styles as needed...
 ];
 
 const MapContainer = () => {
@@ -78,7 +45,7 @@ const MapContainer = () => {
   const [directions, setDirections] = useState(null);
   const [showCircles, setShowCircles] = useState(false);
 
-  // Load the Google Maps script
+  // Hardcoded API key for testing (replace this with an environment variable in production)
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: "AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours",
     libraries: ["geometry"],
@@ -104,7 +71,6 @@ const MapContainer = () => {
       })
       .catch((error) => {
         console.error("Error loading GeoJSON:", error);
-        alert("Failed to load station data. Please try again later.");
       });
   }, []);
 
@@ -140,9 +106,8 @@ const MapContainer = () => {
     [userLocation, map, isLoaded]
   );
 
-  // Locate User (Renamed to "Near Me" and adjusted functionality)
+  // Locate User Functionality
   const locateMe = useCallback(() => {
-    // Clear existing directions and selected station
     setDirections(null);
     setSelectedStation(null);
 
@@ -165,34 +130,12 @@ const MapContainer = () => {
         },
         (error) => {
           console.error("Error fetching user location:", error);
-          alert(
-            "Unable to access your location. Please ensure location services are enabled."
-          );
         }
       );
     } else {
       alert("Geolocation is not supported by your browser.");
     }
   }, [map]);
-
-  // Handle Map Clicks (Clears selections and directions)
-  const handleMapClick = useCallback(() => {
-    setSelectedStation(null);
-    setShowCircles(false);
-    setDirections(null);
-  }, []);
-
-  // Marker Icon Configuration
-  const markerIcon = isLoaded
-    ? {
-        path: google.maps.SymbolPath.CIRCLE,
-        scale: 8,
-        fillColor: "#ffffff",
-        fillOpacity: 1,
-        strokeWeight: 2,
-        strokeColor: "#000000",
-      }
-    : null;
 
   if (!isLoaded) {
     return <div>Loading...</div>;
@@ -207,54 +150,21 @@ const MapContainer = () => {
         options={{
           mapTypeId: "satellite",
           tilt: 45,
-          styles: darkGrayMapStyle, // Added missing comma above
+          styles: darkGrayMapStyle,
           streetViewControl: false,
           mapTypeControl: false,
           fullscreenControl: false,
-          zoomControl: true, // Enable zoom buttons
-          gestureHandling: "auto", // Enable user gestures
-          rotateControl: false, // Disable rotation
+          zoomControl: true,
+          gestureHandling: "auto",
+          rotateControl: false,
         }}
         onLoad={(mapInstance) => setMap(mapInstance)}
-        onClick={handleMapClick}
+        onClick={() => {
+          setSelectedStation(null);
+          setDirections(null);
+        }}
       >
-        {/* User Location Marker (Hidden when directions are active) */}
-        {!directions && userLocation && (
-          <>
-            <Marker
-              position={userLocation}
-              icon={{
-                url: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png",
-              }}
-            />
-            {showCircles && (
-              <>
-                <Circle
-                  center={userLocation}
-                  radius={500}
-                  options={{
-                    strokeColor: "#FFFFFF",
-                    strokeOpacity: 0.8,
-                    strokeWeight: 2,
-                    fillOpacity: 0,
-                  }}
-                />
-                <Circle
-                  center={userLocation}
-                  radius={1000}
-                  options={{
-                    strokeColor: "#FFFFFF",
-                    strokeOpacity: 0.8,
-                    strokeWeight: 2,
-                    fillOpacity: 0,
-                  }}
-                />
-              </>
-            )}
-          </>
-        )}
-
-        {/* Station Markers with MarkerClusterer */}
+        {/* Station Markers */}
         <MarkerClusterer>
           {(clusterer) =>
             stations.map((station) => (
@@ -263,33 +173,19 @@ const MapContainer = () => {
                 position={station.position}
                 clusterer={clusterer}
                 onClick={() => handleMarkerClick(station)}
-                icon={markerIcon}
               />
             ))
           }
         </MarkerClusterer>
 
-        {/* Selected Station InfoWindow */}
-        {selectedStation && (
-          <InfoWindow
-            position={selectedStation.position}
-            onCloseClick={() => setSelectedStation(null)}
-          >
-            <div className="info-window">
-              <h3>{selectedStation.Place || "Unnamed Station"}</h3>
-              <p>{selectedStation.Address || "No address available"}</p>
-            </div>
-          </InfoWindow>
-        )}
-
-        {/* Directions Renderer (Hides user marker) */}
+        {/* Directions Renderer */}
         {directions && (
           <DirectionsRenderer
             directions={directions}
             options={{
-              suppressMarkers: true, // Prevents default markers from DirectionsRenderer
+              suppressMarkers: true,
               polylineOptions: {
-                strokeColor: "#276ef1", // Uber's blue for the route
+                strokeColor: "#276ef1",
                 strokeOpacity: 0.8,
                 strokeWeight: 4,
               },
@@ -298,32 +194,17 @@ const MapContainer = () => {
         )}
       </GoogleMap>
 
-      {/* "Near Me" Button */}
+      {/* Locate Me Button */}
       <button
         onClick={locateMe}
         style={{
           position: "absolute",
+          top: "90%",
           left: "10px",
-          width: "40px", // Fixed width
-          height: "40px", // Fixed height
-          backgroundColor: "#e7e8ec",
-          color: "#ffffff",
-          border: "none",
-          borderRadius: "1%", // Rounded Square
-          fontSize: "1rem",
-          fontWeight: "600",
-          cursor: "pointer",
-          zIndex: 1100,
-          transition:
-            "background-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out",
-          boxShadow: "0 2px 6px rgba(0, 0, 0, 0.1)",
-          display: "flex", // Align icon in center
-          alignItems: "center",
-          justifyContent: "center",
+          zIndex: 1000,
         }}
-        className="locate-me-button"
       >
-        🔘
+        Locate Me
       </button>
     </div>
   );
