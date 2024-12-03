@@ -7,6 +7,7 @@
   align-items: center;
   min-height: 10%;
   padding: 10px 20px;
+  z-index: 1000
 
   /* Task 1: Pin the header to the top and set background to transparent */
   position: fixed;
