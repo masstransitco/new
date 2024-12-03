@@ -22,20 +22,6 @@ const center = {
   lng: 114.1095,
 };
 
-// Custom map styles
-const darkGrayMapStyle = [
-  {
-    featureType: "all",
-    elementType: "labels",
-    stylers: [{ visibility: "off" }],
-  },
-  {
-    featureType: "landscape",
-    elementType: "geometry",
-    stylers: [{ color: "#1c1c1c" }],
-  },
-  // Add more styles as needed...
-];
 
 const MapContainer = () => {
   const [map, setMap] = useState(null);
