@@ -47,7 +47,7 @@ const MapContainer = () => {
 
   // Hardcoded API key for testing (replace this with an environment variable in production)
   const { isLoaded } = useJsApiLoader({
-    googleMapsApiKey: "AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours",
+    googleMapsApiKey: "YOUR_API_KEY_HERE", // Replace with your actual API key or use an environment variable
     libraries: ["geometry"],
   });
 
@@ -130,12 +130,34 @@ const MapContainer = () => {
         },
         (error) => {
           console.error("Error fetching user location:", error);
+          alert(
+            "Unable to access your location. Please ensure location services are enabled."
+          );
         }
       );
     } else {
       alert("Geolocation is not supported by your browser.");
     }
   }, [map]);
+
+  // Handle Map Clicks (Clears selections and directions)
+  const handleMapClick = useCallback(() => {
+    setSelectedStation(null);
+    setShowCircles(false);
+    setDirections(null);
+  }, []);
+
+  // Marker Icon Configuration (Optional customization)
+  const markerIcon = isLoaded
+    ? {
+        path: google.maps.SymbolPath.CIRCLE,
+        scale: 8,
+        fillColor: "#ffffff",
+        fillOpacity: 1,
+        strokeWeight: 2,
+        strokeColor: "#000000",
+      }
+    : null;
 
   if (!isLoaded) {
     return <div>Loading...</div>;
@@ -159,12 +181,45 @@ const MapContainer = () => {
           rotateControl: false,
         }}
         onLoad={(mapInstance) => setMap(mapInstance)}
-        onClick={() => {
-          setSelectedStation(null);
-          setDirections(null);
-        }}
+        onClick={handleMapClick}
       >
-        {/* Station Markers */}
+        {/* User Location Marker and Circles */}
+        {userLocation && (
+          <>
+            <Marker
+              position={userLocation}
+              icon={{
+                url: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png",
+              }}
+            />
+            {showCircles && (
+              <>
+                <Circle
+                  center={userLocation}
+                  radius={500}
+                  options={{
+                    strokeColor: "#FFFFFF",
+                    strokeOpacity: 0.8,
+                    strokeWeight: 2,
+                    fillOpacity: 0,
+                  }}
+                />
+                <Circle
+                  center={userLocation}
+                  radius={1000}
+                  options={{
+                    strokeColor: "#FFFFFF",
+                    strokeOpacity: 0.8,
+                    strokeWeight: 2,
+                    fillOpacity: 0,
+                  }}
+                />
+              </>
+            )}
+          </>
+        )}
+
+        {/* Station Markers with MarkerClusterer */}
         <MarkerClusterer>
           {(clusterer) =>
             stations.map((station) => (
@@ -173,10 +228,24 @@ const MapContainer = () => {
                 position={station.position}
                 clusterer={clusterer}
                 onClick={() => handleMarkerClick(station)}
+                icon={markerIcon}
               />
             ))
           }
         </MarkerClusterer>
+
+        {/* Selected Station InfoWindow */}
+        {selectedStation && (
+          <InfoWindow
+            position={selectedStation.position}
+            onCloseClick={() => setSelectedStation(null)}
+          >
+            <div>
+              <h3>{selectedStation.Place || "Unnamed Station"}</h3>
+              <p>{selectedStation.Address || "No address available"}</p>
+            </div>
+          </InfoWindow>
+        )}
 
         {/* Directions Renderer */}
         {directions && (
@@ -199,12 +268,19 @@ const MapContainer = () => {
         onClick={locateMe}
         style={{
           position: "absolute",
-          top: "90%",
+          top: "10px",
           left: "10px",
+          width: "40px",
+          height: "40px",
+          backgroundColor: "#e7e8ec",
+          color: "#000",
+          border: "none",
+          borderRadius: "4px",
+          cursor: "pointer",
           zIndex: 1000,
         }}
       >
-        Locate Me
+        📍
       </button>
     </div>
   );
