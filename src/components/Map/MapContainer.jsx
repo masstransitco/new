@@ -310,7 +310,7 @@ const MapContainer = () => {
           backgroundColor: "#e7e8ec",
           color: "#ffffff",
           border: "none",
-          borderRadius: "50%", // Circular button
+          borderRadius: "5%", // Rounded Square
           fontSize: "1rem",
           fontWeight: "600",
           cursor: "pointer",
