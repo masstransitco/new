@@ -210,7 +210,7 @@ const MapContainer = () => {
           fullscreenControl: false,
           zoomControl: true, // Enable zoom buttons
           zoomControlOptions: {
-            position: window.google.maps.ControlPosition.RIGHT_TOP, // Reposition zoom controls
+            position: window.google.maps.ControlPosition.BOTTOM_LEFT, // Reposition zoom controls
           },
           gestureHandling: "auto", // Enable user gestures
           rotateControl: false, // Disable rotation
