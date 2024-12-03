@@ -80,7 +80,7 @@ const MapContainer = () => {
 
   // Load the Google Maps script
   const { isLoaded } = useJsApiLoader({
-    googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY, // Use environment variable
+    googleMapsApiKey: AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours, // Use environment variable
     libraries: ["geometry"],
   });
 
