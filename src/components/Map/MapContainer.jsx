@@ -304,10 +304,10 @@ const MapContainer = () => {
         style={{
           position: "absolute",
           left: "10px",
-          bottom: "10px",
+          bottom: "10%",
           width: "50px", // Fixed width
           height: "50px", // Fixed height
-          backgroundColor: "#276ef1",
+          backgroundColor: "#e7e8ec",
           color: "#ffffff",
           border: "none",
           borderRadius: "50%", // Circular button
@@ -324,7 +324,7 @@ const MapContainer = () => {
         }}
         className="locate-me-button"
       >
-        📍
+        🔘
       </button>
     </div>
   );
