@@ -173,7 +173,6 @@ const MapContainer = () => {
           mapId: "94527c02bbb6243",
           mapTypeId: "vector",
           tilt: 45,
-          styles: darkGrayMapStyle,
           streetViewControl: false,
           mapTypeControl: false,
           fullscreenControl: false,
