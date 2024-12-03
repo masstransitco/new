@@ -25,6 +25,7 @@ main {
   border-radius: 8px;
   overflow: hidden;
   margin-bottom: 1rem;
+  top: 10vh;
 }
 
 /* Scene Container */
