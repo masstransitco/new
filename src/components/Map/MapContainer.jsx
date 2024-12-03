@@ -171,7 +171,7 @@ const MapContainer = () => {
         zoom={12}
         options={{
           mapId: "94527c02bbb6243",
-          mapTypeId: "vector",
+          mapTypeId: "hybrid",
           tilt: 45,
           streetViewControl: false,
           mapTypeControl: false,
