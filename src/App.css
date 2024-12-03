@@ -5,7 +5,6 @@ body,
   height: 100%; /* Ensure the full viewport height is defined */
   margin: 0;
   padding: 0;
-  position: fixed;
   background-color: var(--primary-black); /* Background set to black */
 }
 
