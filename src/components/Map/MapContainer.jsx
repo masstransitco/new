@@ -170,6 +170,7 @@ const MapContainer = () => {
         center={center}
         zoom={12}
         options={{
+          mapId: "94527c02bbb6243",
           mapTypeId: "satellite",
           tilt: 45,
           styles: darkGrayMapStyle,
