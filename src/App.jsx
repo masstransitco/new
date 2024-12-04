@@ -3,6 +3,7 @@ import { useContext } from "react";
 import { AuthContext } from "./context/AuthContext"; // Use AuthContext for user state
 import Header from "./components/Header/Header.jsx";
 import MapContainer from "./components/Map/MapContainer.jsx";
+import MenuContainer from "./components/Menu/MenuContainer.jsx";
 import Footer from "./components/Footer/Footer.jsx";
 import "./App.css";
 
@@ -19,6 +20,7 @@ function App() {
       <Header user={user} />
       <main className="main-content">
         <MapContainer />
+        <MenuContainer />
       </main>
       <Footer />
     </div>
