@@ -26,6 +26,7 @@ main {
   overflow: hidden;
   margin-bottom: 1rem;
   top: 1vh;
+  touch-action: none;
 }
 
 /* Scene Container */
