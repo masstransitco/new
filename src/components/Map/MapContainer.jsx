@@ -20,7 +20,7 @@ const containerStyle = {
 // View Definitions
 const CITY_VIEW = {
   name: "CityView",
-  center: { lat: 22.353, lng: 113.926 },
+  center: { lat: 22.353, lng: 114.076 },
   zoom: 10,
   tilt: 45,
   heading: 0,
