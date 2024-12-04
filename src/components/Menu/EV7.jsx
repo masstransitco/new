@@ -3,8 +3,8 @@ import { Canvas } from "@react-three/fiber";
 import { OrbitControls, useGLTF } from "@react-three/drei";
 
 const GLBViewer = ({ modelPath }) => {
-  const { scene } = useGLTF(modelPath);
-  return <primitive object={scene} />;
+  const gltf = useGLTF(modelPath);
+  return <primitive object={gltf.scene} />;
 };
 
 const EV7 = () => {
@@ -18,6 +18,7 @@ const EV7 = () => {
         padding: "10px",
       }}
     >
+      {/* GLB Viewer */}
       <div style={{ flex: "1", height: "25vh" }}>
         <Canvas>
           <ambientLight intensity={0.5} />
@@ -26,6 +27,8 @@ const EV7 = () => {
           <GLBViewer modelPath="/EV7.glb" />
         </Canvas>
       </div>
+
+      {/* Fare Placeholder */}
       <div
         style={{
           flex: "1",
