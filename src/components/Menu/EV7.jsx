@@ -1,3 +1,5 @@
+/* eslint-disable react/no-unknown-property */
+
 import React from "react";
 import { Canvas } from "@react-three/fiber"; // React Three Fiber renderer
 import { OrbitControls, useGLTF } from "@react-three/drei"; // Helper utilities
