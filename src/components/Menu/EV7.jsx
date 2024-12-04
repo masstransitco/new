@@ -1,9 +1,9 @@
 import React from "react";
-import { Canvas } from "@react-three/fiber";
-import { OrbitControls, useGLTF } from "@react-three/drei";
+import { Canvas } from "@react-three/fiber"; // React Three Fiber renderer
+import { OrbitControls, useGLTF } from "@react-three/drei"; // Helper utilities
 
 const GLBViewer = ({ modelPath }) => {
-  const gltf = useGLTF(modelPath);
+  const gltf = useGLTF(modelPath); // Load the GLB model
   return <primitive object={gltf.scene} />;
 };
 
@@ -21,9 +21,12 @@ const EV7 = () => {
       {/* GLB Viewer */}
       <div style={{ flex: "1", height: "25vh" }}>
         <Canvas>
+          {/* Add lighting */}
           <ambientLight intensity={0.5} />
           <directionalLight position={[10, 10, 5]} intensity={1} />
+          {/* OrbitControls for animation */}
           <OrbitControls autoRotate autoRotateSpeed={1.5} />
+          {/* GLB Model */}
           <GLBViewer modelPath="/EV7.glb" />
         </Canvas>
       </div>
