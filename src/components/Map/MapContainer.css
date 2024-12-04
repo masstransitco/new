@@ -16,6 +16,7 @@
   flex-direction: column;
   font-family: "Helvetica", Arial, sans-serif; /* Uber typography style */
   overflow: hidden;
+  touch-action: none;
 }
 
 /* Marker InfoWindow Styling */
