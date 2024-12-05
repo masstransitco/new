@@ -226,7 +226,7 @@ const MapContainer = () => {
         const currentHeading = map.getHeading() || 0;
 
         // Adjust tilt based on deltaY
-        let newTilt = currentTilt + deltaY * 0.1;
+        let newTilt = currentTilt - deltaY * 0.1;
         newTilt = Math.max(0, Math.min(67.5, newTilt)); // Tilt limits
 
         // Adjust heading based on deltaX
