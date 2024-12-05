@@ -45,7 +45,7 @@ const EV5 = () => {
           />
           <pointLight position={[5, 5, 5]} intensity={1} />
           {/* Set initial camera position for zoom effect */}
-          <perspectiveCamera makeDefault position={[0, 0, 25]} fov={25} />{" "}
+          <perspectiveCamera makeDefault position={[0, 0, 50]} fov={15} />{" "}
           {/* FOV set to 45 */}
           {/* OrbitControls for animation */}
           <OrbitControls
