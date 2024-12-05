@@ -35,19 +35,23 @@ const EV5 = () => {
           {/* Add lighting */}
           <ambientLight intensity={0.5} />
           <directionalLight position={[10, 10, 5]} intensity={1} />
-          <hemisphereLight skyColor={"white"} groundColor={"#444444"} intensity={0.5} />
+          <hemisphereLight
+            skyColor={"white"}
+            groundColor={"#444444"}
+            intensity={0.5}
+          />
           <pointLight position={[5, 5, 5]} intensity={1} />
 
           {/* Set initial camera position for zoom effect */}
           <perspectiveCamera makeDefault position={[0, 0, 10]} fov={75} />
 
           {/* OrbitControls for animation */}
-          <OrbitControls 
-            autoRotate 
-            autoRotateSpeed={1.5} 
+          <OrbitControls
+            autoRotate
+            autoRotateSpeed={1.5}
             enableZoom={true}
-            minDistance={5}      // Minimum zoom distance (closer)
-            maxDistance={20}     // Maximum zoom distance (further)
+            minDistance={5} // Minimum zoom distance (closer)
+            maxDistance={20} // Maximum zoom distance (further)
           />
 
           {/* Ground Plane */}
