@@ -201,7 +201,6 @@ const MapContainer = () => {
   useEffect(() => {
     if (map) {
       const mapDiv = map.getDiv();
-
       let isTouching = false;
       let startX = 0;
       let startY = 0;
@@ -213,28 +212,28 @@ const MapContainer = () => {
         startY = touch.clientY;
       };
 
-      const handleTouchMove = (e) => {
+      const handleTouchMoveDebounced = debounce((e) => {
         if (!isTouching) return;
         const touch = e.touches[0];
         const deltaX = touch.clientX - startX;
         const deltaY = touch.clientY - startY;
-        startX = touch.clientX;
-        startY = touch.clientY;
 
-        // Adjust tilt and heading
+        // Update tilt and heading based on deltas
         const currentTilt = map.getTilt() || 0;
         const currentHeading = map.getHeading() || 0;
 
-        // Adjust tilt based on deltaY
-        let newTilt = currentTilt + deltaY * 0.1;
+        let newTilt = currentTilt + deltaY * -0.1; // Inverted response
         newTilt = Math.max(0, Math.min(67.5, newTilt)); // Tilt limits
 
-        // Adjust heading based on deltaX
         let newHeading = currentHeading + deltaX * 0.5;
-        newHeading = newHeading % 360;
+        newHeading %= 360;
 
         map.setTilt(newTilt);
         map.setHeading(newHeading);
+      }, 100); // Adjust delay as needed
+
+      const handleTouchMove = (e) => {
+        handleTouchMoveDebounced(e); // Call the debounced function
       };
 
       const handleTouchEnd = () => {
@@ -252,27 +251,31 @@ const MapContainer = () => {
         mouseY = e.clientY;
       };
 
-      const handleMouseMove = (e) => {
+      const handleMouseMoveDebounced = debounce((e) => {
         if (!isMouseDown) return;
+
         const deltaX = e.clientX - mouseX;
         const deltaY = e.clientY - mouseY;
+
         mouseX = e.clientX;
         mouseY = e.clientY;
 
-        // Adjust tilt and heading
+        // Update tilt and heading based on deltas
         const currentTilt = map.getTilt() || 0;
         const currentHeading = map.getHeading() || 0;
 
-        // Adjust tilt based on deltaY
-        let newTilt = currentTilt + deltaY * 0.1;
+        let newTilt = currentTilt + deltaY * -0.1; // Inverted response
         newTilt = Math.max(0, Math.min(67.5, newTilt)); // Tilt limits
 
-        // Adjust heading based on deltaX
         let newHeading = currentHeading + deltaX * 0.5;
-        newHeading = newHeading % 360;
+        newHeading %= 360;
 
         map.setTilt(newTilt);
         map.setHeading(newHeading);
+      }, 100); // Adjust delay as needed
+
+      const handleMouseMove = (e) => {
+        handleMouseMoveDebounced(e); // Call the debounced function
       };
 
       const handleMouseUp = () => {
