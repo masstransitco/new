@@ -13,7 +13,7 @@ const MenuContainer = () => {
         display: "flex",
         flexDirection: "column",
         gap: "20px",
-        overflow-y: auto;
+        overflow-y: auto,
       }}
     >
       <EV5 />
