@@ -28,11 +28,13 @@
     "geojson-bbox": "^0.0.1",
     "jq": "^1.7.2",
     "lint": "^0.8.19",
+    "lodash": "^4.17.21",
     "prop-types": "^15.8.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.28.0",
-    "react-scripts": "5.0.1"
+    "react-scripts": "5.0.1",
+    "three": "^0.171.0"
   },
   "devDependencies": {
     "@babel/core": "^7.26.0",
