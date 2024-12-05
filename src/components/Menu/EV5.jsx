@@ -6,14 +6,17 @@ import { OrbitControls, useGLTF } from "@react-three/drei"; // Helper utilities
 
 const GLBViewer = ({ modelPath }) => {
   const gltf = useGLTF(modelPath); // Load the GLB model
-  return <primitive object={gltf.scene} />;
+  return (
+    <primitive object={gltf.scene} scale={[2, 2, 2]} position={[0, 1, 0]} />
+  ); // Scale increased by 200% and position adjusted
 };
 
 const GroundPlane = () => {
   return (
     <mesh rotation-x={-Math.PI / 2}>
       <circleGeometry args={[10, 32]} /> {/* Radius of 10 and 32 segments */}
-      <meshStandardMaterial color={"#A0522D"} />
+      <meshStandardMaterial color={"#e7e8ec"} />{" "}
+      {/* Changed color to #e7e8ec */}
     </mesh>
   );
 };
@@ -41,10 +44,9 @@ const EV5 = () => {
             intensity={0.5}
           />
           <pointLight position={[5, 5, 5]} intensity={1} />
-
           {/* Set initial camera position for zoom effect */}
-          <perspectiveCamera makeDefault position={[0, 0, 10]} fov={75} />
-
+          <perspectiveCamera makeDefault position={[0, 0, 10]} fov={45} />{" "}
+          {/* FOV set to 45 */}
           {/* OrbitControls for animation */}
           <OrbitControls
             autoRotate
@@ -53,10 +55,8 @@ const EV5 = () => {
             minDistance={5} // Minimum zoom distance (closer)
             maxDistance={20} // Maximum zoom distance (further)
           />
-
           {/* Ground Plane */}
           <GroundPlane />
-
           {/* GLB Model */}
           <GLBViewer modelPath="/EV5.glb" />
         </Canvas>
