@@ -25,15 +25,15 @@ const EV5 = () => {
   return (
     <div
       style={{
-        width: "90vw",
-        height: "28vh",
+        width: "20vw",
+        height: "11vh",
         display: "flex",
         border: "1px solid #ddd",
         padding: "10px",
       }}
     >
       {/* GLB Viewer */}
-      <div style={{ flex: "1", height: "25vh" }}>
+      <div style={{ flex: "1", height: "10vh" }}>
         <Canvas>
           {/* Add lighting */}
           <ambientLight intensity={0.5} />
