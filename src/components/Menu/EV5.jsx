@@ -45,15 +45,15 @@ const EV5 = () => {
           />
           <pointLight position={[5, 5, 5]} intensity={1} />
           {/* Set initial camera position for zoom effect */}
-          <perspectiveCamera makeDefault position={[0, 0, 10]} fov={45} />{" "}
+          <perspectiveCamera makeDefault position={[0, 0, 25]} fov={25} />{" "}
           {/* FOV set to 45 */}
           {/* OrbitControls for animation */}
           <OrbitControls
             autoRotate
             autoRotateSpeed={1.5}
             enableZoom={true}
-            minDistance={5} // Minimum zoom distance (closer)
-            maxDistance={20} // Maximum zoom distance (further)
+            minDistance={1} // Minimum zoom distance (closer)
+            maxDistance={15} // Maximum zoom distance (further)
           />
           {/* Ground Plane */}
           <GroundPlane />
