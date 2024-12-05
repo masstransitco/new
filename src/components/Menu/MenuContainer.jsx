@@ -13,7 +13,7 @@ const MenuContainer = () => {
         display: "flex",
         flexDirection: "column",
         gap: "20px",
-        overflowY: "auto", // Corrected property name
+        overflow: "auto", // Corrected property name
         borderRadius: "8px", // Added border radius
         border: "1px solid #e78e8ec", // Optional: Add a border for better visibility
         padding: "10px", // Optional: Add some padding
