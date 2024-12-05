@@ -25,7 +25,7 @@ const EV5 = () => {
   return (
     <div
       style={{
-        width: "20vw",
+        width: "100vw",
         height: "11vh",
         display: "flex",
         border: "1px solid #ddd",
@@ -33,7 +33,7 @@ const EV5 = () => {
       }}
     >
       {/* GLB Viewer */}
-      <div style={{ flex: "1", height: "10vh" }}>
+      <div style={{ flex: "1", height: "12vh" }}>
         <Canvas>
           {/* Add lighting */}
           <ambientLight intensity={0.5} />
@@ -45,7 +45,7 @@ const EV5 = () => {
           />
           <pointLight position={[5, 5, 5]} intensity={1} />
           {/* Set initial camera position for zoom effect */}
-          <perspectiveCamera makeDefault position={[0, 0, 50]} fov={15} />{" "}
+          <perspectiveCamera makeDefault position={[15, 0, 100]} fov={15} />{" "}
           {/* FOV set to 45 */}
           {/* OrbitControls for animation */}
           <OrbitControls
