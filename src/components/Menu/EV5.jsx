@@ -9,6 +9,15 @@ const GLBViewer = ({ modelPath }) => {
   return <primitive object={gltf.scene} />;
 };
 
+const GroundPlane = () => {
+  return (
+    <mesh rotation-x={-Math.PI / 2}>
+      <circleGeometry args={[10, 32]} /> {/* Radius of 10 and 32 segments */}
+      <meshStandardMaterial color={"#A0522D"} />
+    </mesh>
+  );
+};
+
 const EV5 = () => {
   return (
     <div
@@ -26,8 +35,24 @@ const EV5 = () => {
           {/* Add lighting */}
           <ambientLight intensity={0.5} />
           <directionalLight position={[10, 10, 5]} intensity={1} />
+          <hemisphereLight skyColor={"white"} groundColor={"#444444"} intensity={0.5} />
+          <pointLight position={[5, 5, 5]} intensity={1} />
+
+          {/* Set initial camera position for zoom effect */}
+          <perspectiveCamera makeDefault position={[0, 0, 10]} fov={75} />
+
           {/* OrbitControls for animation */}
-          <OrbitControls autoRotate autoRotateSpeed={1.5} />
+          <OrbitControls 
+            autoRotate 
+            autoRotateSpeed={1.5} 
+            enableZoom={true}
+            minDistance={5}      // Minimum zoom distance (closer)
+            maxDistance={20}     // Maximum zoom distance (further)
+          />
+
+          {/* Ground Plane */}
+          <GroundPlane />
+
           {/* GLB Model */}
           <GLBViewer modelPath="/EV5.glb" />
         </Canvas>
