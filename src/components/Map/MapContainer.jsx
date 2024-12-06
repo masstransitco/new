@@ -1,7 +1,13 @@
 /* src/components/MapContainer.jsx */
 /* global google */
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  useMemo,
+} from "react";
 import {
   GoogleMap,
   useJsApiLoader,
@@ -41,13 +47,12 @@ const MapContainer = () => {
 
   const mapRef = useRef(null);
 
-  // Hardcoded API key for testing (replace this with an environment variable in production)
   const { isLoaded } = useJsApiLoader({
-    googleMapsApiKey: "AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours", // Replace with your actual API key or use an environment variable
+    googleMapsApiKey: "AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours", // Replace with your actual key
     libraries: ["geometry"],
   });
 
-  // Fetch Stations Data
+  // Fetch stations data once
   useEffect(() => {
     fetch("/stations.geojson")
       .then((response) => {
@@ -70,7 +75,6 @@ const MapContainer = () => {
       });
   }, []);
 
-  // Navigate to a specific view
   const navigateToView = useCallback(
     (view) => {
       setViewHistory((prevHistory) => [...prevHistory, view]);
@@ -88,7 +92,6 @@ const MapContainer = () => {
     [map]
   );
 
-  // Go back to the previous view
   const goBack = useCallback(() => {
     if (viewHistory.length > 1) {
       const newHistory = viewHistory.slice(0, -1);
@@ -107,7 +110,6 @@ const MapContainer = () => {
     }
   }, [map, viewHistory]);
 
-  // Handle Marker Click
   const handleMarkerClick = useCallback(
     (station) => {
       const stationView = {
@@ -119,7 +121,7 @@ const MapContainer = () => {
       setSelectedStation(station);
       setShowCircles(false);
 
-      if (userLocation && isLoaded) {
+      if (userLocation && isLoaded && google?.maps?.DirectionsService) {
         const directionsService = new google.maps.DirectionsService();
         directionsService.route(
           {
@@ -140,7 +142,6 @@ const MapContainer = () => {
     [userLocation, isLoaded, navigateToView]
   );
 
-  // Locate User Functionality
   const locateMe = useCallback(() => {
     setDirections(null);
     setSelectedStation(null);
@@ -158,12 +159,11 @@ const MapContainer = () => {
             lng: position.coords.longitude,
           };
           setUserLocation(userPos);
-          const meView = {
+          navigateToView({
             name: "MeView",
             center: userPos,
             zoom: ME_VIEW_ZOOM,
-          };
-          navigateToView(meView);
+          });
           setShowCircles(true);
         },
         (error) => {
@@ -178,125 +178,125 @@ const MapContainer = () => {
     }
   }, [map, navigateToView]);
 
-  // Handle Map Clicks (Clears selections and directions)
   const handleMapClick = useCallback(() => {
     setSelectedStation(null);
     setShowCircles(false);
     setDirections(null);
   }, []);
 
-  // Marker Icon Configuration (Same symbol for stations and clusters)
-  const markerIcon = isLoaded
-    ? {
-        path: google.maps.SymbolPath.CIRCLE,
-        scale: 8,
-        fillColor: "#ffffff",
-        fillOpacity: 1,
-        strokeWeight: 2,
-        strokeColor: "#000000",
-      }
-    : null;
+  // Memoize the marker icon and station markers to avoid unnecessary re-renders
+  const markerIcon = useMemo(() => {
+    if (!isLoaded || !google?.maps?.SymbolPath) return null;
+    return {
+      path: google.maps.SymbolPath.CIRCLE,
+      scale: 8,
+      fillColor: "#ffffff",
+      fillOpacity: 1,
+      strokeWeight: 2,
+      strokeColor: "#000000",
+    };
+  }, [isLoaded]);
 
-  // Custom Gesture Handling
+  const stationMarkers = useMemo(() => {
+    return stations.map((station) => (
+      <Marker
+        key={station.id}
+        position={station.position}
+        onClick={() => handleMarkerClick(station)}
+        icon={markerIcon}
+      />
+    ));
+  }, [stations, handleMarkerClick, markerIcon]);
+
+  // Optimize gesture handling with requestAnimationFrame
+  const lastAnimationFrame = useRef(null);
+  const isTouching = useRef(false);
+  const isMouseDown = useRef(false);
+  const lastPosition = useRef({ x: 0, y: 0 });
+
   useEffect(() => {
-    if (map) {
-      const mapDiv = map.getDiv();
+    if (!map) return;
 
-      let isTouching = false;
-      let startX = 0;
-      let startY = 0;
+    const mapDiv = map.getDiv();
 
-      const handleTouchStart = (e) => {
-        isTouching = true;
-        const touch = e.touches[0];
-        startX = touch.clientX;
-        startY = touch.clientY;
-      };
+    const applyMapTransform = (deltaX, deltaY) => {
+      if (!map) return;
+      const currentTilt = map.getTilt() || 0;
+      const currentHeading = map.getHeading() || 0;
 
-      const handleTouchMove = (e) => {
-        if (!isTouching) return;
-        const touch = e.touches[0];
-        const deltaX = touch.clientX - startX;
-        const deltaY = touch.clientY - startY;
-        startX = touch.clientX;
-        startY = touch.clientY;
+      let newTilt = currentTilt + deltaY * 0.1;
+      newTilt = Math.max(0, Math.min(67.5, newTilt));
 
-        // Adjust tilt and heading
-        const currentTilt = map.getTilt() || 0;
-        const currentHeading = map.getHeading() || 0;
+      let newHeading = currentHeading + deltaX * 0.5;
+      newHeading = (newHeading + 360) % 360;
 
-        // Adjust tilt based on deltaY
-        let newTilt = currentTilt - deltaY * 0.1;
-        newTilt = Math.max(0, Math.min(67.5, newTilt)); // Tilt limits
+      map.setTilt(newTilt);
+      map.setHeading(newHeading);
+    };
 
-        // Adjust heading based on deltaX
-        let newHeading = currentHeading + deltaX * 0.5;
-        newHeading = newHeading % 360;
+    const handleTouchStart = (e) => {
+      isTouching.current = true;
+      const touch = e.touches[0];
+      lastPosition.current = { x: touch.clientX, y: touch.clientY };
+    };
 
-        map.setTilt(newTilt);
-        map.setHeading(newHeading);
-      };
+    const handleTouchMove = (e) => {
+      if (!isTouching.current) return;
+      const touch = e.touches[0];
+      const deltaX = touch.clientX - lastPosition.current.x;
+      const deltaY = touch.clientY - lastPosition.current.y;
+      lastPosition.current = { x: touch.clientX, y: touch.clientY };
 
-      const handleTouchEnd = () => {
-        isTouching = false;
-      };
+      if (lastAnimationFrame.current)
+        cancelAnimationFrame(lastAnimationFrame.current);
+      lastAnimationFrame.current = requestAnimationFrame(() =>
+        applyMapTransform(deltaX, -deltaY)
+      );
+    };
 
-      // Mouse Events
-      let isMouseDown = false;
-      let mouseX = 0;
-      let mouseY = 0;
+    const handleTouchEnd = () => {
+      isTouching.current = false;
+    };
 
-      const handleMouseDown = (e) => {
-        isMouseDown = true;
-        mouseX = e.clientX;
-        mouseY = e.clientY;
-      };
+    const handleMouseDown = (e) => {
+      isMouseDown.current = true;
+      lastPosition.current = { x: e.clientX, y: e.clientY };
+    };
 
-      const handleMouseMove = (e) => {
-        if (!isMouseDown) return;
-        const deltaX = e.clientX - mouseX;
-        const deltaY = e.clientY - mouseY;
-        mouseX = e.clientX;
-        mouseY = e.clientY;
+    const handleMouseMove = (e) => {
+      if (!isMouseDown.current) return;
+      const deltaX = e.clientX - lastPosition.current.x;
+      const deltaY = e.clientY - lastPosition.current.y;
+      lastPosition.current = { x: e.clientX, y: e.clientY };
 
-        // Adjust tilt and heading
-        const currentTilt = map.getTilt() || 0;
-        const currentHeading = map.getHeading() || 0;
+      if (lastAnimationFrame.current)
+        cancelAnimationFrame(lastAnimationFrame.current);
+      lastAnimationFrame.current = requestAnimationFrame(() =>
+        applyMapTransform(deltaX, deltaY)
+      );
+    };
 
-        // Adjust tilt based on deltaY
-        let newTilt = currentTilt + deltaY * 0.1;
-        newTilt = Math.max(0, Math.min(67.5, newTilt)); // Tilt limits
+    const handleMouseUp = () => {
+      isMouseDown.current = false;
+    };
 
-        // Adjust heading based on deltaX
-        let newHeading = currentHeading + deltaX * 0.5;
-        newHeading = newHeading % 360;
+    mapDiv.addEventListener("touchstart", handleTouchStart, { passive: true });
+    mapDiv.addEventListener("touchmove", handleTouchMove, { passive: true });
+    mapDiv.addEventListener("touchend", handleTouchEnd, { passive: true });
 
-        map.setTilt(newTilt);
-        map.setHeading(newHeading);
-      };
+    mapDiv.addEventListener("mousedown", handleMouseDown);
+    mapDiv.addEventListener("mousemove", handleMouseMove);
+    mapDiv.addEventListener("mouseup", handleMouseUp);
 
-      const handleMouseUp = () => {
-        isMouseDown = false;
-      };
+    return () => {
+      mapDiv.removeEventListener("touchstart", handleTouchStart);
+      mapDiv.removeEventListener("touchmove", handleTouchMove);
+      mapDiv.removeEventListener("touchend", handleTouchEnd);
 
-      mapDiv.addEventListener("touchstart", handleTouchStart);
-      mapDiv.addEventListener("touchmove", handleTouchMove);
-      mapDiv.addEventListener("touchend", handleTouchEnd);
-
-      mapDiv.addEventListener("mousedown", handleMouseDown);
-      mapDiv.addEventListener("mousemove", handleMouseMove);
-      mapDiv.addEventListener("mouseup", handleMouseUp);
-
-      return () => {
-        mapDiv.removeEventListener("touchstart", handleTouchStart);
-        mapDiv.removeEventListener("touchmove", handleTouchMove);
-        mapDiv.removeEventListener("touchend", handleTouchEnd);
-
-        mapDiv.removeEventListener("mousedown", handleMouseDown);
-        mapDiv.removeEventListener("mousemove", handleMouseMove);
-        mapDiv.removeEventListener("mouseup", handleMouseUp);
-      };
-    }
+      mapDiv.removeEventListener("mousedown", handleMouseDown);
+      mapDiv.removeEventListener("mousemove", handleMouseMove);
+      mapDiv.removeEventListener("mouseup", handleMouseUp);
+    };
   }, [map]);
 
   if (!isLoaded) {
@@ -324,12 +324,11 @@ const MapContainer = () => {
           gestureHandling: "none",
           rotateControl: true,
           minZoom: 10,
-          draggable: false, // Disable camera pan
+          draggable: false, // We handle camera movements via custom gestures
         }}
         onLoad={(mapInstance) => setMap(mapInstance)}
         onClick={handleMapClick}
       >
-        {/* User Location Marker and Circles */}
         {userLocation && (
           <>
             <Marker
@@ -365,38 +364,31 @@ const MapContainer = () => {
           </>
         )}
 
-        {/* Station Markers with MarkerClusterer */}
         <MarkerClusterer
           options={{
-            maxZoom: 10, // Clustering only at zoom 10 and below
+            maxZoom: 10,
           }}
           onClick={(cluster) => {
             const clusterCenter = cluster.getCenter();
+            if (!clusterCenter) return;
             const clusterView = {
               name: "ClusterView",
               center: {
                 lat: clusterCenter.lat(),
                 lng: clusterCenter.lng(),
               },
-              zoom: map.getZoom() + 2, // Adjust as needed
+              zoom: map.getZoom() + 2,
             };
             navigateToView(clusterView);
           }}
         >
           {(clusterer) =>
-            stations.map((station) => (
-              <Marker
-                key={station.id}
-                position={station.position}
-                clusterer={clusterer}
-                onClick={() => handleMarkerClick(station)}
-                icon={markerIcon}
-              />
-            ))
+            stationMarkers.map((marker) =>
+              React.cloneElement(marker, { clusterer })
+            )
           }
         </MarkerClusterer>
 
-        {/* Selected Station InfoWindow */}
         {selectedStation && (
           <InfoWindow
             position={selectedStation.position}
@@ -409,7 +401,6 @@ const MapContainer = () => {
           </InfoWindow>
         )}
 
-        {/* Directions Renderer */}
         {directions && (
           <DirectionsRenderer
             directions={directions}
@@ -425,7 +416,6 @@ const MapContainer = () => {
         )}
       </GoogleMap>
 
-      {/* Locate Me Button */}
       <button
         onClick={locateMe}
         style={{
@@ -445,7 +435,6 @@ const MapContainer = () => {
         📍
       </button>
 
-      {/* Back Button */}
       <button
         onClick={goBack}
         style={{
