@@ -1,8 +1,7 @@
 /* eslint-disable react/no-unknown-property */
-
 import React, { Suspense, useMemo } from "react";
-import { Canvas } from "@react-three/fiber"; // React Three Fiber renderer
-import { OrbitControls, useGLTF, Preload } from "@react-three/drei"; // Helper utilities
+import { Canvas } from "@react-three/fiber";
+import { OrbitControls, useGLTF, Preload, Html } from "@react-three/drei";
 import PropTypes from "prop-types";
 
 // Error Boundary to catch rendering errors
@@ -31,7 +30,7 @@ class ErrorBoundary extends React.Component {
 
 // GLBViewer Component
 const GLBViewerComponent = ({ modelPath }) => {
-  const gltf = useGLTF(modelPath, true); // Load the GLB model with DRACO compression if available
+  const gltf = useGLTF(modelPath, true); // Load the GLB model
 
   return (
     <primitive object={gltf.scene} scale={[2, 2, 2]} position={[0, 1, 0]} />
@@ -42,7 +41,7 @@ GLBViewerComponent.propTypes = {
   modelPath: PropTypes.string.isRequired,
 };
 
-// Memoize the GLBViewer and set displayName
+// Memoize the GLBViewer
 const GLBViewer = React.memo(GLBViewerComponent);
 GLBViewer.displayName = "GLBViewer";
 
@@ -50,19 +49,16 @@ GLBViewer.displayName = "GLBViewer";
 const GroundPlaneComponent = () => {
   return (
     <mesh rotation-x={-Math.PI / 2} receiveShadow>
-      <circleGeometry args={[10, 64]} />{" "}
-      {/* Increased segments for smoother appearance */}
+      <circleGeometry args={[10, 64]} />
       <meshStandardMaterial color="#e7e8ec" />
     </mesh>
   );
 };
 
-// Memoize the GroundPlane and set displayName
 const GroundPlane = React.memo(GroundPlaneComponent);
 GroundPlane.displayName = "GroundPlane";
 
 const EV5 = () => {
-  // Memoize camera settings to prevent unnecessary recalculations
   const cameraSettings = useMemo(
     () => ({
       position: [15, 5, 25],
@@ -73,7 +69,6 @@ const EV5 = () => {
     []
   );
 
-  // Memoize lighting settings
   const lighting = useMemo(
     () => (
       <>
@@ -84,15 +79,14 @@ const EV5 = () => {
     []
   );
 
-  // Memoize OrbitControls settings
   const orbitControlsSettings = useMemo(
     () => ({
       autoRotate: true,
       autoRotateSpeed: 1.5,
       enableZoom: true,
-      minDistance: 5, // Increased for better initial view
-      maxDistance: 50, // Adjusted for wider zoom range
-      enablePan: false, // Disable panning for controlled interaction
+      minDistance: 5,
+      maxDistance: 50,
+      enablePan: false,
     }),
     []
   );
@@ -101,7 +95,7 @@ const EV5 = () => {
     <div
       style={{
         width: "100%",
-        height: "100vh", // Full viewport height for better visibility
+        height: "100vh",
         display: "flex",
         flexDirection: "column",
         border: "1px solid #ddd",
@@ -116,7 +110,14 @@ const EV5 = () => {
           camera={cameraSettings}
           style={{ width: "100%", height: "100%" }}
         >
-          <Suspense fallback={<div>Loading 3D Model...</div>}>
+          <Suspense
+            fallback={
+              // Using <Html> to safely render loading indicator inside the 3D scene
+              <Html>
+                <div>Loading 3D Model...</div>
+              </Html>
+            }
+          >
             <ErrorBoundary>
               {lighting}
               <OrbitControls {...orbitControlsSettings} />
