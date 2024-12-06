@@ -1,6 +1,4 @@
-/* src/components/MapContainer.jsx */
 /* global google */
-
 import React, {
   useState,
   useEffect,
@@ -23,7 +21,6 @@ const containerStyle = {
   height: "50vh",
 };
 
-// View Definitions
 const CITY_VIEW = {
   name: "CityView",
   center: { lat: 22.353, lng: 114.076 },
@@ -48,7 +45,7 @@ const MapContainer = () => {
   const mapRef = useRef(null);
 
   const { isLoaded } = useJsApiLoader({
-    googleMapsApiKey: "AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours", // Replace with your actual key
+    googleMapsApiKey: "AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours",
     libraries: ["geometry"],
   });
 
@@ -184,7 +181,6 @@ const MapContainer = () => {
     setDirections(null);
   }, []);
 
-  // Memoize the marker icon and station markers to avoid unnecessary re-renders
   const markerIcon = useMemo(() => {
     if (!isLoaded || !google?.maps?.SymbolPath) return null;
     return {
@@ -208,7 +204,6 @@ const MapContainer = () => {
     ));
   }, [stations, handleMarkerClick, markerIcon]);
 
-  // Optimize gesture handling with requestAnimationFrame
   const lastAnimationFrame = useRef(null);
   const isTouching = useRef(false);
   const isMouseDown = useRef(false);
@@ -216,8 +211,8 @@ const MapContainer = () => {
 
   useEffect(() => {
     if (!map) return;
-
     const mapDiv = map.getDiv();
+    if (!mapDiv) return; // Check for null mapDiv
 
     const applyMapTransform = (deltaX, deltaY) => {
       if (!map) return;
@@ -324,7 +319,7 @@ const MapContainer = () => {
           gestureHandling: "none",
           rotateControl: true,
           minZoom: 10,
-          draggable: false, // We handle camera movements via custom gestures
+          draggable: false,
         }}
         onLoad={(mapInstance) => setMap(mapInstance)}
         onClick={handleMapClick}
