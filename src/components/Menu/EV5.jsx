@@ -1,10 +1,10 @@
 /* eslint-disable react/no-unknown-property */
 import React, { Suspense, useMemo } from "react";
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls, useGLTF, Preload, Html } from "@react-three/drei";
+import { OrbitControls, useGLTF, Preload, Html, Environment } from "@react-three/drei";
 import PropTypes from "prop-types";
 
-// Error Boundary to catch rendering errors
+// Error Boundary to catch rendering errors related to the 3D component tree
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -21,16 +21,24 @@ class ErrorBoundary extends React.Component {
 
   render() {
     if (this.state.hasError) {
-      return <div style={{ color: "red" }}>Failed to load the 3D model.</div>;
+      return (
+        <div style={{ color: "red", fontWeight: "bold", padding: "10px" }}>
+          Failed to load the 3D model.
+        </div>
+      );
     }
 
     return this.props.children;
   }
 }
 
-// GLBViewer Component
+ErrorBoundary.propTypes = {
+  children: PropTypes.node,
+};
+
+// GLBViewer Component: Loads and displays the GLB model
 const GLBViewerComponent = ({ modelPath }) => {
-  const gltf = useGLTF(modelPath, true); // Load the GLB model
+  const gltf = useGLTF(modelPath, true);
 
   return (
     <primitive object={gltf.scene} scale={[2, 2, 2]} position={[0, 1, 0]} />
@@ -41,11 +49,10 @@ GLBViewerComponent.propTypes = {
   modelPath: PropTypes.string.isRequired,
 };
 
-// Memoize the GLBViewer
 const GLBViewer = React.memo(GLBViewerComponent);
 GLBViewer.displayName = "GLBViewer";
 
-// GroundPlane Component
+// GroundPlane: A simple ground plane for reference
 const GroundPlaneComponent = () => {
   return (
     <mesh rotation-x={-Math.PI / 2} receiveShadow>
@@ -58,6 +65,7 @@ const GroundPlaneComponent = () => {
 const GroundPlane = React.memo(GroundPlaneComponent);
 GroundPlane.displayName = "GroundPlane";
 
+// Main Component
 const EV5 = () => {
   const cameraSettings = useMemo(
     () => ({
@@ -95,16 +103,23 @@ const EV5 = () => {
     <div
       style={{
         width: "100%",
-        height: "100vh",
+        height: "15vh",
         display: "flex",
-        flexDirection: "column",
-        border: "1px solid #ddd",
+        flexDirection: "row",
+        alignItems: "center",
+        borderBottom: "1px solid #ddd",
         padding: "10px",
         boxSizing: "border-box",
       }}
     >
-      {/* GLB Viewer */}
-      <div style={{ flex: 3, height: "80vh", marginBottom: "10px" }}>
+      {/* Left Panel: 3D Viewer */}
+      <div
+        style={{
+          flex: "0 0 20%",
+          height: "100%",
+          position: "relative",
+        }}
+      >
         <Canvas
           shadows
           camera={cameraSettings}
@@ -112,9 +127,17 @@ const EV5 = () => {
         >
           <Suspense
             fallback={
-              // Using <Html> to safely render loading indicator inside the 3D scene
-              <Html>
-                <div>Loading 3D Model...</div>
+              <Html center>
+                <div
+                  style={{
+                    background: "#fff",
+                    padding: "10px 20px",
+                    borderRadius: "5px",
+                    boxShadow: "0 2px 10px rgba(0,0,0,0.3)",
+                  }}
+                >
+                  Loading 3D Model...
+                </div>
               </Html>
             }
           >
@@ -122,6 +145,8 @@ const EV5 = () => {
               {lighting}
               <OrbitControls {...orbitControlsSettings} />
               <GroundPlane />
+              {/* Adding Environment */}
+              <Environment preset="studio" />
               <GLBViewer modelPath={process.env.PUBLIC_URL + "/EV5.glb"} />
               <Preload all />
             </ErrorBoundary>
@@ -129,7 +154,7 @@ const EV5 = () => {
         </Canvas>
       </div>
 
-      {/* Fare Placeholder */}
+      {/* Right Panel: Placeholder for Fare or other UI content */}
       <div
         style={{
           flex: 1,
@@ -139,6 +164,7 @@ const EV5 = () => {
           backgroundColor: "#f9f9f9",
           borderRadius: "8px",
           boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
+          height: "100%",
         }}
       >
         <h2 style={{ margin: 0, fontSize: "1.5rem", color: "#333" }}>

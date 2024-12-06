@@ -1,27 +1,26 @@
-import React from "react";
-import { useContext } from "react";
-import { AuthContext } from "./context/AuthContext"; // Use AuthContext for user state
+import React, { useContext } from "react";
+import { AuthContext } from "./context/AuthContext";
 import Header from "./components/Header/Header.jsx";
 import MapContainer from "./components/Map/MapContainer.jsx";
-import MenuContainer from "./components/Menu/MenuContainer.jsx";
+import MotionMenu from "./components/Menu/MotionMenu.jsx"; // Import the new MotionMenu
 import Footer from "./components/Footer/Footer.jsx";
 import "./App.css";
 
 function App() {
-  const { user, loading } = useContext(AuthContext); // Access AuthContext for user and loading states
+  const { user, loading } = useContext(AuthContext);
 
   if (loading) {
-    // Display loading state until auth is initialized
     return <div className="loading">Initializing...</div>;
   }
 
   return (
     <div className="App">
       <Header user={user} />
-      <main className="main-content">
+      <main className="main-content" style={{ paddingBottom: "80px" }}>
+        {/* Ensure content doesn’t overlap with the MotionMenu */}
         <MapContainer />
-        <MenuContainer />
       </main>
+      <MotionMenu /> {/* Add the MotionMenu at the bottom */}
       <Footer />
     </div>
   );

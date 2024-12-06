@@ -8,21 +8,32 @@ const MenuContainer = () => {
   return (
     <div
       style={{
-        width: "95vw",
-        height: "auto",
         display: "flex",
-        flexDirection: "column",
-        gap: "20px",
-        overflow: "scroll", // Corrected property name
-        borderRadius: "8px", // Added border radius
-        border: "1px solid #e78e8ec", // Optional: Add a border for better visibility
-        padding: "10px", // Optional: Add some padding
+        flexDirection: "row",
+        justifyContent: "space-around",
+        alignItems: "center",
+        padding: "10px 0",
+        gap: "15px",
+        overflowX: "auto", // Allow horizontal scrolling for smaller screens
       }}
     >
-      <EV5 />
-      <EV7 />
-      <Taxi />
-      <Van />
+      {/* Each vehicle option */}
+      <div style={{ textAlign: "center" }}>
+        <EV5 />
+        <p style={{ margin: 0, fontSize: "0.85rem" }}>EV5</p>
+      </div>
+      <div style={{ textAlign: "center" }}>
+        <EV7 />
+        <p style={{ margin: 0, fontSize: "0.85rem" }}>EV7</p>
+      </div>
+      <div style={{ textAlign: "center" }}>
+        <Taxi />
+        <p style={{ margin: 0, fontSize: "0.85rem" }}>Taxi</p>
+      </div>
+      <div style={{ textAlign: "center" }}>
+        <Van />
+        <p style={{ margin: 0, fontSize: "0.85rem" }}>Van</p>
+      </div>
     </div>
   );
 };

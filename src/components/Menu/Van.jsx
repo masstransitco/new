@@ -1,5 +1,3 @@
-/* eslint-disable react/no-unknown-property */
-
 import React from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, useGLTF } from "@react-three/drei";

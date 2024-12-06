@@ -5,6 +5,19 @@
   align-items: center;
   min-height: 10%;
   padding: 10px 20px;
+
+  /* Task 1: Pin the header to the top and set background to transparent */
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  background-color: transparent;
+
+  /* Task 2: Remove the bottom border */
+  /* Removed the following line:
+  border-bottom: 1px solid #ccc;
+  */
+
   z-index: 1000; /* Ensure the header stays above other elements */
 }
 
@@ -23,7 +36,7 @@
 }
 
 .logo-image {
-  max-height: 30px;
+  max-height: 40px; /* Task 3: Decreased size by 20% from 50px to 40px */
   object-fit: contain; /* Ensures proper scaling without distortion */
 }
 

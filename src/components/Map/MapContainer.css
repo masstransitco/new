@@ -3,7 +3,7 @@
 /* General Map Container Styling */
 .map-container {
   position: absolute;
-  top: 2%;
+  top: 10%;
   left: 0;
   width: 100%;
   height: 40%;
@@ -16,7 +16,6 @@
   flex-direction: column;
   font-family: "Helvetica", Arial, sans-serif; /* Uber typography style */
   overflow: hidden;
-  touch-action: none;
 }
 
 /* Marker InfoWindow Styling */
