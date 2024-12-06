@@ -7,7 +7,7 @@
   padding: 10px 20px;
 
   /* Task 1: Pin the header to the top and set background to transparent */
-  position: fixed;
+  position: absolute;
   top: 0;
   left: 0;
   width: 100%;
