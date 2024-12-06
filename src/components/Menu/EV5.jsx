@@ -1,7 +1,13 @@
 /* eslint-disable react/no-unknown-property */
 import React, { Suspense, useMemo } from "react";
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls, useGLTF, Preload, Html, Environment } from "@react-three/drei";
+import {
+  OrbitControls,
+  useGLTF,
+  Preload,
+  Html,
+  Environment,
+} from "@react-three/drei";
 import PropTypes from "prop-types";
 
 // Error Boundary to catch rendering errors related to the 3D component tree
