@@ -18,7 +18,7 @@ import {
 
 const containerStyle = {
   width: "100%",
-  height: "50vh",
+  height: "65vh",
 };
 
 const CITY_VIEW = {
