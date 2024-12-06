@@ -47,7 +47,11 @@ const GLBViewerComponent = ({ modelPath }) => {
   const gltf = useGLTF(modelPath, true);
 
   return (
-    <primitive object={gltf.scene} scale={[2, 2, 2]} position={[0, 1, 0]} />
+    <primitive
+      object={gltf.scene}
+      scale={[2, 2, 2]} // Set model scale
+      position={[0, 1, 0]} // Adjust the model position
+    />
   );
 };
 
@@ -73,16 +77,18 @@ GroundPlane.displayName = "GroundPlane";
 
 // Main Component
 const EV5 = () => {
+  // Camera settings
   const cameraSettings = useMemo(
     () => ({
-      position: [15, 5, 25],
-      fov: 50,
-      near: 0.1,
-      far: 1000,
+      position: [35, 0, 25],
+      fov: 15,
+      near: 0.5,
+      far: 50, // Adjust far to fit the scene
     }),
     []
   );
 
+  // Lighting settings
   const lighting = useMemo(
     () => (
       <>
@@ -93,6 +99,7 @@ const EV5 = () => {
     []
   );
 
+  // OrbitControls settings
   const orbitControlsSettings = useMemo(
     () => ({
       autoRotate: true,
@@ -101,6 +108,7 @@ const EV5 = () => {
       minDistance: 5,
       maxDistance: 50,
       enablePan: false,
+      maxPolarAngle: Math.PI / 2, // Prevent camera from going below ground plane
     }),
     []
   );
