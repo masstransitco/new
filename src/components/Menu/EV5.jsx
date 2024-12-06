@@ -29,19 +29,25 @@ class ErrorBoundary extends React.Component {
   }
 }
 
-const GLBViewer = React.memo(({ modelPath }) => {
+// GLBViewer Component
+const GLBViewerComponent = ({ modelPath }) => {
   const gltf = useGLTF(modelPath, true); // Load the GLB model with DRACO compression if available
 
   return (
     <primitive object={gltf.scene} scale={[2, 2, 2]} position={[0, 1, 0]} />
   );
-});
+};
 
-GLBViewer.propTypes = {
+GLBViewerComponent.propTypes = {
   modelPath: PropTypes.string.isRequired,
 };
 
-const GroundPlane = React.memo(() => {
+// Memoize the GLBViewer and set displayName
+const GLBViewer = React.memo(GLBViewerComponent);
+GLBViewer.displayName = "GLBViewer";
+
+// GroundPlane Component
+const GroundPlaneComponent = () => {
   return (
     <mesh rotation-x={-Math.PI / 2} receiveShadow>
       <circleGeometry args={[10, 64]} />{" "}
@@ -49,7 +55,11 @@ const GroundPlane = React.memo(() => {
       <meshStandardMaterial color="#e7e8ec" />
     </mesh>
   );
-});
+};
+
+// Memoize the GroundPlane and set displayName
+const GroundPlane = React.memo(GroundPlaneComponent);
+GroundPlane.displayName = "GroundPlane";
 
 const EV5 = () => {
   // Memoize camera settings to prevent unnecessary recalculations
