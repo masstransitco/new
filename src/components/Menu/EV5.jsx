@@ -49,8 +49,8 @@ const GLBViewerComponent = ({ modelPath }) => {
   return (
     <primitive
       object={gltf.scene}
-      scale={[2, 2, 2]} // Set model scale
-      position={[0, 1, 0]} // Adjust the model position
+      scale={[3, 3, 3]} // Set model scale
+      position={[0, 0, 0]} // Adjust the model position
     />
   );
 };
@@ -81,9 +81,9 @@ const EV5 = () => {
   const cameraSettings = useMemo(
     () => ({
       position: [35, 0, 25],
-      fov: 15,
+      fov: 25,
       near: 0.5,
-      far: 50, // Adjust far to fit the scene
+      far: 0.5, // Adjust far to fit the scene
     }),
     []
   );
@@ -104,7 +104,7 @@ const EV5 = () => {
     () => ({
       autoRotate: true,
       autoRotateSpeed: 1.5,
-      enableZoom: true,
+      enableZoom: false,
       minDistance: 5,
       maxDistance: 50,
       enablePan: false,
