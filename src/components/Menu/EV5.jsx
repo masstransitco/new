@@ -1,59 +1,152 @@
-import React from "react";
-import { createTheme, ThemeProvider } from "@mui/material/styles";
-import CssBaseline from "@mui/material/CssBaseline";
-import Paper from "@mui/material/Paper";
-import MenuContainer from "./MenuContainer";
+/* eslint-disable react/no-unknown-property */
+import React, { Suspense, useMemo } from "react";
+import { Canvas } from "@react-three/fiber";
+import { OrbitControls, useGLTF, Preload, Html } from "@react-three/drei";
+import PropTypes from "prop-types";
 
-// Create a deeper dark theme
-const darkTheme = createTheme({
-  palette: {
-    mode: "dark", // Set the mode to dark
-    background: {
-      paper: "#121212", // Darker color for background.paper
-      default: "#000000", // Darker color for background.default
-    },
-    text: {
-      primary: "#ffffff", // Light text color for better contrast
-      secondary: "#b0b0b0", // Slightly lighter text for secondary elements
-    },
-  },
-});
+// Error Boundary to catch rendering errors
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
 
-const MotionMenu = () => {
+  static getDerivedStateFromError(/* error */) {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error, info) {
+    console.error("Error loading 3D model:", error, info);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return <div style={{ color: "red" }}>Failed to load the 3D model.</div>;
+    }
+
+    return this.props.children;
+  }
+}
+
+// GLBViewer Component
+const GLBViewerComponent = ({ modelPath }) => {
+  const gltf = useGLTF(modelPath, true); // Load the GLB model
+
   return (
-    <Paper
-      elevation={4} // Add a slight shadow for depth
-      sx={{
-        position: "fixed",
-        bottom: 0,
-        left: 0,
-        right: 0,
-        bgcolor: "background.paper", // Use the darker theme background.paper
-        padding: "10px 15px",
-        borderTop: "1px solid #333", // Darker top border for better blending
+    <primitive object={gltf.scene} scale={[2, 2, 2]} position={[0, 1, 0]} />
+  );
+};
+
+GLBViewerComponent.propTypes = {
+  modelPath: PropTypes.string.isRequired,
+};
+
+// Memoize the GLBViewer
+const GLBViewer = React.memo(GLBViewerComponent);
+GLBViewer.displayName = "GLBViewer";
+
+// GroundPlane Component
+const GroundPlaneComponent = () => {
+  return (
+    <mesh rotation-x={-Math.PI / 2} receiveShadow>
+      <circleGeometry args={[10, 64]} />
+      <meshStandardMaterial color="#e7e8ec" />
+    </mesh>
+  );
+};
+
+const GroundPlane = React.memo(GroundPlaneComponent);
+GroundPlane.displayName = "GroundPlane";
+
+const EV5 = () => {
+  const cameraSettings = useMemo(
+    () => ({
+      position: [15, 5, 25],
+      fov: 50,
+      near: 0.1,
+      far: 1000,
+    }),
+    []
+  );
+
+  const lighting = useMemo(
+    () => (
+      <>
+        <ambientLight intensity={0.5} />
+        <directionalLight position={[10, 10, 5]} intensity={1} castShadow />
+      </>
+    ),
+    []
+  );
+
+  const orbitControlsSettings = useMemo(
+    () => ({
+      autoRotate: true,
+      autoRotateSpeed: 1.5,
+      enableZoom: true,
+      minDistance: 5,
+      maxDistance: 50,
+      enablePan: false,
+    }),
+    []
+  );
+
+  return (
+    <div
+      style={{
+        width: "100%",
+        height: "100vh",
         display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
+        flexDirection: "column",
+        border: "1px solid #ddd",
+        padding: "10px",
+        boxSizing: "border-box",
       }}
     >
-      {/* MenuContainer holds the car options */}
-      <MenuContainer />
-    </Paper>
-  );
-};
-
-// Main App component to wrap MotionMenu with ThemeProvider
-const App = () => {
-  return (
-    <ThemeProvider theme={darkTheme}>
-      <CssBaseline /> {/* Normalize styles */}
-      <MotionMenu />
-      {/* Ensure GLB Loader or other components match the background */}
-      <div style={{ backgroundColor: darkTheme.palette.background.default, height: '100vh' }}>
-        {/* Your GLB Loader or other content goes here */}
+      {/* GLB Viewer */}
+      <div style={{ flex: 3, height: "80vh", marginBottom: "10px" }}>
+        <Canvas
+          shadows
+          camera={cameraSettings}
+          style={{ width: "100%", height: "100%" }}
+        >
+          <Suspense
+            fallback={
+              // Using <Html> to safely render loading indicator inside the 3D scene
+              <Html>
+                <div>Loading 3D Model...</div>
+              </Html>
+            }
+          >
+            <ErrorBoundary>
+              {lighting}
+              <OrbitControls {...orbitControlsSettings} />
+              <GroundPlane />
+              <GLBViewer modelPath={process.env.PUBLIC_URL + "/EV5.glb"} />
+              <Preload all />
+            </ErrorBoundary>
+          </Suspense>
+        </Canvas>
       </div>
-    </ThemeProvider>
+
+      {/* Fare Placeholder */}
+      <div
+        style={{
+          flex: 1,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: "#f9f9f9",
+          borderRadius: "8px",
+          boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
+        }}
+      >
+        <h2 style={{ margin: 0, fontSize: "1.5rem", color: "#333" }}>
+          Fare Placeholder
+        </h2>
+      </div>
+    </div>
   );
 };
 
-export default App;
+export default EV5;
