@@ -10,21 +10,17 @@ import {
 } from "@react-three/drei";
 import PropTypes from "prop-types";
 
-// Error Boundary to catch rendering errors related to the 3D component tree
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
     this.state = { hasError: false };
   }
-
-  static getDerivedStateFromError(/* error */) {
+  static getDerivedStateFromError() {
     return { hasError: true };
   }
-
   componentDidCatch(error, info) {
     console.error("Error loading 3D model:", error, info);
   }
-
   render() {
     if (this.state.hasError) {
       return (
@@ -33,7 +29,6 @@ class ErrorBoundary extends React.Component {
         </div>
       );
     }
-
     return this.props.children;
   }
 }
@@ -42,13 +37,9 @@ ErrorBoundary.propTypes = {
   children: PropTypes.node,
 };
 
-// GLBViewer Component: Loads and displays the GLB model
 const GLBViewerComponent = ({ modelPath }) => {
-  const gltf = useGLTF(modelPath, true);
-
-  return (
-    <primitive object={gltf.scene} scale={[2, 2, 2]} position={[0, 1, 0]} />
-  );
+  const { scene } = useGLTF(modelPath, true);
+  return <primitive object={scene} scale={[2, 2, 2]} position={[0, 1, 0]} />;
 };
 
 GLBViewerComponent.propTypes = {
@@ -58,27 +49,23 @@ GLBViewerComponent.propTypes = {
 const GLBViewer = React.memo(GLBViewerComponent);
 GLBViewer.displayName = "GLBViewer";
 
-// GroundPlane: A simple ground plane for reference
-const GroundPlaneComponent = () => {
-  return (
-    <mesh rotation-x={-Math.PI / 2} receiveShadow>
-      <circleGeometry args={[10, 64]} />
-      <meshStandardMaterial color="#e7e8ec" />
-    </mesh>
-  );
-};
+const GroundPlaneComponent = () => (
+  <mesh rotation-x={-Math.PI / 2} receiveShadow>
+    <circleGeometry args={[10, 64]} />
+    <meshStandardMaterial color="#e7e8ec" />
+  </mesh>
+);
 
 const GroundPlane = React.memo(GroundPlaneComponent);
 GroundPlane.displayName = "GroundPlane";
 
-// Main Component
 const Van = () => {
   const cameraSettings = useMemo(
     () => ({
-      position: [15, 5, 25],
-      fov: 50,
-      near: 0.1,
-      far: 1000,
+      position: [20, 10, 25],
+      fov: 30,
+      near: 0.5,
+      far: 100,
     }),
     []
   );
@@ -97,10 +84,11 @@ const Van = () => {
     () => ({
       autoRotate: true,
       autoRotateSpeed: 1.5,
-      enableZoom: true,
+      enableZoom: false,
       minDistance: 5,
       maxDistance: 50,
       enablePan: false,
+      maxPolarAngle: Math.PI / 2,
     }),
     []
   );
@@ -108,75 +96,44 @@ const Van = () => {
   return (
     <div
       style={{
-        width: "100%",
-        height: "15vh",
-        display: "flex",
-        flexDirection: "row",
-        alignItems: "center",
-        borderBottom: "1px solid #ddd",
-        padding: "10px",
-        boxSizing: "border-box",
+        width: "80px",
+        height: "10vh", // smaller height for bottom bar
+        overflow: "hidden",
+        borderRadius: "8px",
+        boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
       }}
     >
-      {/* Left Panel: 3D Viewer */}
-      <div
-        style={{
-          flex: "0 0 20%",
-          height: "100%",
-          position: "relative",
-        }}
+      <Canvas
+        shadows
+        camera={cameraSettings}
+        style={{ width: "100%", height: "100%" }}
       >
-        <Canvas
-          shadows
-          camera={cameraSettings}
-          style={{ width: "100%", height: "100%" }}
+        <Suspense
+          fallback={
+            <Html center>
+              <div
+                style={{
+                  background: "#fff",
+                  padding: "10px 20px",
+                  borderRadius: "5px",
+                  boxShadow: "0 2px 10px rgba(0,0,0,0.3)",
+                }}
+              >
+                Loading...
+              </div>
+            </Html>
+          }
         >
-          <Suspense
-            fallback={
-              <Html center>
-                <div
-                  style={{
-                    background: "#fff",
-                    padding: "10px 20px",
-                    borderRadius: "5px",
-                    boxShadow: "0 2px 10px rgba(0,0,0,0.3)",
-                  }}
-                >
-                  Loading 3D Model...
-                </div>
-              </Html>
-            }
-          >
-            <ErrorBoundary>
-              {lighting}
-              <OrbitControls {...orbitControlsSettings} />
-              <GroundPlane />
-              {/* Adding Environment */}
-              <Environment preset="studio" />
-              <GLBViewer modelPath={process.env.PUBLIC_URL + "/Van.glb"} />
-              <Preload all />
-            </ErrorBoundary>
-          </Suspense>
-        </Canvas>
-      </div>
-
-      {/* Right Panel: Placeholder for Fare or other UI content */}
-      <div
-        style={{
-          flex: 1,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          backgroundColor: "#f9f9f9",
-          borderRadius: "8px",
-          boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
-          height: "100%",
-        }}
-      >
-        <h2 style={{ margin: 0, fontSize: "1.5rem", color: "#333" }}>
-          Fare Placeholder
-        </h2>
-      </div>
+          <ErrorBoundary>
+            {lighting}
+            <OrbitControls {...orbitControlsSettings} />
+            <GroundPlane />
+            <Environment preset="studio" />
+            <Preload all />
+            <GLBViewer modelPath={process.env.PUBLIC_URL + "/Van.glb"} />
+          </ErrorBoundary>
+        </Suspense>
+      </Canvas>
     </div>
   );
 };
