@@ -80,10 +80,10 @@ const EV5 = () => {
   // Camera settings
   const cameraSettings = useMemo(
     () => ({
-      position: [35, 0, 25],
+      position: [15, 5, 25],
       fov: 25,
-      near: 0.5,
-      far: 0.5, // Adjust far to fit the scene
+      near: 0.1,
+      far: 100, // Adjust far to fit the scene
     }),
     []
   );
