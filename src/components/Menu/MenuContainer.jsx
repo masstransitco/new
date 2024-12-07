@@ -1,39 +1,66 @@
-import React from "react";
+import React, { useState } from "react";
+import { motion } from "framer-motion";
 import EV5 from "./EV5";
 import EV7 from "./EV7";
 import Taxi from "./Taxi";
 import Van from "./Van";
 
+const cars = [
+  { name: "EV5", Component: EV5 },
+  { name: "EV7", Component: EV7 },
+  { name: "Taxi", Component: Taxi },
+  { name: "Van", Component: Van },
+];
+
 const MenuContainer = () => {
+  const [selectedCar, setSelectedCar] = useState("EV5"); // Default selected
+
   return (
     <div
       style={{
         display: "flex",
         flexDirection: "row",
-        justifyContent: "space-around",
+        justifyContent: "flex-start",
         alignItems: "center",
-        padding: "10px 0",
         gap: "15px",
-        overflowX: "auto", // Allow horizontal scrolling for smaller screens
+        overflowX: "auto",
+        width: "100%",
+        height: "100%",
+        padding: "10px 0",
       }}
     >
-      {/* Each vehicle option */}
-      <div style={{ textAlign: "center" }}>
-        <EV5 />
-        <p style={{ margin: 0, fontSize: "0.85rem" }}>EV5</p>
-      </div>
-      <div style={{ textAlign: "center" }}>
-        <EV7 />
-        <p style={{ margin: 0, fontSize: "0.85rem" }}>EV7</p>
-      </div>
-      <div style={{ textAlign: "center" }}>
-        <Taxi />
-        <p style={{ margin: 0, fontSize: "0.85rem" }}>Taxi</p>
-      </div>
-      <div style={{ textAlign: "center" }}>
-        <Van />
-        <p style={{ margin: 0, fontSize: "0.85rem" }}>Van</p>
-      </div>
+      {cars.map(({ name, Component }) => {
+        const isSelected = selectedCar === name;
+        return (
+          <motion.div
+            key={name}
+            style={{
+              textAlign: "center",
+              flex: "0 0 auto",
+              cursor: "pointer",
+              // Set a min width to keep the items clearly visible
+              minWidth: "80px",
+            }}
+            onClick={() => setSelectedCar(name)}
+            animate={{
+              scale: isSelected ? 1.1 : 1,
+              boxShadow: isSelected ? "0 0 10px rgba(255,255,255,0.6)" : "none",
+              transition: { type: "spring", stiffness: 200, damping: 15 },
+            }}
+          >
+            <Component />
+            <p
+              style={{
+                margin: 0,
+                fontSize: "0.85rem",
+                color: isSelected ? "#fff" : "#ccc",
+              }}
+            >
+              {name}
+            </p>
+          </motion.div>
+        );
+      })}
     </div>
   );
 };

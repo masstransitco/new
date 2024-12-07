@@ -1,59 +1,60 @@
 /* eslint-disable react/no-unknown-property */
 import React, { Suspense, useMemo } from "react";
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls, useGLTF, Preload, Html } from "@react-three/drei";
+import {
+  OrbitControls,
+  useGLTF,
+  Preload,
+  Html,
+  Environment,
+} from "@react-three/drei";
 import PropTypes from "prop-types";
 
-// Error Boundary to catch rendering errors
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
     this.state = { hasError: false };
   }
-
-  static getDerivedStateFromError(/* error */) {
+  static getDerivedStateFromError() {
     return { hasError: true };
   }
-
   componentDidCatch(error, info) {
     console.error("Error loading 3D model:", error, info);
   }
-
   render() {
     if (this.state.hasError) {
-      return <div style={{ color: "red" }}>Failed to load the 3D model.</div>;
+      return (
+        <div style={{ color: "red", fontWeight: "bold", padding: "10px" }}>
+          Failed to load the 3D model.
+        </div>
+      );
     }
-
     return this.props.children;
   }
 }
 
-// GLBViewer Component
-const GLBViewerComponent = ({ modelPath }) => {
-  const gltf = useGLTF(modelPath, true); // Load the GLB model
+ErrorBoundary.propTypes = {
+  children: PropTypes.node,
+};
 
-  return (
-    <primitive object={gltf.scene} scale={[2, 2, 2]} position={[0, 1, 0]} />
-  );
+const GLBViewerComponent = ({ modelPath }) => {
+  const { scene } = useGLTF(modelPath, true);
+  return <primitive object={scene} scale={[2, 2, 2]} position={[0, 1, 0]} />;
 };
 
 GLBViewerComponent.propTypes = {
   modelPath: PropTypes.string.isRequired,
 };
 
-// Memoize the GLBViewer
 const GLBViewer = React.memo(GLBViewerComponent);
 GLBViewer.displayName = "GLBViewer";
 
-// GroundPlane Component
-const GroundPlaneComponent = () => {
-  return (
-    <mesh rotation-x={-Math.PI / 2} receiveShadow>
-      <circleGeometry args={[10, 64]} />
-      <meshStandardMaterial color="#e7e8ec" />
-    </mesh>
-  );
-};
+const GroundPlaneComponent = () => (
+  <mesh rotation-x={-Math.PI / 2} receiveShadow>
+    <circleGeometry args={[10, 64]} />
+    <meshStandardMaterial color="#e7e8ec" />
+  </mesh>
+);
 
 const GroundPlane = React.memo(GroundPlaneComponent);
 GroundPlane.displayName = "GroundPlane";
@@ -61,10 +62,10 @@ GroundPlane.displayName = "GroundPlane";
 const EV5 = () => {
   const cameraSettings = useMemo(
     () => ({
-      position: [15, 5, 25],
-      fov: 50,
-      near: 0.1,
-      far: 1000,
+      position: [20, 10, 25],
+      fov: 30,
+      near: 0.5,
+      far: 100,
     }),
     []
   );
@@ -83,10 +84,11 @@ const EV5 = () => {
     () => ({
       autoRotate: true,
       autoRotateSpeed: 1.5,
-      enableZoom: true,
+      enableZoom: false,
       minDistance: 5,
       maxDistance: 50,
       enablePan: false,
+      maxPolarAngle: Math.PI / 2,
     }),
     []
   );
@@ -94,57 +96,44 @@ const EV5 = () => {
   return (
     <div
       style={{
-        width: "100%",
-        height: "100vh",
-        display: "flex",
-        flexDirection: "column",
-        border: "1px solid #ddd",
-        padding: "10px",
-        boxSizing: "border-box",
+        width: "80px",
+        height: "10vh", // smaller height for bottom bar
+        overflow: "hidden",
+        borderRadius: "8px",
+        boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
       }}
     >
-      {/* GLB Viewer */}
-      <div style={{ flex: 3, height: "80vh", marginBottom: "10px" }}>
-        <Canvas
-          shadows
-          camera={cameraSettings}
-          style={{ width: "100%", height: "100%" }}
-        >
-          <Suspense
-            fallback={
-              // Using <Html> to safely render loading indicator inside the 3D scene
-              <Html>
-                <div>Loading 3D Model...</div>
-              </Html>
-            }
-          >
-            <ErrorBoundary>
-              {lighting}
-              <OrbitControls {...orbitControlsSettings} />
-              <GroundPlane />
-              <GLBViewer modelPath={process.env.PUBLIC_URL + "/EV5.glb"} />
-              <Preload all />
-            </ErrorBoundary>
-          </Suspense>
-        </Canvas>
-      </div>
-
-      {/* Fare Placeholder */}
-      <div
-        style={{
-          flex: 1,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          backgroundColor: "#f9f9f9",
-          borderRadius: "8px",
-          boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
-        }}
+      <Canvas
+        shadows
+        camera={cameraSettings}
+        style={{ width: "100%", height: "100%" }}
       >
-        <h2 style={{ margin: 0, fontSize: "1.5rem", color: "#333" }}>
-          Fare Placeholder
-        </h2>
-      </div>
+        <Suspense
+          fallback={
+            <Html center>
+              <div
+                style={{
+                  background: "#fff",
+                  padding: "10px 20px",
+                  borderRadius: "5px",
+                  boxShadow: "0 2px 10px rgba(0,0,0,0.3)",
+                }}
+              >
+                Loading...
+              </div>
+            </Html>
+          }
+        >
+          <ErrorBoundary>
+            {lighting}
+            <OrbitControls {...orbitControlsSettings} />
+            <GroundPlane />
+            <Environment preset="studio" />
+            <Preload all />
+            <GLBViewer modelPath={process.env.PUBLIC_URL + "/EV5.glb"} />
+          </ErrorBoundary>
+        </Suspense>
+      </Canvas>
     </div>
   );
 };
