@@ -49,8 +49,8 @@ const GLBViewerComponent = ({ modelPath }) => {
   return (
     <primitive
       object={gltf.scene}
-      scale={[3, 3, 3]} // Set model scale
-      position={[0, 0, 0]} // Adjust the model position
+      scale={[2, 2, 2]} // Set model scale
+      position={[0, 1, 0]} // Adjust the model position
     />
   );
 };
