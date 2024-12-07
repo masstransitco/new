@@ -39,7 +39,7 @@ ErrorBoundary.propTypes = {
 
 const GLBViewerComponent = ({ modelPath }) => {
   const { scene } = useGLTF(modelPath, true);
-  return <primitive object={scene} scale={[2, 2, 2]} position={[0, 1, 0]} />;
+  return <primitive object={scene} scale={[5, 5, 5]} position={[0, 0.2, 0]} />;
 };
 
 GLBViewerComponent.propTypes = {
