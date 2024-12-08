@@ -3,7 +3,7 @@
 /* General Map Container Styling */
 .map-container {
   position: absolute;
-  top: 10%;
+  top: 0;
   left: 0;
   width: 100%;
   height: 85%;
@@ -24,7 +24,7 @@
   font-size: 0.9rem;
   color: #333333; /* Neutral dark gray */
   padding: 12px;
-  background-color: #ffffff;
+  background-color: #e7e8ec;
   border-radius: 8px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15); /* Softer shadow for depth */
   text-align: left;
@@ -34,13 +34,13 @@
   font-size: 1rem;
   font-weight: 600;
   margin: 0 0 5px;
-  color: #000000; /* Black for header text */
+  color: #121212; /* Black for header text */
 }
 
 .info-window p {
   margin: 0;
   font-size: 0.9rem;
-  color: #555555; /* Subtle gray for description text */
+  color: #121212; /* Subtle gray for description text */
 }
 
 /* Map Responsiveness */
