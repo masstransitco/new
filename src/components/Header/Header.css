@@ -110,27 +110,28 @@
 /* Sign-In and Get Started Buttons */
 .signin-button,
 .get-started-button {
-  background-color: #2171ec;
-  color: white;
+  background-color: #e7e8ec; /* Updated sign-in button color */
+  color: #333; /* Dark text for contrast */
   font-family: "Roboto", Arial, sans-serif;
-  font-size: 16px;
+  font-size: 9.6px; /* 60% of original font size (16px -> 9.6px) */
   font-weight: bold;
-  height: 40px;
-  padding: 0 16px;
+  height: 24px; /* 60% of original height (40px -> 24px) */
+  padding: 0 9.6px; /* 60% of original padding (16px -> 9.6px) */
   border: none;
-  border-radius: 20px; /* Consistent pill shape */
+  border-radius: 12px; /* Maintains pill shape */
   cursor: pointer;
   transition: background-color 0.3s ease, transform 0.2s ease;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 120px; /* Ensures buttons have a good width */
+  min-width: auto; /* Adjust width dynamically based on text */
+  white-space: nowrap; /* Prevent text wrapping */
 }
 
 /* Hover Effects */
 .signin-button:hover,
 .get-started-button:hover {
-  background-color: #185abc;
+  background-color: #d6d7da; /* Slightly lighter shade for hover */
 }
 
 .signin-button:active,
@@ -140,8 +141,8 @@
 
 /* Disabled State */
 .signin-button:disabled {
-  background-color: #8e918f;
-  color: #cfcfcf;
+  background-color: #cfcfcf;
+  color: #8e8e8e;
   cursor: not-allowed;
 }
 
