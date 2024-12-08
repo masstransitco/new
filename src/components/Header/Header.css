@@ -3,12 +3,15 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  min-height: 8%;
-  padding: 5px 5px;
+  min-height: 10%;
+  padding: 10px 20px;
+  position: fixed;
   top: 0;
   left: 0;
   width: 100%;
-  z-index: 1000;
+  background-color: transparent; /* Transparent header */
+  z-index: 1000; /* Ensure the header stays above other elements */
+  transition: background-color 0.3s ease-in-out; /* Smooth transition for background */
 }
 
 /* Header Content Wrapper */
@@ -23,12 +26,16 @@
 .logo {
   display: flex;
   align-items: center;
-  left: 12px;
 }
 
 .logo-image {
-  max-height: 30px; /* Task 3: Decreased size by 20% from 50px to 40px */
-  object-fit: contain; /* Ensures proper scaling without distortion */
+  max-height: 40px; /* Reduced size for improved alignment */
+  object-fit: contain;
+  transition: transform 0.3s ease; /* Add subtle animation for hover */
+}
+
+.logo:hover .logo-image {
+  transform: scale(1.1); /* Slightly scale the logo on hover */
 }
 
 /* User Section */
@@ -36,7 +43,6 @@
   display: flex;
   align-items: center;
   position: relative;
-  right: 8px;
 }
 
 .user-info {
@@ -53,6 +59,7 @@
   border: none;
   cursor: pointer;
   padding: 0;
+  color: #fff; /* Ensure text remains legible on transparent header */
 }
 
 .user-avatar-button:focus {
@@ -61,22 +68,22 @@
 }
 
 .user-avatar-button img {
-  width: 28px; /* Task 5: Decreased size by 30% from 40px to ~28px */
-  height: 28px; /* Task 5: Decreased size by 30% from 40px to ~28px */
+  width: 28px; /* Reduced size for a compact UI */
+  height: 28px;
   border-radius: 50%;
-  margin-right: 7px; /* Adjusted margin proportionally */
-  flex-shrink: 0; /* Prevent avatar from resizing unexpectedly */
+  margin-right: 7px;
+  flex-shrink: 0;
 }
 
 .user-name {
-  font-size: 0.7rem; /* Task 5: Decreased font size by 30% from 1rem to 0.7rem */
+  font-size: 0.7rem; /* Reduced font size */
   color: #fff;
 }
 
 /* Dropdown Menu */
 .dropdown-menu {
   position: absolute;
-  top: calc(100% + 10px); /* Space below avatar for dropdown */
+  top: calc(100% + 10px); /* Space below avatar */
   right: 0;
   background-color: #fff;
   border: 1px solid #ccc;
@@ -92,7 +99,7 @@
 .dropdown-menu.show {
   opacity: 1;
   transform: translateY(0);
-  pointer-events: auto; /* Allow interaction when visible */
+  pointer-events: auto; /* Enable interaction */
 }
 
 .dropdown-menu ul {
@@ -106,6 +113,7 @@
   font-size: 0.9rem;
   color: #333;
   cursor: pointer;
+  transition: background-color 0.2s ease;
 }
 
 .dropdown-menu li:hover {
@@ -119,7 +127,6 @@
   color: #880000;
   cursor: pointer;
   font-size: 0.9rem;
-  text-decoration: none;
 }
 
 .logout-button:hover {
@@ -148,118 +155,62 @@
   }
 }
 
-/* Google Sign-In Wrapper */
-.google-signin-wrapper {
-  display: flex;
-  align-items: center;
-  /* Adjust padding or margins as needed */
-}
-
 /* Google Sign-In Button Styles */
 .gsi-material-button {
   background-color: #131314;
-  background-image: none;
   border: 1px solid #747775;
-  -webkit-border-radius: 20px;
   border-radius: 20px;
-  -webkit-box-sizing: border-box;
   box-sizing: border-box;
   color: #e3e3e3;
   cursor: pointer;
-  font-family: "Roboto", arial, sans-serif;
+  font-family: "Roboto", Arial, sans-serif;
   font-size: 14px;
   height: 40px;
-  letter-spacing: 0.25px;
-  outline: none;
-  overflow: hidden;
   padding: 0 12px;
-  position: relative;
   text-align: center;
-  -webkit-transition: background-color 0.218s, border-color 0.218s,
-    box-shadow 0.218s;
-  transition: background-color 0.218s, border-color 0.218s, box-shadow 0.218s;
-  vertical-align: middle;
+  transition: background-color 0.2s, border-color 0.2s, box-shadow 0.2s;
   white-space: nowrap;
   width: auto;
-  max-width: 400px;
   min-width: min-content;
-  border-color: #8e918f;
-}
-
-.gsi-material-button .gsi-material-button-icon {
-  height: 20px;
-  margin-right: 12px;
-  min-width: 20px;
-  width: 20px;
-}
-
-.gsi-material-button .gsi-material-button-content-wrapper {
-  -webkit-align-items: center;
-  align-items: center;
-  display: flex;
-  -webkit-flex-direction: row;
-  flex-direction: row;
-  -webkit-flex-wrap: nowrap;
-  flex-wrap: nowrap;
-  height: 100%;
-  justify-content: space-between;
-  position: relative;
-  width: 100%;
-}
-
-.gsi-material-button .gsi-material-button-contents {
-  -webkit-flex-grow: 1;
-  flex-grow: 1;
-  font-family: "Roboto", arial, sans-serif;
-  font-weight: 500;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  vertical-align: top;
-}
-
-.gsi-material-button .gsi-material-button-state {
-  -webkit-transition: opacity 0.218s;
-  transition: opacity 0.218s;
-  bottom: 0;
-  left: 0;
-  opacity: 0;
-  position: absolute;
-  right: 0;
-  top: 0;
 }
 
 .gsi-material-button:disabled {
-  cursor: default;
   background-color: #13131461;
   border-color: #8e918f1f;
+  cursor: default;
 }
 
-.gsi-material-button:disabled .gsi-material-button-state {
-  background-color: #e3e3e31f;
+.gsi-material-button:hover {
+  box-shadow: 0 1px 2px rgba(60, 64, 67, 0.3), 0 1px 3px rgba(60, 64, 67, 0.15);
 }
 
-.gsi-material-button:disabled .gsi-material-button-contents {
-  opacity: 38%;
+/* Get Started Button */
+.get-started-button {
+  background-color: #2171ec;
+  color: white;
+  font-family: "Roboto", Arial, sans-serif;
+  font-size: 14px;
+  font-weight: bold;
+  height: 40px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
 }
 
-.gsi-material-button:disabled .gsi-material-button-icon {
-  opacity: 38%;
+.get-started-button:hover {
+  background-color: #185abc;
 }
 
-.gsi-material-button:not(:disabled):active .gsi-material-button-state,
-.gsi-material-button:not(:disabled):focus .gsi-material-button-state {
-  background-color: white;
-  opacity: 12%;
+/* Button Wrapper */
+.button-wrapper {
+  display: flex;
+  gap: 10px;
+  align-items: center;
 }
 
-.gsi-material-button:not(:disabled):hover {
-  -webkit-box-shadow: 0 1px 2px 0 rgba(60, 64, 67, 0.3),
-    0 1px 3px 1px rgba(60, 64, 67, 0.15);
-  box-shadow: 0 1px 2px 0 rgba(60, 64, 67, 0.3),
-    0 1px 3px 1px rgba(60, 64, 67, 0.15);
-}
-
-.gsi-material-button:not(:disabled):hover .gsi-material-button-state {
-  background-color: white;
-  opacity: 8%;
+/* Aesthetic Enhancement: Reduce transparency on scroll */
+.header.scrolled {
+  background-color: rgba(0, 0, 0, 0.85); /* Add a semi-transparent background */
 }
