@@ -9,9 +9,9 @@
   top: 0;
   left: 0;
   width: 100%;
-  background-color: transparent; /* Transparent header */
-  z-index: 1000; /* Ensure the header stays above other elements */
-  transition: background-color 0.3s ease-in-out; /* Smooth transition for background */
+  background-color: rgba(0, 0, 0, 0.85); /* Consistent dark background */
+  z-index: 1000; /* Ensure the header stays above all other sections */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* Subtle shadow for depth */
 }
 
 /* Header Content Wrapper */
@@ -29,7 +29,7 @@
 }
 
 .logo-image {
-  max-height: 40px; /* Reduced size for improved alignment */
+  max-height: 40px;
   object-fit: contain;
   transition: transform 0.3s ease; /* Add subtle animation for hover */
 }
@@ -59,31 +59,25 @@
   border: none;
   cursor: pointer;
   padding: 0;
-  color: #fff; /* Ensure text remains legible on transparent header */
-}
-
-.user-avatar-button:focus {
-  outline: 2px solid #007bff;
-  outline-offset: 2px;
+  color: #fff;
 }
 
 .user-avatar-button img {
-  width: 28px; /* Reduced size for a compact UI */
+  width: 28px;
   height: 28px;
   border-radius: 50%;
   margin-right: 7px;
-  flex-shrink: 0;
 }
 
 .user-name {
-  font-size: 0.7rem; /* Reduced font size */
+  font-size: 0.9rem;
   color: #fff;
 }
 
 /* Dropdown Menu */
 .dropdown-menu {
   position: absolute;
-  top: calc(100% + 10px); /* Space below avatar */
+  top: calc(100% + 10px);
   right: 0;
   background-color: #fff;
   border: 1px solid #ccc;
@@ -93,19 +87,13 @@
   transform: translateY(-10px);
   transition: opacity 0.3s, transform 0.3s ease-in-out;
   z-index: 100;
-  pointer-events: none; /* Prevent interaction when hidden */
+  pointer-events: none;
 }
 
 .dropdown-menu.show {
   opacity: 1;
   transform: translateY(0);
-  pointer-events: auto; /* Enable interaction */
-}
-
-.dropdown-menu ul {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+  pointer-events: auto;
 }
 
 .dropdown-menu li {
@@ -113,24 +101,48 @@
   font-size: 0.9rem;
   color: #333;
   cursor: pointer;
-  transition: background-color 0.2s ease;
 }
 
 .dropdown-menu li:hover {
   background-color: #f0f0f0;
 }
 
-/* Logout Button */
-.logout-button {
-  background: none;
+/* Sign-In and Get Started Buttons */
+.signin-button,
+.get-started-button {
+  background-color: #2171ec;
+  color: white;
+  font-family: "Roboto", Arial, sans-serif;
+  font-size: 16px;
+  font-weight: bold;
+  height: 40px;
+  padding: 0 16px;
   border: none;
-  color: #880000;
+  border-radius: 20px; /* Consistent pill shape */
   cursor: pointer;
-  font-size: 0.9rem;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 120px; /* Ensures buttons have a good width */
 }
 
-.logout-button:hover {
-  text-decoration: underline;
+/* Hover Effects */
+.signin-button:hover,
+.get-started-button:hover {
+  background-color: #185abc;
+}
+
+.signin-button:active,
+.get-started-button:active {
+  transform: scale(0.95);
+}
+
+/* Disabled State */
+.signin-button:disabled {
+  background-color: #8e918f;
+  color: #cfcfcf;
+  cursor: not-allowed;
 }
 
 /* Loading Spinner */
@@ -155,62 +167,9 @@
   }
 }
 
-/* Google Sign-In Button Styles */
-.gsi-material-button {
-  background-color: #131314;
-  border: 1px solid #747775;
-  border-radius: 20px;
-  box-sizing: border-box;
-  color: #e3e3e3;
-  cursor: pointer;
-  font-family: "Roboto", Arial, sans-serif;
-  font-size: 14px;
-  height: 40px;
-  padding: 0 12px;
-  text-align: center;
-  transition: background-color 0.2s, border-color 0.2s, box-shadow 0.2s;
-  white-space: nowrap;
-  width: auto;
-  min-width: min-content;
-}
-
-.gsi-material-button:disabled {
-  background-color: #13131461;
-  border-color: #8e918f1f;
-  cursor: default;
-}
-
-.gsi-material-button:hover {
-  box-shadow: 0 1px 2px rgba(60, 64, 67, 0.3), 0 1px 3px rgba(60, 64, 67, 0.15);
-}
-
-/* Get Started Button */
-.get-started-button {
-  background-color: #2171ec;
-  color: white;
-  font-family: "Roboto", Arial, sans-serif;
-  font-size: 14px;
-  font-weight: bold;
-  height: 40px;
-  padding: 0 16px;
-  border: none;
-  border-radius: 20px;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-.get-started-button:hover {
-  background-color: #185abc;
-}
-
 /* Button Wrapper */
 .button-wrapper {
   display: flex;
   gap: 10px;
   align-items: center;
-}
-
-/* Aesthetic Enhancement: Reduce transparency on scroll */
-.header.scrolled {
-  background-color: rgba(0, 0, 0, 0.85); /* Add a semi-transparent background */
 }
