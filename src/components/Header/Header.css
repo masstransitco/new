@@ -4,20 +4,11 @@
   justify-content: space-between;
   align-items: center;
   min-height: 8%;
-  padding: 8px 8px;
-
-  /* Task 1: Pin the header to the top and set background to transparent */
+  padding: 5px 5px;
   top: 0;
   left: 0;
   width: 100%;
-  background-color: transparent;
-
-  /* Task 2: Remove the bottom border */
-  /* Removed the following line:
-  border-bottom: 1px solid #ccc;
-  */
-
-  z-index: 1000; /* Ensure the header stays above other elements */
+  z-index: 1000;
 }
 
 /* Header Content Wrapper */
@@ -32,10 +23,11 @@
 .logo {
   display: flex;
   align-items: center;
+  left: 8px;
 }
 
 .logo-image {
-  max-height: 40px; /* Task 3: Decreased size by 20% from 50px to 40px */
+  max-height: 30px; /* Task 3: Decreased size by 20% from 50px to 40px */
   object-fit: contain; /* Ensures proper scaling without distortion */
 }
 
@@ -44,6 +36,7 @@
   display: flex;
   align-items: center;
   position: relative;
+  right: 8px;
 }
 
 .user-info {
