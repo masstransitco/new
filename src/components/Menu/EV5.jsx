@@ -54,7 +54,7 @@ GLBViewer.displayName = "GLBViewer";
 const GroundPlaneComponent = () => (
   <mesh rotation-x={-Math.PI / 2} receiveShadow>
     <circleGeometry args={[10, 64]} />
-    <meshStandardMaterial color="#e7e8ec" />
+    <meshStandardMaterial color="#adadad" />
   </mesh>
 );
 
