@@ -2,13 +2,14 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh; /* Full viewport height */
+  width: 100%; /* Full viewport height */
+  height: 3.5px;
   background-color: #adadad; /* Background color of the loader container */
 }
 
 .pulsating-strip {
-  width: 100px; /* Width of the loading strip */
-  height: 3.5px; /* Height of the loading strip */
+  width: 99%; /* Width of the loading strip */
+  height: 3.2px; /* Height of the loading strip */
   background-color: #2171ec; /* Base color of the strip */
 
   border-radius: 1.5px; /* Rounded corners with a radius of 1.5px */
