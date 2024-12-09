@@ -13,7 +13,7 @@ main {
   flex-direction: column; /* Stack children vertically */
   height: 100%;
   overflow-y: auto; /* Allow scrolling for overflow content */
-  padding: 1rem;
+  padding: 1px;
   box-sizing: border-box;
 }
 
