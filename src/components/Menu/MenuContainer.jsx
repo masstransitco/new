@@ -20,7 +20,7 @@ const MenuContainer = () => {
       style={{
         display: "flex",
         flexDirection: "row",
-        justifyContent: "flex-start",
+        justifyContent: "center", // Center the items
         alignItems: "center",
         gap: "15px",
         overflowX: "auto",
@@ -38,8 +38,7 @@ const MenuContainer = () => {
               textAlign: "center",
               flex: "0 0 auto",
               cursor: "pointer",
-              // Set a min width to keep the items clearly visible
-              minWidth: "80px",
+              minWidth: "80px", // Set a min width to keep the items clearly visible
             }}
             onClick={() => setSelectedCar(name)}
             animate={{
