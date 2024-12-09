@@ -5,6 +5,7 @@ import MapContainer from "./components/Map/MapContainer.jsx";
 import MotionMenu from "./components/Menu/MotionMenu.jsx";
 import PulseStrip from "./components/PulseStrip/PulseStrip.jsx";
 import Footer from "./components/Footer/Footer.jsx";
+import { Analytics } from "@vercel/analytics/react";
 import "./App.css";
 
 function App() {
@@ -16,6 +17,7 @@ function App() {
 
   return (
     <div className="App">
+      <Analytics />
       <Header user={user} />
       <main className="main-content" style={{ paddingBottom: "80px" }}>
         {/* Ensure content doesn’t overlap with the MotionMenu */}
