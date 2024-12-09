@@ -1,8 +1,10 @@
 import globals from "globals";
 import pluginReact from "eslint-plugin-react";
 
-/** @type {import('eslint').Linter.Config[]} */
+/** @type {import('eslint').Linter.FlatConfig[]} */
 export default [
+  // Start with react recommended configs
+  ...pluginReact.configs.flat.recommended,
   {
     files: ["**/*.{js,mjs,cjs,jsx}"],
     languageOptions: {
@@ -11,22 +13,35 @@ export default [
         AudioWorkletGlobalScope: true,
       },
       parserOptions: {
-        ecmaVersion: 2020, // Specify ECMAScript version
-        sourceType: "module", // Allow use of imports
+        ecmaVersion: 2020,
+        sourceType: "module",
         ecmaFeatures: {
-          jsx: true, // Enable JSX support
+          jsx: true,
         },
       },
     },
     settings: {
       react: {
-        version: "detect", // Automatically detect the React version
+        version: "detect",
       },
     },
     rules: {
-      "no-console": "off", // Disable no-console rule
-      "react/no-unknown-property": ["error", { ignore: ["rotation-x", "receiveShadow", "args", "object", "position", "intensity", "castShadow"] }], // Allow specific properties for @react-three/fiber
+      "no-console": "off",
+      // Allow certain Three.js props in React Three Fiber components
+      "react/no-unknown-property": [
+        "error",
+        {
+          ignore: [
+            "rotation-x",
+            "receiveShadow",
+            "args",
+            "object",
+            "position",
+            "intensity",
+            "castShadow"
+          ],
+        },
+      ],
     },
   },
-  pluginReact.configs.flat.recommended,
 ];
