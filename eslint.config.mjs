@@ -3,8 +3,6 @@ import pluginReact from "eslint-plugin-react";
 
 /** @type {import('eslint').Linter.FlatConfig[]} */
 export default [
-  // Start with react recommended configs
-  ...pluginReact.configs.flat.recommended,
   {
     files: ["**/*.{js,mjs,cjs,jsx}"],
     languageOptions: {
@@ -20,14 +18,20 @@ export default [
         },
       },
     },
+    // Register the plugin here
+    plugins: {
+      react: pluginReact,
+    },
     settings: {
       react: {
         version: "detect",
       },
     },
     rules: {
-      "no-console": "off",
-      // Allow certain Three.js props in React Three Fiber components
+      // Now that 'react' is registered in plugins, these rules can be used:
+      "react/jsx-uses-react": "error",
+      "react/jsx-uses-vars": "error",
+      "react/react-in-jsx-scope": "off",
       "react/no-unknown-property": [
         "error",
         {
@@ -38,10 +42,15 @@ export default [
             "object",
             "position",
             "intensity",
-            "castShadow"
+            "castShadow",
           ],
         },
       ],
+      "react/no-unused-prop-types": "warn",
+      "react/no-array-index-key": "warn",
+
+      // General rules
+      "no-console": "off",
     },
   },
 ];
