@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import EV5 from "./EV5";
 import EV7 from "./EV7";
@@ -12,15 +12,25 @@ const cars = [
   { name: "Van", Component: Van },
 ];
 
-const MenuContainer = () => {
+const MenuContainer = ({ onSelectCar }) => {
   const [selectedCar, setSelectedCar] = useState("EV5"); // Default selected
+
+  const handleSelectCar = (name) => {
+    setSelectedCar(name);
+    onSelectCar(name); // Trigger the event
+  };
+
+  useEffect(() => {
+    // Set default selection on mount
+    onSelectCar(selectedCar);
+  }, [onSelectCar, selectedCar]);
 
   return (
     <div
       style={{
         display: "flex",
         flexDirection: "row",
-        justifyContent: "center", // Center the items
+        justifyContent: "center",
         alignItems: "center",
         gap: "15px",
         overflowX: "auto",
@@ -38,14 +48,11 @@ const MenuContainer = () => {
               textAlign: "center",
               flex: "0 0 auto",
               cursor: "pointer",
-              minWidth: "80px", // Set a min width to keep the items clearly visible
+              minWidth: "80px",
+              border: "none", // Remove border
+              boxShadow: "none", // Remove shadow
             }}
-            onClick={() => setSelectedCar(name)}
-            animate={{
-              scale: isSelected ? 1.1 : 1,
-              boxShadow: isSelected ? "0 0 10px rgba(255,255,255,0.6)" : "none",
-              transition: { type: "spring", stiffness: 200, damping: 15 },
-            }}
+            onClick={() => handleSelectCar(name)}
           >
             <Component />
             <p

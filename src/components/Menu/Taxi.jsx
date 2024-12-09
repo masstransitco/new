@@ -1,4 +1,3 @@
-/* eslint-disable react/no-unknown-property */
 import React, { Suspense, useMemo } from "react";
 import { Canvas } from "@react-three/fiber";
 import {
@@ -10,66 +9,32 @@ import {
 } from "@react-three/drei";
 import PropTypes from "prop-types";
 
-class ErrorBoundary extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = { hasError: false };
-  }
-  static getDerivedStateFromError() {
-    return { hasError: true };
-  }
-  componentDidCatch(error, info) {
-    console.error("Error loading 3D model:", error, info);
-  }
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div style={{ color: "red", fontWeight: "bold", padding: "10px" }}>
-          Failed to load the 3D model.
-        </div>
-      );
-    }
-    return this.props.children;
-  }
-}
-
-ErrorBoundary.propTypes = {
-  children: PropTypes.node,
-};
-
 const GLBViewerComponent = ({ modelPath }) => {
   const { scene } = useGLTF(modelPath, true);
-  return (
-    <primitive object={scene} scale={[10, 10, 10]} position={[0, 1.5, 0]} />
-  );
+  return <primitive object={scene} scale={[1, 1, 1]} position={[0, 1.5, 0]} />;
 };
 
 GLBViewerComponent.propTypes = {
   modelPath: PropTypes.string.isRequired,
 };
 
-const GLBViewer = React.memo(GLBViewerComponent);
-GLBViewer.displayName = "GLBViewer";
-
-const GroundPlaneComponent = () => (
+const GroundPlaneComponent = ({ isSelected }) => (
   <mesh rotation-x={-Math.PI / 2} receiveShadow>
     <circleGeometry args={[10, 64]} />
-    <meshStandardMaterial color="#e7e8ec" />
+    <meshStandardMaterial color={isSelected ? "#2171EC" : "#adadad"} />
+    <shadowMaterial opacity={0.5} /> {/* Add shadow effect */}
   </mesh>
 );
 
-const GroundPlane = React.memo(GroundPlaneComponent);
-GroundPlane.displayName = "GroundPlane";
-
-const Taxi = () => {
+const Taxi = ({ isSelected }) => {
   const cameraSettings = useMemo(
     () => ({
       position: [20, 10, 25],
-      fov: 30,
+      fov: isSelected ? 30 : 45,
       near: 0.5,
       far: 100,
     }),
-    []
+    [isSelected]
   );
 
   const lighting = useMemo(
@@ -84,25 +49,25 @@ const Taxi = () => {
 
   const orbitControlsSettings = useMemo(
     () => ({
-      autoRotate: true,
-      autoRotateSpeed: 1.5,
+      autoRotate: isSelected,
+      autoRotateSpeed: isSelected ? 1.5 : 0,
       enableZoom: false,
       minDistance: 5,
       maxDistance: 50,
       enablePan: false,
       maxPolarAngle: Math.PI / 2,
     }),
-    []
+    [isSelected]
   );
 
   return (
     <div
       style={{
         width: "80px",
-        height: "10vh", // smaller height for bottom bar
+        height: "10vh",
         overflow: "hidden",
         borderRadius: "8px",
-        boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
+        boxShadow: "none", // Remove shadow
       }}
     >
       <Canvas
@@ -110,34 +75,24 @@ const Taxi = () => {
         camera={cameraSettings}
         style={{ width: "100%", height: "100%" }}
       >
-        <Suspense
-          fallback={
-            <Html center>
-              <div
-                style={{
-                  background: "#fff",
-                  padding: "10px 20px",
-                  borderRadius: "5px",
-                  boxShadow: "0 2px 10px rgba(0,0,0,0.3)",
-                }}
-              >
-                Loading...
-              </div>
-            </Html>
-          }
-        >
-          <ErrorBoundary>
-            {lighting}
-            <OrbitControls {...orbitControlsSettings} />
-            <GroundPlane />
-            <Environment preset="studio" />
-            <Preload all />
-            <GLBViewer modelPath={process.env.PUBLIC_URL + "/Taxi.glb"} />
-          </ErrorBoundary>
+        <Suspense fallback={<Html center>Loading...</Html>}>
+          {lighting}
+          <OrbitControls {...orbitControlsSettings} />
+          <GroundPlaneComponent isSelected={isSelected} />{" "}
+          {/* Pass selection state */}
+          <Environment preset="studio" />
+          <Preload all />
+          <GLBViewerComponent
+            modelPath={process.env.PUBLIC_URL + "/Taxi.glb"}
+          />
         </Suspense>
       </Canvas>
     </div>
   );
+};
+
+EV5.propTypes = {
+  isSelected: PropTypes.bool.isRequired, // Ensure isSelected prop is required
 };
 
 export default Taxi;
