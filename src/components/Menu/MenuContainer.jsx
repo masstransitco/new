@@ -13,11 +13,11 @@ const cars = [
 ];
 
 const MenuContainer = memo(({ onSelectCar }) => {
-  const [selectedCar, setSelectedCar] = useState("EV5"); // Default selected
+  const [selectedCar, setSelectedCar] = useState("EV5");
 
   const handleSelectCar = (name) => {
     setSelectedCar(name);
-    onSelectCar(name); // Trigger the event
+    onSelectCar(name);
   };
 
   useEffect(() => {
@@ -49,12 +49,12 @@ const MenuContainer = memo(({ onSelectCar }) => {
               flex: "0 0 auto",
               cursor: "pointer",
               minWidth: "80px",
-              border: "none", // Remove border
-              boxShadow: "none", // Remove shadow
+              border: "none",
+              boxShadow: "none",
             }}
             onClick={() => handleSelectCar(name)}
-            whileHover={{ scale: 1.05 }} // Subtle hover scale for delight
-            whileTap={{ scale: 0.95 }} // Slight tap feedback
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             transition={{ type: "spring", stiffness: 200, damping: 15 }}
           >
             <Component isSelected={isSelected} />
@@ -73,5 +73,6 @@ const MenuContainer = memo(({ onSelectCar }) => {
     </div>
   );
 });
+MenuContainer.displayName = "MenuContainer";
 
 export default MenuContainer;

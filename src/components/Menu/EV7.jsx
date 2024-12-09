@@ -9,30 +9,45 @@ import {
 } from "@react-three/drei";
 import PropTypes from "prop-types";
 
-// Extract static lighting since it does not depend on props
+// Lighting component
 const Lighting = () => (
   <>
+    {/* eslint-disable-next-line react/no-unknown-property */}
     <ambientLight intensity={0.5} />
+    {/* eslint-disable-next-line react/no-unknown-property */}
     <directionalLight position={[10, 10, 5]} intensity={1} castShadow />
   </>
 );
+Lighting.displayName = "Lighting";
 
 const GLBViewerComponent = memo(({ modelPath }) => {
   const { scene } = useGLTF(modelPath, true);
-  return <primitive object={scene} scale={[1, 1, 1]} position={[0, 1.5, 0]} />;
+  return (
+    // eslint-disable-next-line react/no-unknown-property
+    <primitive object={scene} scale={[1, 1, 1]} position={[0, 1.5, 0]} />
+  );
 });
+GLBViewerComponent.displayName = "GLBViewerComponent";
 
 GLBViewerComponent.propTypes = {
   modelPath: PropTypes.string.isRequired,
 };
 
 const GroundPlaneComponent = memo(({ isSelected }) => (
-  <mesh rotation-x={-Math.PI / 2} receiveShadow>
+  <mesh
+    // Fix rotation-x error
+    rotation={[-Math.PI / 2, 0, 0]}
+    // eslint-disable-next-line react/no-unknown-property
+    receiveShadow
+  >
+    {/* eslint-disable-next-line react/no-unknown-property */}
     <circleGeometry args={[10, 64]} />
     <meshStandardMaterial color={isSelected ? "#2171EC" : "#adadad"} />
+    {/* eslint-disable-next-line react/no-unknown-property */}
     <shadowMaterial opacity={0.5} />
   </mesh>
 ));
+GroundPlaneComponent.displayName = "GroundPlaneComponent";
 
 GroundPlaneComponent.propTypes = {
   isSelected: PropTypes.bool.isRequired,
@@ -69,10 +84,11 @@ const EV7 = memo(({ isSelected }) => {
         height: "10vh",
         overflow: "hidden",
         borderRadius: "8px",
-        boxShadow: "none", // Remove shadow
+        boxShadow: "none",
       }}
     >
       <Canvas
+        // eslint-disable-next-line react/no-unknown-property
         shadows
         camera={cameraSettings}
         style={{ width: "100%", height: "100%" }}
@@ -89,6 +105,7 @@ const EV7 = memo(({ isSelected }) => {
     </div>
   );
 });
+EV7.displayName = "EV7";
 
 EV7.propTypes = {
   isSelected: PropTypes.bool.isRequired,
