@@ -30,12 +30,12 @@
     opacity: 1;
   }
   10% {
-    transform: scale(1.3); /* Quick scale up for pulse */
+    transform: scale(1.08); /* Quick scale up for pulse */
     background-color: #4a9fe8; /* Lighter shade */
     opacity: 1;
   }
   20% {
-    transform: scale(1.2); /* Slightly scale down */
+    transform: scale(1.05); /* Slightly scale down */
     background-color: #4a9fe8; /* Maintain lighter shade */
     opacity: 0.9;
   }
@@ -45,12 +45,12 @@
     opacity: 0.8;
   }
   60% {
-    transform: scale(1); /* Maintain original size briefly */
+    transform: scale(1.01); /* Maintain original size briefly */
     background-color: #2171ec; /* Maintain original color */
     opacity: 0.7;
   }
   80% {
-    transform: scale(1); /* Maintain original size briefly */
+    transform: scale(1.03); /* Maintain original size briefly */
     background-color: #2171ec; /* Maintain original color */
     opacity: 0.8;
   }
