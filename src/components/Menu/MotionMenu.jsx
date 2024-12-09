@@ -11,7 +11,7 @@ const MotionMenu = () => {
         bottom: 0,
         left: 0,
         right: 0,
-        bgcolor: "background.paper",
+        bgcolor: "#adadad",
         p: "10px 15px",
         borderTop: "1px solid #ddd",
         display: "flex",
