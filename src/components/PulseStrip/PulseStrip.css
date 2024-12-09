@@ -25,37 +25,37 @@
 
 @keyframes heartbeat {
   0% {
-    transform: scale(1);
+    transform: scale(0.955);
     background-color: #2171ec; /* Initial color */
     opacity: 1;
   }
   10% {
-    transform: scale(1.08); /* Quick scale up for pulse */
+    transform: scale(1); /* Quick scale up for pulse */
     background-color: #4a9fe8; /* Lighter shade */
     opacity: 1;
   }
   20% {
-    transform: scale(1.05); /* Slightly scale down */
+    transform: scale(0.985); /* Slightly scale down */
     background-color: #4a9fe8; /* Maintain lighter shade */
     opacity: 0.9;
   }
   40% {
-    transform: scale(1); /* Return to original size quickly */
+    transform: scale(0.958); /* Return to original size quickly */
     background-color: #2171ec; /* Return to original color */
     opacity: 0.8;
   }
   60% {
-    transform: scale(1.01); /* Maintain original size briefly */
+    transform: scale(0.956); /* Maintain original size briefly */
     background-color: #2171ec; /* Maintain original color */
     opacity: 0.7;
   }
   80% {
-    transform: scale(1.03); /* Maintain original size briefly */
+    transform: scale(0.955); /* Maintain original size briefly */
     background-color: #2171ec; /* Maintain original color */
     opacity: 0.8;
   }
   100% {
-    transform: scale(1); /* Return to original size */
+    transform: scale(0.956); /* Return to original size */
     background-color: #2171ec; /* Return to original color */
     opacity: 1;
   }
