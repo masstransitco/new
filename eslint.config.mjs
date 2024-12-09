@@ -11,8 +11,10 @@ export default [
         AudioWorkletGlobalScope: true,
       },
       parserOptions: {
+        ecmaVersion: 2020, // Specify ECMAScript version
+        sourceType: "module", // Allow use of imports
         ecmaFeatures: {
-          jsx: true,
+          jsx: true, // Enable JSX support
         },
       },
     },
@@ -23,6 +25,7 @@ export default [
     },
     rules: {
       "no-console": "off", // Disable no-console rule
+      "react/no-unknown-property": ["error", { ignore: ["rotation-x", "receiveShadow", "args", "object", "position", "intensity", "castShadow"] }], // Allow specific properties for @react-three/fiber
     },
   },
   pluginReact.configs.flat.recommended,
