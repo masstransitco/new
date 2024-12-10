@@ -11,15 +11,15 @@ const MotionMenu = () => {
         bottom: 0,
         left: 0,
         right: 0,
-        bgcolor: "#adadad", // Set background color to #adadad
+        bgcolor: "background.paper",
         p: "10px 15px",
         borderTop: "1px solid #ddd",
         display: "flex",
-        justifyContent: "space-between", // Distributes space evenly between items
+        justifyContent: "center",
         alignItems: "center",
-        height: "18vh", // Occupy 20% of viewport height
+        height: "20vh",
         boxSizing: "border-box",
-        px: 2, // Add horizontal padding for equal space from left and right
+        borderRadius: "8px 8px 0 0", // 8px corner radius on top
       }}
     >
       <MenuContainer />

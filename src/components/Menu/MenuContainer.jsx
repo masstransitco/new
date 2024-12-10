@@ -58,12 +58,13 @@ const MenuContainer = memo(({ onSelectCar = () => {} }) => {
             whileTap={{ scale: 0.95 }}
             transition={{ type: "spring", stiffness: 200, damping: 15 }}
           >
+            {/* Pass isSelected to change model highlight */}
             <Component isSelected={isSelected} />
             <p
               style={{
                 margin: 0,
                 fontSize: "0.85rem",
-                color: isSelected ? "#fff" : "#ccc",
+                color: "#ccc", // No selection highlight on text
               }}
             >
               {name}

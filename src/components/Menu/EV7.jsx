@@ -1,56 +1,11 @@
 import React, { Suspense, useMemo, memo } from "react";
 import { Canvas } from "@react-three/fiber";
-import {
-  OrbitControls,
-  useGLTF,
-  Preload,
-  Html,
-  Environment,
-} from "@react-three/drei";
+import { OrbitControls, Preload, Html, Environment } from "@react-three/drei";
 import PropTypes from "prop-types";
 
-const Lighting = () => (
-  <>
-    {/* eslint-disable-next-line react/no-unknown-property */}
-    <ambientLight intensity={0.5} />
-    {/* eslint-disable-next-line react/no-unknown-property */}
-    <directionalLight position={[10, 10, 5]} intensity={1} castShadow />
-  </>
-);
-Lighting.displayName = "Lighting";
-
-const GLBViewerComponent = memo(({ modelPath }) => {
-  const { scene } = useGLTF(modelPath, true);
-  return (
-    // eslint-disable-next-line react/no-unknown-property
-    <primitive object={scene} scale={[1, 1, 1]} position={[0, 1.5, 0]} />
-  );
-});
-GLBViewerComponent.displayName = "GLBViewerComponent";
-
-GLBViewerComponent.propTypes = {
-  modelPath: PropTypes.string.isRequired,
-};
-
-const GroundPlaneComponent = memo(({ isSelected }) => (
-  <mesh
-    // eslint-disable-next-line react/no-unknown-property
-    rotation={[-Math.PI / 2, 0, 0]}
-    // eslint-disable-next-line react/no-unknown-property
-    receiveShadow
-  >
-    {/* eslint-disable-next-line react/no-unknown-property */}
-    <circleGeometry args={[10, 64]} />
-    <meshStandardMaterial color={isSelected ? "#2171EC" : "#adadad"} />
-    {/* eslint-disable-next-line react/no-unknown-property */}
-    <shadowMaterial opacity={0.5} />
-  </mesh>
-));
-GroundPlaneComponent.displayName = "GroundPlaneComponent";
-
-GroundPlaneComponent.propTypes = {
-  isSelected: PropTypes.bool.isRequired,
-};
+import Lighting from "./Lighting";
+import GroundPlaneComponent from "./GroundPlaneComponent";
+import GLBViewerComponent from "./GLBViewerComponent";
 
 const EV7 = memo(({ isSelected }) => {
   const cameraSettings = useMemo(
@@ -76,6 +31,8 @@ const EV7 = memo(({ isSelected }) => {
     [isSelected]
   );
 
+  const modelScale = isSelected ? [3.2, 3.2, 3.2] : [3, 3, 3];
+
   return (
     <div
       style={{
@@ -87,7 +44,6 @@ const EV7 = memo(({ isSelected }) => {
       }}
     >
       <Canvas
-        // eslint-disable-next-line react/no-unknown-property
         shadows
         camera={cameraSettings}
         style={{ width: "100%", height: "100%" }}
@@ -100,15 +56,15 @@ const EV7 = memo(({ isSelected }) => {
           <Preload all />
           <GLBViewerComponent
             modelPath={process.env.PUBLIC_URL + "/EV7.glb"}
-            scale={[3, 3, 3]}
+            scale={modelScale}
           />
         </Suspense>
       </Canvas>
     </div>
   );
 });
-EV7.displayName = "EV7";
 
+EV7.displayName = "EV7";
 EV7.propTypes = {
   isSelected: PropTypes.bool.isRequired,
 };
