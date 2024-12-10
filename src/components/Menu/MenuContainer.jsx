@@ -1,5 +1,6 @@
 import React, { useState, useEffect, memo } from "react";
 import { motion } from "framer-motion";
+import PropTypes from "prop-types";
 import EV5 from "./EV5";
 import EV7 from "./EV7";
 import Taxi from "./Taxi";
@@ -12,7 +13,7 @@ const cars = [
   { name: "Van", Component: Van },
 ];
 
-const MenuContainer = memo(({ onSelectCar }) => {
+const MenuContainer = memo(({ onSelectCar = () => {} }) => {
   const [selectedCar, setSelectedCar] = useState("EV5");
 
   const handleSelectCar = (name) => {
@@ -73,6 +74,11 @@ const MenuContainer = memo(({ onSelectCar }) => {
     </div>
   );
 });
+
 MenuContainer.displayName = "MenuContainer";
+
+MenuContainer.propTypes = {
+  onSelectCar: PropTypes.func,
+};
 
 export default MenuContainer;
