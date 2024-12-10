@@ -9,21 +9,17 @@ import React, {
 import {
   GoogleMap,
   useJsApiLoader,
-  Marker,
-  InfoWindow,
   DirectionsRenderer,
   Circle,
   OverlayView,
 } from "@react-google-maps/api";
 import { FaLocationArrow } from "react-icons/fa";
 
-// Define libraries outside the component
-const libraries = ["geometry"];
+// Use a vector map with a known vector mapId
+const mapId = "94527c02bbb6243"; // Ensure this is a valid vector map ID from your Google Cloud project
 
-const containerStyle = {
-  width: "100%",
-  height: "100%", // The map itself fills its parent container
-};
+const libraries = ["geometry"];
+const containerStyle = { width: "100%", height: "100%" };
 
 const CITY_VIEW = {
   name: "CityView",
@@ -31,12 +27,22 @@ const CITY_VIEW = {
   zoom: 11,
   tilt: 45,
   heading: 0,
+  title: "Hong Kong",
 };
 
 const DISTRICT_VIEW_ZOOM = 12;
 const STATION_VIEW_ZOOM = 17;
-const ME_VIEW_ZOOM = 17;
+const ME_VIEW_ZOOM = 14;
+const ME_VIEW_TILT = 45;
 const CIRCLE_DISTANCES = [500, 1000]; // meters
+
+function getViewTitle(view) {
+  if (view.name === "CityView") return "Hong Kong";
+  if (view.name === "MeView") return "Near me";
+  if (view.name === "DistrictView") return view.districtName || "District";
+  if (view.name === "StationView") return view.stationName || "Unnamed Station";
+  return "";
+}
 
 const MapContainer = () => {
   const [map, setMap] = useState(null);
@@ -49,9 +55,11 @@ const MapContainer = () => {
   const currentView = viewHistory[viewHistory.length - 1];
   const mapRef = useRef(null);
 
+  // Specify libraries and optionally a version that supports moveCamera
   const { isLoaded } = useJsApiLoader({
-    googleMapsApiKey: "AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours",
+    googleMapsApiKey: "YOUR_API_KEY_HERE",
     libraries,
+    // version: 'beta' // Optional: You can try specifying version if needed
   });
 
   useEffect(() => {
@@ -67,7 +75,9 @@ const MapContainer = () => {
             lat: feature.geometry.coordinates[1],
             lng: feature.geometry.coordinates[0],
           },
-          ...feature.properties,
+          District: feature.properties.District,
+          Place: feature.properties.Place,
+          Address: feature.properties.Address,
         }));
         setStations(features);
       })
@@ -78,29 +88,52 @@ const MapContainer = () => {
 
   const navigateToView = useCallback(
     (view) => {
+      if (!map) return;
+      const cameraOptions = {
+        center: view.center,
+        zoom: view.zoom,
+        tilt: view.tilt !== undefined ? view.tilt : currentView.tilt || 45,
+        heading:
+          view.heading !== undefined ? view.heading : currentView.heading || 0,
+      };
       setViewHistory((prevHistory) => [...prevHistory, view]);
-      if (map) {
+
+      // Use moveCamera if available
+      if (typeof map.moveCamera === "function") {
+        map.moveCamera(cameraOptions);
+      } else {
+        // Fallback if moveCamera not supported
         map.panTo(view.center);
         map.setZoom(view.zoom);
         if (view.tilt !== undefined) map.setTilt(view.tilt);
         if (view.heading !== undefined) map.setHeading(view.heading);
       }
     },
-    [map]
+    [map, currentView]
   );
 
   const goBack = useCallback(() => {
-    if (viewHistory.length > 1) {
-      const newHistory = viewHistory.slice(0, -1);
-      setViewHistory(newHistory);
-      const previousView = newHistory[newHistory.length - 1];
-      if (map) {
-        map.panTo(previousView.center);
-        map.setZoom(previousView.zoom);
-        if (previousView.tilt !== undefined) map.setTilt(previousView.tilt);
-        if (previousView.heading !== undefined)
-          map.setHeading(previousView.heading);
-      }
+    if (viewHistory.length <= 1) return;
+    const newHistory = viewHistory.slice(0, -1);
+    setViewHistory(newHistory);
+    const previousView = newHistory[newHistory.length - 1];
+    if (!map) return;
+
+    const cameraOptions = {
+      center: previousView.center,
+      zoom: previousView.zoom,
+      tilt: previousView.tilt !== undefined ? previousView.tilt : 45,
+      heading: previousView.heading !== undefined ? previousView.heading : 0,
+    };
+
+    if (typeof map.moveCamera === "function") {
+      map.moveCamera(cameraOptions);
+    } else {
+      map.panTo(previousView.center);
+      map.setZoom(previousView.zoom);
+      if (previousView.tilt !== undefined) map.setTilt(previousView.tilt);
+      if (previousView.heading !== undefined)
+        map.setHeading(previousView.heading);
     }
   }, [map, viewHistory]);
 
@@ -130,29 +163,27 @@ const MapContainer = () => {
     });
   }, [stationsByDistrict]);
 
-  const highlightIcon = useMemo(() => {
-    if (!isLoaded || !google?.maps?.SymbolPath) return null;
-    return {
-      path: google.maps.SymbolPath.CIRCLE,
-      scale: 10,
-      fillColor: "#2171ec",
-      fillOpacity: 1,
-      strokeWeight: 2,
-      strokeColor: "#ffffff",
-    };
-  }, [isLoaded]);
+  const computeDistance = useCallback(
+    (pos) => {
+      if (!userLocation || !google?.maps?.geometry?.spherical) return Infinity;
+      const userLatLng = new google.maps.LatLng(
+        userLocation.lat,
+        userLocation.lng
+      );
+      const stationLatLng = new google.maps.LatLng(pos.lat, pos.lng);
+      return google.maps.geometry.spherical.computeDistanceBetween(
+        userLatLng,
+        stationLatLng
+      );
+    },
+    [userLocation]
+  );
 
-  const defaultStationIcon = useMemo(() => {
-    if (!isLoaded || !google?.maps?.SymbolPath) return null;
-    return {
-      path: google.maps.SymbolPath.CIRCLE,
-      scale: 8,
-      fillColor: "#ffffff",
-      fillOpacity: 1,
-      strokeWeight: 2,
-      strokeColor: "#000000",
-    };
-  }, [isLoaded]);
+  const inMeView = currentView.name === "MeView";
+  const filteredStations = useMemo(() => {
+    if (!inMeView || !userLocation) return stations;
+    return stations.filter((st) => computeDistance(st.position) <= 1000);
+  }, [inMeView, userLocation, stations, computeDistance]);
 
   const handleMarkerClick = useCallback(
     (station) => {
@@ -160,51 +191,36 @@ const MapContainer = () => {
         name: "StationView",
         center: station.position,
         zoom: STATION_VIEW_ZOOM,
+        stationName: station.Place || "Unnamed Station",
       };
       navigateToView(stationView);
       setSelectedStation(station);
       setShowCircles(false);
 
-      if (userLocation && isLoaded && google?.maps?.DirectionsService) {
-        const directionsService = new google.maps.DirectionsService();
-        directionsService.route(
-          {
-            origin: userLocation,
-            destination: station.position,
-            travelMode: "WALKING",
-          },
-          (result, status) => {
-            if (status === "OK") {
-              setDirections(result);
-            } else {
-              console.error("Directions request failed:", status);
+      if (userLocation && google?.maps?.DirectionsService) {
+        if (computeDistance(station.position) <= 1000) {
+          const directionsService = new google.maps.DirectionsService();
+          directionsService.route(
+            {
+              origin: userLocation,
+              destination: station.position,
+              travelMode: "WALKING",
+            },
+            (result, status) => {
+              if (status === "OK") {
+                setDirections(result);
+              } else {
+                console.error("Directions request failed:", status);
+              }
             }
-          }
-        );
+          );
+        } else {
+          setDirections(null);
+        }
       }
     },
-    [userLocation, isLoaded, navigateToView]
+    [userLocation, navigateToView, computeDistance]
   );
-
-  const stationMarkers = useMemo(() => {
-    return stations.map((station) => {
-      const isSelected = selectedStation && selectedStation.id === station.id;
-      return (
-        <Marker
-          key={station.id}
-          position={station.position}
-          onClick={() => handleMarkerClick(station)}
-          icon={isSelected ? highlightIcon : defaultStationIcon}
-        />
-      );
-    });
-  }, [
-    stations,
-    selectedStation,
-    handleMarkerClick,
-    highlightIcon,
-    defaultStationIcon,
-  ]);
 
   const handleMapClick = useCallback(() => {
     setSelectedStation(null);
@@ -216,6 +232,7 @@ const MapContainer = () => {
         name: "MeView",
         center: userLocation,
         zoom: ME_VIEW_ZOOM,
+        tilt: ME_VIEW_TILT,
       };
       navigateToView(meView);
       return;
@@ -242,15 +259,14 @@ const MapContainer = () => {
           };
           setUserLocation(userPos);
 
-          const currentZoom = map.getZoom() || CITY_VIEW.zoom;
-          map.setZoom(currentZoom - 2);
-          map.panTo(userPos);
-
+          const meView = {
+            name: "MeView",
+            center: userPos,
+            zoom: ME_VIEW_ZOOM,
+            tilt: ME_VIEW_TILT,
+          };
+          navigateToView(meView);
           setShowCircles(true);
-          setViewHistory((prev) => [
-            ...prev,
-            { name: "MeView", center: userPos, zoom: currentZoom - 2 },
-          ]);
         },
         (error) => {
           console.error("Error fetching user location:", error);
@@ -262,7 +278,7 @@ const MapContainer = () => {
     } else {
       alert("Geolocation is not supported by your browser.");
     }
-  }, [map]);
+  }, [map, navigateToView]);
 
   const onLoadMap = useCallback((mapInstance) => {
     mapRef.current = mapInstance;
@@ -277,22 +293,87 @@ const MapContainer = () => {
     };
   }, []);
 
-  const districtMarkers = useMemo(() => {
+  const districtOverlays = useMemo(() => {
     if (currentView.name !== "CityView") return null;
-    return districtClusters.map((cluster) => (
-      <Marker
-        key={cluster.district}
-        position={cluster.position}
-        onClick={() => {
-          navigateToView({
-            name: "DistrictView",
-            center: cluster.position,
-            zoom: DISTRICT_VIEW_ZOOM,
-          });
-        }}
-      />
-    ));
+    return districtClusters.map((cluster) => {
+      const handleDistrictClick = () => {
+        const districtView = {
+          name: "DistrictView",
+          center: cluster.position,
+          zoom: DISTRICT_VIEW_ZOOM,
+          districtName: cluster.district,
+        };
+        navigateToView(districtView);
+      };
+
+      return (
+        <OverlayView
+          key={cluster.district}
+          position={cluster.position}
+          mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
+        >
+          <div
+            onClick={handleDistrictClick}
+            style={{
+              width: "20px",
+              height: "20px",
+              background: "#fff",
+              border: "2px solid #000",
+              borderRadius: "2px",
+              cursor: "pointer",
+            }}
+          ></div>
+        </OverlayView>
+      );
+    });
   }, [currentView.name, districtClusters, navigateToView]);
+
+  const stationOverlays = useMemo(() => {
+    if (currentView.name === "CityView") return null;
+    return filteredStations.map((station) => {
+      const handleClick = () => handleMarkerClick(station);
+      return (
+        <OverlayView
+          key={station.id}
+          position={station.position}
+          mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
+        >
+          <div
+            onClick={handleClick}
+            style={{
+              width: "20px",
+              height: "20px",
+              background: "#fff",
+              border: "2px solid #000",
+              borderRadius: "50%",
+              cursor: "pointer",
+            }}
+          ></div>
+        </OverlayView>
+      );
+    });
+  }, [currentView.name, filteredStations, handleMarkerClick]);
+
+  const userOverlay = useMemo(() => {
+    if (!userLocation) return null;
+    return (
+      <OverlayView
+        position={userLocation}
+        mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
+      >
+        <div
+          style={{
+            width: 0,
+            height: 0,
+            borderLeft: "10px solid transparent",
+            borderRight: "10px solid transparent",
+            borderBottom: "20px solid #2171ec",
+            transform: "rotate(180deg)",
+          }}
+        ></div>
+      </OverlayView>
+    );
+  }, [userLocation]);
 
   useEffect(() => {
     if (!map) return;
@@ -362,19 +443,40 @@ const MapContainer = () => {
     return <div>Loading...</div>;
   }
 
+  const viewTitle = getViewTitle(currentView);
+
   return (
-    // Removed inline height: "100%" so that .map-container's external CSS can take effect (60vh)
     <div
       className="map-container"
       style={{ position: "relative", width: "100%" }}
       ref={mapRef}
     >
+      {/* ViewBar */}
+      <div
+        style={{
+          position: "absolute",
+          top: "10px",
+          left: "50%",
+          transform: "translateX(-50%)",
+          background: "rgba(0,0,0,0.7)",
+          color: "#fff",
+          padding: "6px 12px",
+          borderRadius: "9999px",
+          zIndex: 1100,
+          fontSize: "16px",
+          fontWeight: "500",
+          textAlign: "center",
+        }}
+      >
+        {viewTitle}
+      </div>
+
       <GoogleMap
         mapContainerStyle={containerStyle}
         center={currentView.center}
         zoom={currentView.zoom}
         options={{
-          mapId: "94527c02bbb6243",
+          mapId: mapId,
           tilt: currentView.tilt || 45,
           heading: currentView.heading || 0,
           streetViewControl: false,
@@ -391,12 +493,6 @@ const MapContainer = () => {
       >
         {userLocation && (
           <>
-            <Marker
-              position={userLocation}
-              icon={{
-                url: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png",
-              }}
-            />
             {showCircles &&
               CIRCLE_DISTANCES.map((dist) => (
                 <React.Fragment key={dist}>
@@ -435,20 +531,31 @@ const MapContainer = () => {
           </>
         )}
 
-        {districtMarkers}
-
-        {currentView.name !== "CityView" && stationMarkers}
+        {districtOverlays}
+        {stationOverlays}
+        {userOverlay}
 
         {selectedStation && (
-          <InfoWindow
+          <OverlayView
             position={selectedStation.position}
-            onCloseClick={() => setSelectedStation(null)}
+            mapPaneName={OverlayView.OVERLAY_LAYER}
           >
-            <div>
-              <h3>{selectedStation.Place || "Unnamed Station"}</h3>
-              <p>{selectedStation.Address || "No address available"}</p>
+            <div
+              style={{
+                background: "#fff",
+                padding: "8px",
+                borderRadius: "4px",
+                boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
+              }}
+            >
+              <h3 style={{ margin: "0 0 4px 0", fontSize: "14px" }}>
+                {selectedStation.Place || "Unnamed Station"}
+              </h3>
+              <p style={{ margin: 0, fontSize: "12px" }}>
+                {selectedStation.Address || "No address available"}
+              </p>
             </div>
-          </InfoWindow>
+          </OverlayView>
         )}
 
         {directions && (
