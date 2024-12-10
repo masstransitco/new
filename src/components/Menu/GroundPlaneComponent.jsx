@@ -1,3 +1,5 @@
+/* eslint-disable react/no-unknown-property */
+
 import React, { memo } from "react";
 import PropTypes from "prop-types";
 

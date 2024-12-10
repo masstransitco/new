@@ -13,24 +13,30 @@ import {
   InfoWindow,
   DirectionsRenderer,
   Circle,
-  MarkerClusterer,
+  OverlayView,
 } from "@react-google-maps/api";
+import { HgiLocationUser03 } from "react-icons/hgi"; // Adjust the import path to your icons library
 
 const containerStyle = {
   width: "100%",
-  height: "70vh",
+  height: "50vh",
 };
 
 const CITY_VIEW = {
   name: "CityView",
   center: { lat: 22.353, lng: 114.076 },
-  zoom: 10,
+  zoom: 11, // Increased from 10 to 11
   tilt: 45,
   heading: 0,
 };
 
+const DISTRICT_VIEW_ZOOM = 12; // Example zoom level when reverting to district clusters
 const STATION_VIEW_ZOOM = 17;
 const ME_VIEW_ZOOM = 17;
+
+// Distances for the user's location circles
+const CIRCLE_DISTANCES = [500, 1000]; // meters
+// We'll label them e.g. "500m" and "1km"
 
 const MapContainer = () => {
   const [map, setMap] = useState(null);
@@ -107,6 +113,77 @@ const MapContainer = () => {
     }
   }, [map, viewHistory]);
 
+  // Group stations by district (assuming 'District' property)
+  const stationsByDistrict = useMemo(() => {
+    const grouping = {};
+    stations.forEach((st) => {
+      const district = st.District || "Unknown";
+      if (!grouping[district]) grouping[district] = [];
+      grouping[district].push(st);
+    });
+    return grouping;
+  }, [stations]);
+
+  const districtClusters = useMemo(() => {
+    return Object.entries(stationsByDistrict).map(([district, stList]) => {
+      let latSum = 0,
+        lngSum = 0;
+      stList.forEach((s) => {
+        latSum += s.position.lat;
+        lngSum += s.position.lng;
+      });
+      const centroid = {
+        lat: latSum / stList.length,
+        lng: lngSum / stList.length,
+      };
+      return { district, position: centroid, count: stList.length };
+    });
+  }, [stationsByDistrict]);
+
+  const highlightIcon = useMemo(() => {
+    if (!isLoaded || !google?.maps?.SymbolPath) return null;
+    return {
+      path: google.maps.SymbolPath.CIRCLE,
+      scale: 10,
+      fillColor: "#2171ec", // a nice uber-blue highlight
+      fillOpacity: 1,
+      strokeWeight: 2,
+      strokeColor: "#ffffff",
+    };
+  }, [isLoaded]);
+
+  const defaultStationIcon = useMemo(() => {
+    if (!isLoaded || !google?.maps?.SymbolPath) return null;
+    return {
+      path: google.maps.SymbolPath.CIRCLE,
+      scale: 8,
+      fillColor: "#ffffff",
+      fillOpacity: 1,
+      strokeWeight: 2,
+      strokeColor: "#000000",
+    };
+  }, [isLoaded]);
+
+  const stationMarkers = useMemo(() => {
+    return stations.map((station) => {
+      const isSelected = selectedStation && selectedStation.id === station.id;
+      return (
+        <Marker
+          key={station.id}
+          position={station.position}
+          onClick={() => handleMarkerClick(station)}
+          icon={isSelected ? highlightIcon : defaultStationIcon}
+        />
+      );
+    });
+  }, [
+    stations,
+    selectedStation,
+    handleMarkerClick,
+    highlightIcon,
+    defaultStationIcon,
+  ]);
+
   const handleMarkerClick = useCallback(
     (station) => {
       const stationView = {
@@ -139,6 +216,27 @@ const MapContainer = () => {
     [userLocation, isLoaded, navigateToView]
   );
 
+  const handleMapClick = useCallback(() => {
+    // User clicked map, not a station
+    setSelectedStation(null);
+    setShowCircles(false);
+    setDirections(null);
+
+    // Priority: If user location known, center on user (MeView)
+    if (userLocation) {
+      const meView = {
+        name: "MeView",
+        center: userLocation,
+        zoom: ME_VIEW_ZOOM,
+      };
+      navigateToView(meView);
+      return;
+    }
+
+    // Else center back to district clusters (CityView)
+    navigateToView(CITY_VIEW);
+  }, [userLocation, navigateToView]);
+
   const locateMe = useCallback(() => {
     setDirections(null);
     setSelectedStation(null);
@@ -156,12 +254,17 @@ const MapContainer = () => {
             lng: position.coords.longitude,
           };
           setUserLocation(userPos);
-          navigateToView({
-            name: "MeView",
-            center: userPos,
-            zoom: ME_VIEW_ZOOM,
-          });
+
+          // Instead of setting directly to ME_VIEW_ZOOM, we zoom out by 2 levels from current
+          const currentZoom = map.getZoom() || CITY_VIEW.zoom;
+          map.setZoom(currentZoom - 2);
+          map.panTo(userPos);
+
           setShowCircles(true);
+          setViewHistory((prev) => [
+            ...prev,
+            { name: "MeView", center: userPos, zoom: currentZoom - 2 },
+          ]);
         },
         (error) => {
           console.error("Error fetching user location:", error);
@@ -173,36 +276,50 @@ const MapContainer = () => {
     } else {
       alert("Geolocation is not supported by your browser.");
     }
-  }, [map, navigateToView]);
+  }, [map]);
 
-  const handleMapClick = useCallback(() => {
-    setSelectedStation(null);
-    setShowCircles(false);
-    setDirections(null);
+  const onLoadMap = useCallback((mapInstance) => {
+    mapRef.current = mapInstance;
+    setMap(mapInstance);
   }, []);
 
-  const markerIcon = useMemo(() => {
-    if (!isLoaded || !google?.maps?.SymbolPath) return null;
+  // Helper for placing circle labels
+  // We'll place text at the top of each circle (north)
+  const getCircleLabelPosition = useCallback((center, radius) => {
+    // Approx 0.000009 degrees of lat ~ 1 meter
+    const latOffset = radius * 0.000009;
     return {
-      path: google.maps.SymbolPath.CIRCLE,
-      scale: 8,
-      fillColor: "#ffffff",
-      fillOpacity: 1,
-      strokeWeight: 2,
-      strokeColor: "#000000",
+      lat: center.lat + latOffset,
+      lng: center.lng,
     };
-  }, [isLoaded]);
+  }, []);
 
-  const stationMarkers = useMemo(() => {
-    return stations.map((station) => (
+  // District cluster markers (shown only in CityView)
+  const districtMarkers = useMemo(() => {
+    // Only render these if currentView is CityView
+    if (currentView.name !== "CityView") return null;
+
+    return districtClusters.map((cluster) => (
       <Marker
-        key={station.id}
-        position={station.position}
-        onClick={() => handleMarkerClick(station)}
-        icon={markerIcon}
+        key={cluster.district}
+        position={cluster.position}
+        icon={{
+          // Provide a custom icon or a styled marker for clusters
+          url: "/path/to/your/cluster-icon.png", // Update with actual icon
+          scaledSize: new window.google.maps.Size(40, 40),
+        }}
+        onClick={() => {
+          // Zoom in or navigate to a district view if needed
+          // For simplicity, let's just zoom into DistrictView level centered on this cluster
+          navigateToView({
+            name: "DistrictView",
+            center: cluster.position,
+            zoom: DISTRICT_VIEW_ZOOM,
+          });
+        }}
       />
     ));
-  }, [stations, handleMarkerClick, markerIcon]);
+  }, [currentView.name, districtClusters, navigateToView]);
 
   const lastAnimationFrame = useRef(null);
   const isTouching = useRef(false);
@@ -212,7 +329,7 @@ const MapContainer = () => {
   useEffect(() => {
     if (!map) return;
     const mapDiv = map.getDiv();
-    if (!mapDiv) return; // Check for null mapDiv
+    if (!mapDiv) return;
 
     const applyMapTransform = (deltaX, deltaY) => {
       if (!map) return;
@@ -321,7 +438,7 @@ const MapContainer = () => {
           minZoom: 10,
           draggable: false,
         }}
-        onLoad={(mapInstance) => setMap(mapInstance)}
+        onLoad={onLoadMap}
         onClick={handleMapClick}
       >
         {userLocation && (
@@ -332,57 +449,48 @@ const MapContainer = () => {
                 url: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png",
               }}
             />
-            {showCircles && (
-              <>
-                <Circle
-                  center={userLocation}
-                  radius={500}
-                  options={{
-                    strokeColor: "#FFFFFF",
-                    strokeOpacity: 0.8,
-                    strokeWeight: 2,
-                    fillOpacity: 0,
-                  }}
-                />
-                <Circle
-                  center={userLocation}
-                  radius={1000}
-                  options={{
-                    strokeColor: "#FFFFFF",
-                    strokeOpacity: 0.8,
-                    strokeWeight: 2,
-                    fillOpacity: 0,
-                  }}
-                />
-              </>
-            )}
+            {showCircles &&
+              CIRCLE_DISTANCES.map((dist, i) => (
+                <React.Fragment key={dist}>
+                  <Circle
+                    center={userLocation}
+                    radius={dist}
+                    options={{
+                      strokeColor: "#2171ec",
+                      strokeOpacity: 0.8,
+                      strokeWeight: 2,
+                      fillOpacity: 0,
+                    }}
+                  />
+                  {/* Overlay text label on top of the circle line */}
+                  <OverlayView
+                    position={getCircleLabelPosition(userLocation, dist)}
+                    mapPaneName={OverlayView.OVERLAY_LAYER}
+                  >
+                    <div
+                      style={{
+                        background: "#fff",
+                        padding: "2px 6px",
+                        borderRadius: "10px",
+                        fontSize: "12px",
+                        boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                        transform: "translate(-50%, -100%)",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {dist >= 1000 ? `${dist / 1000}km` : `${dist}m`}
+                    </div>
+                  </OverlayView>
+                </React.Fragment>
+              ))}
           </>
         )}
 
-        <MarkerClusterer
-          options={{
-            maxZoom: 10,
-          }}
-          onClick={(cluster) => {
-            const clusterCenter = cluster.getCenter();
-            if (!clusterCenter) return;
-            const clusterView = {
-              name: "ClusterView",
-              center: {
-                lat: clusterCenter.lat(),
-                lng: clusterCenter.lng(),
-              },
-              zoom: map.getZoom() + 2,
-            };
-            navigateToView(clusterView);
-          }}
-        >
-          {(clusterer) =>
-            stationMarkers.map((marker) =>
-              React.cloneElement(marker, { clusterer })
-            )
-          }
-        </MarkerClusterer>
+        {/* District clusters only on CityView */}
+        {districtMarkers}
+
+        {/* Stations (only show if not in CityView to avoid clutter) */}
+        {currentView.name !== "CityView" && stationMarkers}
 
         {selectedStation && (
           <InfoWindow
@@ -411,31 +519,33 @@ const MapContainer = () => {
         )}
       </GoogleMap>
 
-      <button
-        onClick={locateMe}
+      {/* Locate Me Button */}
+      <div
         style={{
           position: "absolute",
-          top: "10px",
-          left: "10px",
-          width: "40px",
-          height: "40px",
-          backgroundColor: "#e7e8ec",
-          color: "#000",
-          border: "none",
+          bottom: "20px",
+          left: "20px",
+          backgroundColor: "#fff",
           borderRadius: "4px",
+          boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
           cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          padding: "8px",
           zIndex: 1000,
         }}
+        onClick={locateMe}
       >
-        📍
-      </button>
+        <HgiLocationUser03 style={{ color: "#2171ec", fontSize: "24px" }} />
+      </div>
 
+      {/* Back Button */}
       <button
         onClick={goBack}
         style={{
           position: "absolute",
           top: "10px",
-          left: "60px",
+          left: "10px",
           width: "40px",
           height: "40px",
           backgroundColor: "#e7e8ec",
