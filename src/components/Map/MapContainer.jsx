@@ -17,6 +17,9 @@ import {
 } from "@react-google-maps/api";
 import { FaLocationArrow } from "react-icons/fa";
 
+// Define libraries outside the component so that they do not cause re-rendering or reloading
+const libraries = ["geometry"];
+
 const containerStyle = {
   width: "100%",
   height: "100%", // Occupy entire space provided by parent container
@@ -51,7 +54,7 @@ const MapContainer = () => {
   const { isLoaded } = useJsApiLoader({
     // Keep the Google Maps API key in place
     googleMapsApiKey: "AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours",
-    libraries: ["geometry"],
+    libraries, // Use the libraries constant defined above
   });
 
   // Fetch stations data once
@@ -294,7 +297,6 @@ const MapContainer = () => {
       <Marker
         key={cluster.district}
         position={cluster.position}
-        // Using default marker (no custom icon) as requested
         onClick={() => {
           navigateToView({
             name: "DistrictView",
