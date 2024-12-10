@@ -1,6 +1,7 @@
 /* eslint-disable react/no-unknown-property */
 import React, { memo, useEffect, useRef } from "react";
-import { useGLTF, useThree } from "@react-three/drei";
+import { useGLTF } from "@react-three/drei";
+import { useThree } from "@react-three/fiber"; // Correct import source
 import PropTypes from "prop-types";
 import { Box3, Vector3 } from "three";
 
