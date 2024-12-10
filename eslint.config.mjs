@@ -28,7 +28,7 @@ export default [
       },
     },
     rules: {
-      // Now that 'react' is registered in plugins, these rules can be used:
+      // React-specific rules
       "react/jsx-uses-react": "error",
       "react/jsx-uses-vars": "error",
       "react/react-in-jsx-scope": "off",
@@ -37,6 +37,7 @@ export default [
         {
           ignore: [
             "rotation-x",
+            "rotation",         // Add this line
             "receiveShadow",
             "args",
             "object",
