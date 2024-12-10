@@ -15,7 +15,7 @@ import {
   Circle,
   OverlayView,
 } from "@react-google-maps/api";
-import { HgiLocationUser03 } from "react-icons/hgi"; // Adjust the import path to your icons library
+import { FaLocationArrow } from "react-icons/fa";
 
 const containerStyle = {
   width: "100%",
@@ -36,7 +36,6 @@ const ME_VIEW_ZOOM = 17;
 
 // Distances for the user's location circles
 const CIRCLE_DISTANCES = [500, 1000]; // meters
-// We'll label them e.g. "500m" and "1km"
 
 const MapContainer = () => {
   const [map, setMap] = useState(null);
@@ -51,6 +50,7 @@ const MapContainer = () => {
   const mapRef = useRef(null);
 
   const { isLoaded } = useJsApiLoader({
+    // Include your Google Maps API key here
     googleMapsApiKey: "AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours",
     libraries: ["geometry"],
   });
@@ -145,7 +145,7 @@ const MapContainer = () => {
     return {
       path: google.maps.SymbolPath.CIRCLE,
       scale: 10,
-      fillColor: "#2171ec", // a nice uber-blue highlight
+      fillColor: "#2171ec",
       fillOpacity: 1,
       strokeWeight: 2,
       strokeColor: "#ffffff",
@@ -163,26 +163,6 @@ const MapContainer = () => {
       strokeColor: "#000000",
     };
   }, [isLoaded]);
-
-  const stationMarkers = useMemo(() => {
-    return stations.map((station) => {
-      const isSelected = selectedStation && selectedStation.id === station.id;
-      return (
-        <Marker
-          key={station.id}
-          position={station.position}
-          onClick={() => handleMarkerClick(station)}
-          icon={isSelected ? highlightIcon : defaultStationIcon}
-        />
-      );
-    });
-  }, [
-    stations,
-    selectedStation,
-    handleMarkerClick,
-    highlightIcon,
-    defaultStationIcon,
-  ]);
 
   const handleMarkerClick = useCallback(
     (station) => {
@@ -215,6 +195,26 @@ const MapContainer = () => {
     },
     [userLocation, isLoaded, navigateToView]
   );
+
+  const stationMarkers = useMemo(() => {
+    return stations.map((station) => {
+      const isSelected = selectedStation && selectedStation.id === station.id;
+      return (
+        <Marker
+          key={station.id}
+          position={station.position}
+          onClick={() => handleMarkerClick(station)}
+          icon={isSelected ? highlightIcon : defaultStationIcon}
+        />
+      );
+    });
+  }, [
+    stations,
+    selectedStation,
+    handleMarkerClick,
+    highlightIcon,
+    defaultStationIcon,
+  ]);
 
   const handleMapClick = useCallback(() => {
     // User clicked map, not a station
@@ -255,7 +255,7 @@ const MapContainer = () => {
           };
           setUserLocation(userPos);
 
-          // Instead of setting directly to ME_VIEW_ZOOM, we zoom out by 2 levels from current
+          // Instead of setting directly to ME_VIEW_ZOOM, zoom out by 2 from current
           const currentZoom = map.getZoom() || CITY_VIEW.zoom;
           map.setZoom(currentZoom - 2);
           map.panTo(userPos);
@@ -284,7 +284,6 @@ const MapContainer = () => {
   }, []);
 
   // Helper for placing circle labels
-  // We'll place text at the top of each circle (north)
   const getCircleLabelPosition = useCallback((center, radius) => {
     // Approx 0.000009 degrees of lat ~ 1 meter
     const latOffset = radius * 0.000009;
@@ -296,7 +295,6 @@ const MapContainer = () => {
 
   // District cluster markers (shown only in CityView)
   const districtMarkers = useMemo(() => {
-    // Only render these if currentView is CityView
     if (currentView.name !== "CityView") return null;
 
     return districtClusters.map((cluster) => (
@@ -304,13 +302,10 @@ const MapContainer = () => {
         key={cluster.district}
         position={cluster.position}
         icon={{
-          // Provide a custom icon or a styled marker for clusters
-          url: "/path/to/your/cluster-icon.png", // Update with actual icon
+          url: "/path/to/your/cluster-icon.png",
           scaledSize: new window.google.maps.Size(40, 40),
         }}
         onClick={() => {
-          // Zoom in or navigate to a district view if needed
-          // For simplicity, let's just zoom into DistrictView level centered on this cluster
           navigateToView({
             name: "DistrictView",
             center: cluster.position,
@@ -321,93 +316,97 @@ const MapContainer = () => {
     ));
   }, [currentView.name, districtClusters, navigateToView]);
 
-  const lastAnimationFrame = useRef(null);
-  const isTouching = useRef(false);
-  const isMouseDown = useRef(false);
-  const lastPosition = useRef({ x: 0, y: 0 });
-
+  // Unified pointer events + RAF loop for smooth tilt & rotate
   useEffect(() => {
     if (!map) return;
     const mapDiv = map.getDiv();
     if (!mapDiv) return;
 
-    const applyMapTransform = (deltaX, deltaY) => {
+    let isInteracting = false;
+    let lastPointerPosition = { x: 0, y: 0 };
+    let deltaXAccum = 0;
+    let deltaYAccum = 0;
+    let rafId = null;
+
+    const updateMapTransform = () => {
       if (!map) return;
+
+      const easingFactor = 0.9;
+      const applyDeltaX = deltaXAccum * (1 - easingFactor);
+      const applyDeltaY = deltaYAccum * (1 - easingFactor);
+
       const currentTilt = map.getTilt() || 0;
       const currentHeading = map.getHeading() || 0;
 
-      let newTilt = currentTilt + deltaY * 0.1;
+      let newTilt = currentTilt + applyDeltaY * 0.1;
       newTilt = Math.max(0, Math.min(67.5, newTilt));
 
-      let newHeading = currentHeading + deltaX * 0.5;
+      let newHeading = currentHeading + applyDeltaX * 0.5;
       newHeading = (newHeading + 360) % 360;
 
-      map.setTilt(newTilt);
-      map.setHeading(newHeading);
+      map.setOptions({
+        tilt: newTilt,
+        heading: newHeading,
+      });
+
+      // Apply easing to deltas
+      deltaXAccum *= easingFactor;
+      deltaYAccum *= easingFactor;
+
+      if (
+        isInteracting ||
+        Math.abs(deltaXAccum) > 0.1 ||
+        Math.abs(deltaYAccum) > 0.1
+      ) {
+        rafId = requestAnimationFrame(updateMapTransform);
+      } else {
+        rafId = null;
+      }
     };
 
-    const handleTouchStart = (e) => {
-      isTouching.current = true;
-      const touch = e.touches[0];
-      lastPosition.current = { x: touch.clientX, y: touch.clientY };
+    const handlePointerDown = (e) => {
+      isInteracting = true;
+      lastPointerPosition = { x: e.clientX, y: e.clientY };
+      if (!rafId) {
+        rafId = requestAnimationFrame(updateMapTransform);
+      }
     };
 
-    const handleTouchMove = (e) => {
-      if (!isTouching.current) return;
-      const touch = e.touches[0];
-      const deltaX = touch.clientX - lastPosition.current.x;
-      const deltaY = touch.clientY - lastPosition.current.y;
-      lastPosition.current = { x: touch.clientX, y: touch.clientY };
+    const handlePointerMove = (e) => {
+      if (!isInteracting) return;
+      const dx = e.clientX - lastPointerPosition.x;
+      const dy = e.clientY - lastPointerPosition.y;
+      lastPointerPosition = { x: e.clientX, y: e.clientY };
 
-      if (lastAnimationFrame.current)
-        cancelAnimationFrame(lastAnimationFrame.current);
-      lastAnimationFrame.current = requestAnimationFrame(() =>
-        applyMapTransform(deltaX, -deltaY)
-      );
+      deltaXAccum += dx;
+      deltaYAccum += dy;
     };
 
-    const handleTouchEnd = () => {
-      isTouching.current = false;
+    const handlePointerUp = () => {
+      isInteracting = false;
     };
 
-    const handleMouseDown = (e) => {
-      isMouseDown.current = true;
-      lastPosition.current = { x: e.clientX, y: e.clientY };
-    };
-
-    const handleMouseMove = (e) => {
-      if (!isMouseDown.current) return;
-      const deltaX = e.clientX - lastPosition.current.x;
-      const deltaY = e.clientY - lastPosition.current.y;
-      lastPosition.current = { x: e.clientX, y: e.clientY };
-
-      if (lastAnimationFrame.current)
-        cancelAnimationFrame(lastAnimationFrame.current);
-      lastAnimationFrame.current = requestAnimationFrame(() =>
-        applyMapTransform(deltaX, deltaY)
-      );
-    };
-
-    const handleMouseUp = () => {
-      isMouseDown.current = false;
-    };
-
-    mapDiv.addEventListener("touchstart", handleTouchStart, { passive: true });
-    mapDiv.addEventListener("touchmove", handleTouchMove, { passive: true });
-    mapDiv.addEventListener("touchend", handleTouchEnd, { passive: true });
-
-    mapDiv.addEventListener("mousedown", handleMouseDown);
-    mapDiv.addEventListener("mousemove", handleMouseMove);
-    mapDiv.addEventListener("mouseup", handleMouseUp);
+    mapDiv.addEventListener("pointerdown", handlePointerDown, {
+      passive: false,
+    });
+    mapDiv.addEventListener("pointermove", handlePointerMove, {
+      passive: false,
+    });
+    mapDiv.addEventListener("pointerup", handlePointerUp, { passive: false });
+    mapDiv.addEventListener("pointercancel", handlePointerUp, {
+      passive: false,
+    });
+    mapDiv.addEventListener("pointerleave", handlePointerUp, {
+      passive: false,
+    });
 
     return () => {
-      mapDiv.removeEventListener("touchstart", handleTouchStart);
-      mapDiv.removeEventListener("touchmove", handleTouchMove);
-      mapDiv.removeEventListener("touchend", handleTouchEnd);
-
-      mapDiv.removeEventListener("mousedown", handleMouseDown);
-      mapDiv.removeEventListener("mousemove", handleMouseMove);
-      mapDiv.removeEventListener("mouseup", handleMouseUp);
+      mapDiv.removeEventListener("pointerdown", handlePointerDown);
+      mapDiv.removeEventListener("pointermove", handlePointerMove);
+      mapDiv.removeEventListener("pointerup", handlePointerUp);
+      mapDiv.removeEventListener("pointercancel", handlePointerUp);
+      mapDiv.removeEventListener("pointerleave", handlePointerUp);
+      if (rafId) cancelAnimationFrame(rafId);
     };
   }, [map]);
 
@@ -450,7 +449,7 @@ const MapContainer = () => {
               }}
             />
             {showCircles &&
-              CIRCLE_DISTANCES.map((dist, i) => (
+              CIRCLE_DISTANCES.map((dist) => (
                 <React.Fragment key={dist}>
                   <Circle
                     center={userLocation}
@@ -462,7 +461,6 @@ const MapContainer = () => {
                       fillOpacity: 0,
                     }}
                   />
-                  {/* Overlay text label on top of the circle line */}
                   <OverlayView
                     position={getCircleLabelPosition(userLocation, dist)}
                     mapPaneName={OverlayView.OVERLAY_LAYER}
@@ -536,7 +534,7 @@ const MapContainer = () => {
         }}
         onClick={locateMe}
       >
-        <HgiLocationUser03 style={{ color: "#2171ec", fontSize: "24px" }} />
+        <FaLocationArrow style={{ color: "#2171ec", fontSize: "24px" }} />
       </div>
 
       {/* Back Button */}
