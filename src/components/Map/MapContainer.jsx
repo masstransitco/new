@@ -17,12 +17,12 @@ import {
 } from "@react-google-maps/api";
 import { FaLocationArrow } from "react-icons/fa";
 
-// Define libraries outside the component so that they do not cause re-rendering or reloading
+// Define libraries outside the component
 const libraries = ["geometry"];
 
 const containerStyle = {
   width: "100%",
-  height: "100%", // Occupy entire space provided by parent container
+  height: "100%", // The map itself fills its parent container
 };
 
 const CITY_VIEW = {
@@ -36,8 +36,6 @@ const CITY_VIEW = {
 const DISTRICT_VIEW_ZOOM = 12;
 const STATION_VIEW_ZOOM = 17;
 const ME_VIEW_ZOOM = 17;
-
-// Distances for the user's location circles
 const CIRCLE_DISTANCES = [500, 1000]; // meters
 
 const MapContainer = () => {
@@ -52,12 +50,10 @@ const MapContainer = () => {
   const mapRef = useRef(null);
 
   const { isLoaded } = useJsApiLoader({
-    // Keep the Google Maps API key in place
     googleMapsApiKey: "AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours",
-    libraries, // Use the libraries constant defined above
+    libraries,
   });
 
-  // Fetch stations data once
   useEffect(() => {
     fetch("/stations.geojson")
       .then((response) => {
@@ -86,12 +82,8 @@ const MapContainer = () => {
       if (map) {
         map.panTo(view.center);
         map.setZoom(view.zoom);
-        if (view.tilt !== undefined) {
-          map.setTilt(view.tilt);
-        }
-        if (view.heading !== undefined) {
-          map.setHeading(view.heading);
-        }
+        if (view.tilt !== undefined) map.setTilt(view.tilt);
+        if (view.heading !== undefined) map.setHeading(view.heading);
       }
     },
     [map]
@@ -105,17 +97,13 @@ const MapContainer = () => {
       if (map) {
         map.panTo(previousView.center);
         map.setZoom(previousView.zoom);
-        if (previousView.tilt !== undefined) {
-          map.setTilt(previousView.tilt);
-        }
-        if (previousView.heading !== undefined) {
+        if (previousView.tilt !== undefined) map.setTilt(previousView.tilt);
+        if (previousView.heading !== undefined)
           map.setHeading(previousView.heading);
-        }
       }
     }
   }, [map, viewHistory]);
 
-  // Group stations by district
   const stationsByDistrict = useMemo(() => {
     const grouping = {};
     stations.forEach((st) => {
@@ -281,9 +269,7 @@ const MapContainer = () => {
     setMap(mapInstance);
   }, []);
 
-  // Helper for placing circle labels
   const getCircleLabelPosition = useCallback((center, radius) => {
-    // Approximately 0.000009 degrees of latitude ~ 1 meter
     const latOffset = radius * 0.000009;
     return {
       lat: center.lat + latOffset,
@@ -308,7 +294,6 @@ const MapContainer = () => {
     ));
   }, [currentView.name, districtClusters, navigateToView]);
 
-  // Immediate tilt & rotate updates on pointer move
   useEffect(() => {
     if (!map) return;
     const mapDiv = map.getDiv();
@@ -378,9 +363,10 @@ const MapContainer = () => {
   }
 
   return (
+    // Removed inline height: "100%" so that .map-container's external CSS can take effect (60vh)
     <div
       className="map-container"
-      style={{ position: "relative", width: "100%", height: "100%" }}
+      style={{ position: "relative", width: "100%" }}
       ref={mapRef}
     >
       <GoogleMap
