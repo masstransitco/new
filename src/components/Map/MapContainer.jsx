@@ -15,9 +15,10 @@ import {
 } from "@react-google-maps/api";
 import { FaLocationArrow } from "react-icons/fa";
 
-// Use a vector map with a known vector mapId
-const mapId = "94527c02bbb6243"; // Ensure this is a valid vector map ID from your Google Cloud project
+// Vector map ID
+const mapId = "94527c02bbb6243";
 
+// Libraries
 const libraries = ["geometry"];
 const containerStyle = { width: "100%", height: "100%" };
 
@@ -27,13 +28,15 @@ const CITY_VIEW = {
   zoom: 11,
   tilt: 45,
   heading: 0,
-  title: "Hong Kong",
 };
 
 const DISTRICT_VIEW_ZOOM = 12;
 const STATION_VIEW_ZOOM = 17;
-const ME_VIEW_ZOOM = 14;
+// Increased ME_VIEW_ZOOM by +1 (was 14, now 15)
+const ME_VIEW_ZOOM = 15;
 const ME_VIEW_TILT = 45;
+const ROUTE_VIEW_TILT = 65; // For route view
+
 const CIRCLE_DISTANCES = [500, 1000]; // meters
 
 function getViewTitle(view) {
@@ -41,8 +44,34 @@ function getViewTitle(view) {
   if (view.name === "MeView") return "Near me";
   if (view.name === "DistrictView") return view.districtName || "District";
   if (view.name === "StationView") return view.stationName || "Unnamed Station";
+  if (view.name === "RouteView") return view.stationName || "Route View";
   return "";
 }
+
+// Styles for RouteView to dim buildings
+const ROUTE_VIEW_STYLES = [
+  {
+    featureType: "poi",
+    stylers: [{ visibility: "off" }],
+  },
+  {
+    featureType: "transit",
+    stylers: [{ visibility: "off" }],
+  },
+  {
+    featureType: "administrative",
+    stylers: [{ visibility: "off" }],
+  },
+  {
+    featureType: "landscape.man_made",
+    stylers: [{ color: "#e0e0e0", visibility: "simplified", lightness: 80 }],
+  },
+  {
+    featureType: "building",
+    elementType: "geometry",
+    stylers: [{ visibility: "on" }, { color: "#cccccc" }, { lightness: 80 }],
+  },
+];
 
 const MapContainer = () => {
   const [map, setMap] = useState(null);
@@ -55,11 +84,9 @@ const MapContainer = () => {
   const currentView = viewHistory[viewHistory.length - 1];
   const mapRef = useRef(null);
 
-  // Specify libraries and optionally a version that supports moveCamera
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: "AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours",
     libraries,
-    // version: 'beta' // Optional: You can try specifying version if needed
   });
 
   useEffect(() => {
@@ -96,17 +123,23 @@ const MapContainer = () => {
         heading:
           view.heading !== undefined ? view.heading : currentView.heading || 0,
       };
+
       setViewHistory((prevHistory) => [...prevHistory, view]);
 
-      // Use moveCamera if available
       if (typeof map.moveCamera === "function") {
         map.moveCamera(cameraOptions);
       } else {
-        // Fallback if moveCamera not supported
         map.panTo(view.center);
         map.setZoom(view.zoom);
         if (view.tilt !== undefined) map.setTilt(view.tilt);
         if (view.heading !== undefined) map.setHeading(view.heading);
+      }
+
+      // If RouteView, apply styles
+      if (view.name === "RouteView") {
+        map.setOptions({ styles: ROUTE_VIEW_STYLES });
+      } else {
+        map.setOptions({ styles: [] });
       }
     },
     [map, currentView]
@@ -134,6 +167,13 @@ const MapContainer = () => {
       if (previousView.tilt !== undefined) map.setTilt(previousView.tilt);
       if (previousView.heading !== undefined)
         map.setHeading(previousView.heading);
+    }
+
+    // Restore styles if not route view
+    if (previousView.name === "RouteView") {
+      map.setOptions({ styles: ROUTE_VIEW_STYLES });
+    } else {
+      map.setOptions({ styles: [] });
     }
   }, [map, viewHistory]);
 
@@ -209,6 +249,33 @@ const MapContainer = () => {
             (result, status) => {
               if (status === "OK") {
                 setDirections(result);
+
+                // Now that we have a route, go to RouteView:
+                // RouteView: zoom = currentView.zoom -1, tilt=65, heading towards station
+                const userLatLng = new google.maps.LatLng(
+                  userLocation.lat,
+                  userLocation.lng
+                );
+                const stationLatLng = new google.maps.LatLng(
+                  station.position.lat,
+                  station.position.lng
+                );
+                const heading = google.maps.geometry.spherical.computeHeading(
+                  userLatLng,
+                  stationLatLng
+                );
+                const routeView = {
+                  name: "RouteView",
+                  center: {
+                    lat: (userLocation.lat + station.position.lat) / 2,
+                    lng: (userLocation.lng + station.position.lng) / 2,
+                  },
+                  zoom: (currentView.zoom || ME_VIEW_ZOOM) - 1,
+                  tilt: ROUTE_VIEW_TILT,
+                  heading,
+                  stationName: station.Place || "Unnamed Station",
+                };
+                navigateToView(routeView);
               } else {
                 console.error("Directions request failed:", status);
               }
@@ -219,7 +286,7 @@ const MapContainer = () => {
         }
       }
     },
-    [userLocation, navigateToView, computeDistance]
+    [userLocation, navigateToView, computeDistance, currentView.zoom]
   );
 
   const handleMapClick = useCallback(() => {
@@ -231,7 +298,7 @@ const MapContainer = () => {
       const meView = {
         name: "MeView",
         center: userLocation,
-        zoom: ME_VIEW_ZOOM,
+        zoom: ME_VIEW_ZOOM, // now 15
         tilt: ME_VIEW_TILT,
       };
       navigateToView(meView);
@@ -262,7 +329,7 @@ const MapContainer = () => {
           const meView = {
             name: "MeView",
             center: userPos,
-            zoom: ME_VIEW_ZOOM,
+            zoom: ME_VIEW_ZOOM, // now 15
             tilt: ME_VIEW_TILT,
           };
           navigateToView(meView);
@@ -330,6 +397,7 @@ const MapContainer = () => {
 
   const stationOverlays = useMemo(() => {
     if (currentView.name === "CityView") return null;
+    // Blue border for stations in any view (especially MeView)
     return filteredStations.map((station) => {
       const handleClick = () => handleMarkerClick(station);
       return (
@@ -344,7 +412,7 @@ const MapContainer = () => {
               width: "20px",
               height: "20px",
               background: "#fff",
-              border: "2px solid #000",
+              border: "2px solid #2171ec", // blue border
               borderRadius: "50%",
               cursor: "pointer",
             }}
@@ -354,8 +422,15 @@ const MapContainer = () => {
     });
   }, [currentView.name, filteredStations, handleMarkerClick]);
 
+  // User arrow should point down by default: Just use borderTop instead of borderBottom
+  // We'll adjust its transform based on map tilt
   const userOverlay = useMemo(() => {
     if (!userLocation) return null;
+    let tilt = currentView.tilt || 0;
+    // Slight adjustment to arrow rotation based on tilt
+    // For simplicity, rotate arrow to appear "flattened" as tilt increases
+    const arrowRotation = 180 - (tilt / 65) * 30; // arbitrary math to change angle slightly
+
     return (
       <OverlayView
         position={userLocation}
@@ -367,13 +442,14 @@ const MapContainer = () => {
             height: 0,
             borderLeft: "10px solid transparent",
             borderRight: "10px solid transparent",
-            borderBottom: "20px solid #2171ec",
-            transform: "rotate(180deg)",
+            borderTop: "20px solid #2171ec", // now pointing down by default
+            transform: `rotate(${arrowRotation}deg)`,
+            transformOrigin: "center",
           }}
         ></div>
       </OverlayView>
     );
-  }, [userLocation]);
+  }, [userLocation, currentView.tilt]);
 
   useEffect(() => {
     if (!map) return;
@@ -445,6 +521,14 @@ const MapContainer = () => {
 
   const viewTitle = getViewTitle(currentView);
 
+  // On StationView and RouteView hide the infobox by default.
+  // We previously showed it when selectedStation was defined.
+  // Now, we only show it if we are not in StationView or RouteView.
+  const showInfobox =
+    selectedStation &&
+    currentView.name !== "StationView" &&
+    currentView.name !== "RouteView";
+
   return (
     <div
       className="map-container"
@@ -510,17 +594,15 @@ const MapContainer = () => {
                     position={getCircleLabelPosition(userLocation, dist)}
                     mapPaneName={OverlayView.OVERLAY_LAYER}
                   >
+                    {/* Removed white pill background, text now blue & more "pop" */}
                     <div
                       style={{
-                        background: "#fff",
-                        padding: "4px 8px",
-                        borderRadius: "12px",
+                        color: "#2171ec",
                         fontSize: "14px",
-                        boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
+                        fontWeight: "bold",
+                        textShadow: "0 0 4px rgba(33,113,236,0.5)",
                         transform: "translate(-50%, -100%)",
                         whiteSpace: "nowrap",
-                        border: "1px solid #ccc",
-                        color: "#333",
                       }}
                     >
                       {dist >= 1000 ? `${dist / 1000}km` : `${dist}m`}
@@ -535,7 +617,7 @@ const MapContainer = () => {
         {stationOverlays}
         {userOverlay}
 
-        {selectedStation && (
+        {showInfobox && (
           <OverlayView
             position={selectedStation.position}
             mapPaneName={OverlayView.OVERLAY_LAYER}
