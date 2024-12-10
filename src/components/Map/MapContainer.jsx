@@ -57,7 +57,7 @@ const MapContainer = () => {
 
   // Specify libraries and optionally a version that supports moveCamera
   const { isLoaded } = useJsApiLoader({
-    googleMapsApiKey: "YOUR_API_KEY_HERE",
+    googleMapsApiKey: "AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours",
     libraries,
     // version: 'beta' // Optional: You can try specifying version if needed
   });
