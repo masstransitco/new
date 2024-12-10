@@ -19,18 +19,18 @@ import { FaLocationArrow } from "react-icons/fa";
 
 const containerStyle = {
   width: "100%",
-  height: "50vh",
+  height: "100%", // Occupy entire space provided by parent container
 };
 
 const CITY_VIEW = {
   name: "CityView",
   center: { lat: 22.353, lng: 114.076 },
-  zoom: 11, // Increased from 10 to 11
+  zoom: 11,
   tilt: 45,
   heading: 0,
 };
 
-const DISTRICT_VIEW_ZOOM = 12; // Example zoom level when reverting to district clusters
+const DISTRICT_VIEW_ZOOM = 12;
 const STATION_VIEW_ZOOM = 17;
 const ME_VIEW_ZOOM = 17;
 
@@ -46,11 +46,10 @@ const MapContainer = () => {
   const [showCircles, setShowCircles] = useState(false);
   const [viewHistory, setViewHistory] = useState([CITY_VIEW]);
   const currentView = viewHistory[viewHistory.length - 1];
-
   const mapRef = useRef(null);
 
   const { isLoaded } = useJsApiLoader({
-    // Include your Google Maps API key here
+    // Keep the Google Maps API key in place
     googleMapsApiKey: "AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours",
     libraries: ["geometry"],
   });
@@ -113,7 +112,7 @@ const MapContainer = () => {
     }
   }, [map, viewHistory]);
 
-  // Group stations by district (assuming 'District' property)
+  // Group stations by district
   const stationsByDistrict = useMemo(() => {
     const grouping = {};
     stations.forEach((st) => {
@@ -217,12 +216,10 @@ const MapContainer = () => {
   ]);
 
   const handleMapClick = useCallback(() => {
-    // User clicked map, not a station
     setSelectedStation(null);
     setShowCircles(false);
     setDirections(null);
 
-    // Priority: If user location known, center on user (MeView)
     if (userLocation) {
       const meView = {
         name: "MeView",
@@ -233,7 +230,6 @@ const MapContainer = () => {
       return;
     }
 
-    // Else center back to district clusters (CityView)
     navigateToView(CITY_VIEW);
   }, [userLocation, navigateToView]);
 
@@ -255,7 +251,6 @@ const MapContainer = () => {
           };
           setUserLocation(userPos);
 
-          // Instead of setting directly to ME_VIEW_ZOOM, zoom out by 2 from current
           const currentZoom = map.getZoom() || CITY_VIEW.zoom;
           map.setZoom(currentZoom - 2);
           map.panTo(userPos);
@@ -285,7 +280,7 @@ const MapContainer = () => {
 
   // Helper for placing circle labels
   const getCircleLabelPosition = useCallback((center, radius) => {
-    // Approx 0.000009 degrees of lat ~ 1 meter
+    // Approximately 0.000009 degrees of latitude ~ 1 meter
     const latOffset = radius * 0.000009;
     return {
       lat: center.lat + latOffset,
@@ -293,18 +288,13 @@ const MapContainer = () => {
     };
   }, []);
 
-  // District cluster markers (shown only in CityView)
   const districtMarkers = useMemo(() => {
     if (currentView.name !== "CityView") return null;
-
     return districtClusters.map((cluster) => (
       <Marker
         key={cluster.district}
         position={cluster.position}
-        icon={{
-          url: "/path/to/your/cluster-icon.png",
-          scaledSize: new window.google.maps.Size(40, 40),
-        }}
+        // Using default marker (no custom icon) as requested
         onClick={() => {
           navigateToView({
             name: "DistrictView",
@@ -316,70 +306,42 @@ const MapContainer = () => {
     ));
   }, [currentView.name, districtClusters, navigateToView]);
 
-  // Unified pointer events + RAF loop for smooth tilt & rotate
+  // Immediate tilt & rotate updates on pointer move
   useEffect(() => {
     if (!map) return;
     const mapDiv = map.getDiv();
     if (!mapDiv) return;
 
     let isInteracting = false;
-    let lastPointerPosition = { x: 0, y: 0 };
-    let deltaXAccum = 0;
-    let deltaYAccum = 0;
-    let rafId = null;
+    let lastX = 0;
+    let lastY = 0;
 
-    const updateMapTransform = () => {
-      if (!map) return;
+    const handlePointerDown = (e) => {
+      isInteracting = true;
+      lastX = e.clientX;
+      lastY = e.clientY;
+    };
 
-      const easingFactor = 0.9;
-      const applyDeltaX = deltaXAccum * (1 - easingFactor);
-      const applyDeltaY = deltaYAccum * (1 - easingFactor);
+    const handlePointerMove = (e) => {
+      if (!isInteracting) return;
+      const dx = e.clientX - lastX;
+      const dy = e.clientY - lastY;
+      lastX = e.clientX;
+      lastY = e.clientY;
 
       const currentTilt = map.getTilt() || 0;
       const currentHeading = map.getHeading() || 0;
 
-      let newTilt = currentTilt + applyDeltaY * 0.1;
+      let newTilt = currentTilt + dy * 0.1;
       newTilt = Math.max(0, Math.min(67.5, newTilt));
 
-      let newHeading = currentHeading + applyDeltaX * 0.5;
+      let newHeading = currentHeading + dx * 0.5;
       newHeading = (newHeading + 360) % 360;
 
       map.setOptions({
         tilt: newTilt,
         heading: newHeading,
       });
-
-      // Apply easing to deltas
-      deltaXAccum *= easingFactor;
-      deltaYAccum *= easingFactor;
-
-      if (
-        isInteracting ||
-        Math.abs(deltaXAccum) > 0.1 ||
-        Math.abs(deltaYAccum) > 0.1
-      ) {
-        rafId = requestAnimationFrame(updateMapTransform);
-      } else {
-        rafId = null;
-      }
-    };
-
-    const handlePointerDown = (e) => {
-      isInteracting = true;
-      lastPointerPosition = { x: e.clientX, y: e.clientY };
-      if (!rafId) {
-        rafId = requestAnimationFrame(updateMapTransform);
-      }
-    };
-
-    const handlePointerMove = (e) => {
-      if (!isInteracting) return;
-      const dx = e.clientX - lastPointerPosition.x;
-      const dy = e.clientY - lastPointerPosition.y;
-      lastPointerPosition = { x: e.clientX, y: e.clientY };
-
-      deltaXAccum += dx;
-      deltaYAccum += dy;
     };
 
     const handlePointerUp = () => {
@@ -406,7 +368,6 @@ const MapContainer = () => {
       mapDiv.removeEventListener("pointerup", handlePointerUp);
       mapDiv.removeEventListener("pointercancel", handlePointerUp);
       mapDiv.removeEventListener("pointerleave", handlePointerUp);
-      if (rafId) cancelAnimationFrame(rafId);
     };
   }, [map]);
 
@@ -417,7 +378,7 @@ const MapContainer = () => {
   return (
     <div
       className="map-container"
-      style={{ position: "relative" }}
+      style={{ position: "relative", width: "100%", height: "100%" }}
       ref={mapRef}
     >
       <GoogleMap
@@ -468,12 +429,14 @@ const MapContainer = () => {
                     <div
                       style={{
                         background: "#fff",
-                        padding: "2px 6px",
-                        borderRadius: "10px",
-                        fontSize: "12px",
-                        boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                        padding: "4px 8px",
+                        borderRadius: "12px",
+                        fontSize: "14px",
+                        boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
                         transform: "translate(-50%, -100%)",
                         whiteSpace: "nowrap",
+                        border: "1px solid #ccc",
+                        color: "#333",
                       }}
                     >
                       {dist >= 1000 ? `${dist / 1000}km` : `${dist}m`}
@@ -484,10 +447,8 @@ const MapContainer = () => {
           </>
         )}
 
-        {/* District clusters only on CityView */}
         {districtMarkers}
 
-        {/* Stations (only show if not in CityView to avoid clutter) */}
         {currentView.name !== "CityView" && stationMarkers}
 
         {selectedStation && (
