@@ -100,6 +100,7 @@ const Taxi = memo(({ isSelected }) => {
           <Preload all />
           <GLBViewerComponent
             modelPath={process.env.PUBLIC_URL + "/Taxi.glb"}
+            scale={[3, 3, 3]}
           />
         </Suspense>
       </Canvas>

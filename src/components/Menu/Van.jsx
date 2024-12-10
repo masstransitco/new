@@ -98,7 +98,10 @@ const Van = memo(({ isSelected }) => {
           <GroundPlaneComponent isSelected={isSelected} />
           <Environment preset="studio" />
           <Preload all />
-          <GLBViewerComponent modelPath={process.env.PUBLIC_URL + "/Van.glb"} />
+          <GLBViewerComponent
+            modelPath={process.env.PUBLIC_URL + "/Van.glb"}
+            scale={[3, 3, 3]}
+          />
         </Suspense>
       </Canvas>
     </div>

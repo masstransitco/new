@@ -98,7 +98,10 @@ const EV5 = memo(({ isSelected }) => {
           <GroundPlaneComponent isSelected={isSelected} />
           <Environment preset="studio" />
           <Preload all />
-          <GLBViewerComponent modelPath={process.env.PUBLIC_URL + "/EV5.glb"} />
+          <GLBViewerComponent
+            modelPath={process.env.PUBLIC_URL + "/EV5.glb"}
+            scale={[3, 3, 3]}
+          />
         </Suspense>
       </Canvas>
     </div>
