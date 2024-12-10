@@ -1,5 +1,5 @@
 /* eslint-disable react/no-unknown-property */
-import React, { memo, useEffect, useRef } from "react";
+import React, { memo, useEffect, useRef, useMemo } from "react";
 import { useGLTF } from "@react-three/drei";
 import { useThree } from "@react-three/fiber"; // Correct import source
 import PropTypes from "prop-types";
@@ -28,7 +28,8 @@ const GLBViewerComponent = memo(({ modelPath }) => {
 
     // Calculate the necessary distance from the camera based on field of view
     const fov = camera.fov * (Math.PI / 180); // Convert FOV to radians
-    const aspect = size.width / size.height;
+    // Removed 'aspect' variable since it's not used
+    // const aspect = size.width / size.height; // Unused
     const distance = maxDimension / (2 * Math.tan(fov / 2));
 
     // Optional: Add padding to the distance
@@ -51,16 +52,18 @@ const GLBViewerComponent = memo(({ modelPath }) => {
   }, [scene, camera, size]);
 
   // Determine the scale based on the model's name
-  let scale = [1, 1, 1]; // Default scale
-  const lowerPath = modelPath.toLowerCase();
-  if (
-    lowerPath.includes("ev5") ||
-    lowerPath.includes("ev7") ||
-    lowerPath.includes("taxi") ||
-    lowerPath.includes("van")
-  ) {
-    scale = [3, 3, 3]; // Scale specific models to [3, 3, 3]
-  }
+  const scale = useMemo(() => {
+    const lowerPath = modelPath.toLowerCase();
+    if (
+      lowerPath.includes("ev5") ||
+      lowerPath.includes("ev7") ||
+      lowerPath.includes("taxi") ||
+      lowerPath.includes("van")
+    ) {
+      return [3, 3, 3]; // Scale specific models to [3, 3, 3]
+    }
+    return [1, 1, 1]; // Default scale
+  }, [modelPath]);
 
   return (
     <primitive
