@@ -34,6 +34,7 @@ GLBViewerComponent.propTypes = {
 };
 
 const GroundPlaneComponent = memo(({ isSelected }) => (
+  {/* eslint-disable-next-line react/no-unknown-property */}
   <mesh
     // Fix rotation-x error
     rotation={[-Math.PI / 2, 0, 0]}
