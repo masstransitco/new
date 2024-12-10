@@ -9,7 +9,6 @@ import {
 } from "@react-three/drei";
 import PropTypes from "prop-types";
 
-// Lighting component
 const Lighting = () => (
   <>
     {/* eslint-disable-next-line react/no-unknown-property */}
@@ -34,9 +33,8 @@ GLBViewerComponent.propTypes = {
 };
 
 const GroundPlaneComponent = memo(({ isSelected }) => (
-  {/* eslint-disable-next-line react/no-unknown-property */}
   <mesh
-    // Fix rotation-x error
+    // eslint-disable-next-line react/no-unknown-property
     rotation={[-Math.PI / 2, 0, 0]}
     // eslint-disable-next-line react/no-unknown-property
     receiveShadow

@@ -33,9 +33,9 @@ GLBViewerComponent.propTypes = {
 };
 
 const GroundPlaneComponent = memo(({ isSelected }) => (
-  {/* eslint-disable-next-line react/no-unknown-property */}
   <mesh
-    rotation={[-Math.PI / 2, 0, 0]} // Use rotation array instead of rotation-x
+    // eslint-disable-next-line react/no-unknown-property
+    rotation={[-Math.PI / 2, 0, 0]}
     // eslint-disable-next-line react/no-unknown-property
     receiveShadow
   >
