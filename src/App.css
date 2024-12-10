@@ -1,3 +1,5 @@
+/* App.css */
+
 /* Global Styles */
 html,
 body,
@@ -6,35 +8,34 @@ body,
   margin: 0;
   padding: 0;
   background-color: var(--primary-black); /* Background set to black */
+  overflow: hidden; /* Disable browser-level scroll */
+  user-select: none; /* Disable text selection */
+  -webkit-user-select: none; /* For Safari */
+  -ms-user-select: none; /* For Internet Explorer */
 }
 
-main {
+body {
+  -webkit-touch-callout: none; /* Disable callout on iOS */
+  -webkit-user-drag: none; /* Disable image dragging on Safari */
+}
+
+.App {
+  -webkit-touch-callout: none; /* Disable callout on iOS */
+  -webkit-user-select: none; /* Disable text selection on Safari */
+  -khtml-user-select: none; /* Disable text selection on Konqueror */
+  -moz-user-select: none; /* Disable text selection on Firefox */
+  -ms-user-select: none; /* Disable text selection on IE/Edge */
+  user-select: none; /* Disable text selection */
+}
+
+.main-content {
   display: flex;
   flex-direction: column; /* Stack children vertically */
-  height: 100%;
-  overflow-y: auto; /* Allow scrolling for overflow content */
-  padding: 1px;
+  height: calc(100% - 120px); /* Adjust based on header and footer height (60px each) */
+  overflow: hidden; /* Prevent scrolling within main-content */
+  padding: 1rem;
   box-sizing: border-box;
-}
-
-/* Map Container */
-.map-container {
-  width: 100%;
-  height: 60vh; /* Occupies 60% of viewport height */
-  border: 1px solid #555555;
-  border-radius: 8px;
-  overflow: hidden;
-  margin-bottom: 1rem;
-  touch-action: none;
-}
-
-/* Scene Container */
-.scene-container {
-  width: 100%;
-  height: 40vh; /* Occupies 40% of viewport height */
-  border: 1px solid #555555;
-  border-radius: 8px;
-  overflow: hidden;
+  gap: 1.5px; /* 1.5px gap between components */
 }
 
 /* Header and Footer */
@@ -45,4 +46,91 @@ footer {
   text-align: center;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   z-index: 10;
+  width: 100%;
+  height: 60px; /* Fixed height to match footer */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff; /* Assuming white text for visibility */
+}
+
+/* Footer should match Header */
+footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+}
+
+/* Map Container */
+.map-container {
+  width: 100%;
+  height: 60vh; /* Occupies 60% of viewport height */
+  border: 1px solid #555555;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 1.5px; /* 1.5px gap below */
+  position: relative;
+}
+
+/* PulseStrip */
+.pulse-strip {
+  width: 100%;
+  height: 50px; /* Adjust height as needed */
+  background: linear-gradient(90deg, #ff6b6b, #f06595, #cc5de8, #845ef7, #5c7cfa);
+  animation: pulse 2s infinite;
+  margin-bottom: 1.5px; /* 1.5px gap below */
+  border-radius: 8px;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.7;
+  }
+}
+
+/* MotionMenu */
+.motion-menu {
+  width: 100%;
+  height: 70%; /* Reduced height by 30% */
+  background-color: var(--primary-black);
+  border-top: 1px solid #555555;
+  position: fixed;
+  bottom: 60px; /* Positioned above the footer */
+  left: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Add any additional styling as needed */
+}
+
+/* Loading Screen */
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #ffffff;
+  font-size: 1.5rem;
+}
+
+/* Disable Right-Click Context Menu */
+.App {
+  -webkit-touch-callout: none; /* Disable callout on iOS */
+  -webkit-user-select: none; /* Disable text selection on Safari */
+  -khtml-user-select: none; /* Disable text selection on Konqueror */
+  -moz-user-select: none; /* Disable text selection on Firefox */
+  -ms-user-select: none; /* Disable text selection on IE/Edge */
+  user-select: none; /* Disable text selection */
+}
+
+/* Additional spacing if needed */
+.component-spacing {
+  margin-bottom: 1.5px;
 }
