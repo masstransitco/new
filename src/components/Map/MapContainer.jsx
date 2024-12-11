@@ -261,13 +261,14 @@ const MapContainer = () => {
   // Compute distance between user and station
   const computeDistance = useCallback(
     (pos) => {
-      if (!userLocation || !google?.maps?.geometry?.spherical) return Infinity;
-      const userLatLng = new google.maps.LatLng(
+      if (!userLocation || !window.google?.maps?.geometry?.spherical)
+        return Infinity;
+      const userLatLng = new window.google.maps.LatLng(
         userLocation.lat,
         userLocation.lng
       );
-      const stationLatLng = new google.maps.LatLng(pos.lat, pos.lng);
-      return google.maps.geometry.spherical.computeDistanceBetween(
+      const stationLatLng = new window.google.maps.LatLng(pos.lat, pos.lng);
+      return window.google.maps.geometry.spherical.computeDistanceBetween(
         userLatLng,
         stationLatLng
       );
@@ -290,8 +291,9 @@ const MapContainer = () => {
         if (currentView.name === "MeView") {
           // Show walking route if within 1000m
           const dist = computeDistance(station.position);
-          if (dist <= 1000 && google?.maps?.DirectionsService) {
-            const directionsService = new google.maps.DirectionsService();
+          if (dist <= 1000 && window.google?.maps?.DirectionsService) {
+            const directionsService =
+              new window.google.maps.DirectionsService();
             directionsService.route(
               {
                 origin: userLocation,
@@ -455,7 +457,9 @@ const MapContainer = () => {
           onClick={handleDistrictClick}
           icon={{
             url: "https://maps.google.com/mapfiles/ms/icons/red-dot.png", // District marker icon
-            scaledSize: new google.maps.Size(20, 20),
+            scaledSize: window.google
+              ? new window.google.maps.Size(20, 20)
+              : undefined,
           }}
         />
       );
@@ -476,9 +480,11 @@ const MapContainer = () => {
           onClick={handleClick}
           icon={{
             url: isSelected
-              ? "https://maps.google.com/mapfiles/ms/icons/blue-dot.png" // Selected station icon
-              : "https://maps.google.com/mapfiles/ms/icons/white-dot.png", // Default station icon
-            scaledSize: new google.maps.Size(20, 20),
+              ? "https://maps.google.com/mapfiles/ms/icons/blue-dot.png"
+              : "https://maps.google.com/mapfiles/ms/icons/white-dot.png",
+            scaledSize: window.google
+              ? new window.google.maps.Size(20, 20)
+              : undefined,
           }}
         />
       );
