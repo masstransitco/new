@@ -17,11 +17,11 @@ import {
   Marker,
 } from "@react-google-maps/api";
 import { FaLocationArrow } from "react-icons/fa";
-import { toast } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify"; // Import ToastContainer
 import "react-toastify/dist/ReactToastify.css";
 
 // Initialize toast notifications
-toast.configure();
+// Removed toast.configure() as it's deprecated
 
 // Vector map ID
 const mapId = "94527c02bbb6243";
@@ -590,6 +590,8 @@ const MapContainer = () => {
       style={{ position: "relative", width: "100%", height: "100%" }}
       ref={mapRef}
     >
+      {/* ToastContainer for toast notifications */}
+      <ToastContainer /> {/* Added ToastContainer */}
       {/* ViewBar */}
       <div
         style={{
@@ -610,7 +612,6 @@ const MapContainer = () => {
       >
         {viewTitle}
       </div>
-
       {/* Choose Destination Button */}
       {showChooseDestination && (
         <div
@@ -635,7 +636,6 @@ const MapContainer = () => {
           💚 Choose your destination
         </div>
       )}
-
       <GoogleMap
         mapContainerStyle={containerStyle}
         center={currentView.center}
@@ -776,7 +776,6 @@ const MapContainer = () => {
             </InfoWindow>
           )}
       </GoogleMap>
-
       {/* Locate Me Button */}
       <div
         style={{
@@ -797,7 +796,6 @@ const MapContainer = () => {
       >
         <FaLocationArrow style={{ color: "#2171ec", fontSize: "24px" }} />
       </div>
-
       {/* Back Button */}
       {viewHistory.length > 1 && (
         <button
@@ -820,7 +818,6 @@ const MapContainer = () => {
           ←
         </button>
       )}
-
       {/* CSS Keyframes for Pulse Animation */}
       <style>
         {`
