@@ -31,7 +31,7 @@ import districtsData from "./districts.geojson";
 import "./MapContainer.css";
 
 // Hardcoded API Key
-const GOOGLE_MAPS_API_KEY = "AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours";
+const GOOGLE_MAPS_API_KEY = "AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours"; // **Ensure you replace this with a valid API key!**
 
 // MapId
 const mapId = "94527c02bbb6243";
@@ -159,31 +159,39 @@ const MapContainer = () => {
 
   // Load stations.geojson
   useEffect(() => {
-    // Assuming stationsData is already imported
-    const features = stationsData.features.map((f) => ({
-      id: f.id,
-      position: {
-        lat: f.geometry.coordinates[1],
-        lng: f.geometry.coordinates[0],
-      },
-      District: f.properties.District,
-      place: f.properties.place,
-      Address: f.properties.Address,
-    }));
-    setStations(features);
+    if (stationsData && Array.isArray(stationsData.features)) {
+      const features = stationsData.features.map((f) => ({
+        id: f.id,
+        position: {
+          lat: f.geometry.coordinates[1],
+          lng: f.geometry.coordinates[0],
+        },
+        District: f.properties.District,
+        place: f.properties.place,
+        Address: f.properties.Address,
+      }));
+      setStations(features);
+    } else {
+      console.error("stationsData.features is undefined or not an array.");
+      setStations([]); // Set to empty array to prevent undefined
+    }
   }, []);
 
   // Load districts.geojson (if applicable)
   useEffect(() => {
-    // Assuming districtsData is already imported
-    const districtsProcessed = districtsData.features.map((f) => ({
-      name: f.properties.District,
-      position: {
-        lat: f.geometry.coordinates[1],
-        lng: f.geometry.coordinates[0],
-      },
-    }));
-    setDistricts(districtsProcessed);
+    if (districtsData && Array.isArray(districtsData.features)) {
+      const districtsProcessed = districtsData.features.map((f) => ({
+        name: f.properties.District,
+        position: {
+          lat: f.geometry.coordinates[1],
+          lng: f.geometry.coordinates[0],
+        },
+      }));
+      setDistricts(districtsProcessed);
+    } else {
+      console.error("districtsData.features is undefined or not an array.");
+      setDistricts([]); // Set to empty array to prevent undefined
+    }
   }, []);
 
   // Navigate to a given view
