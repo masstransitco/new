@@ -107,11 +107,7 @@ const ROUTE_VIEW_STYLES = [
   {
     featureType: "building",
     elementType: "geometry",
-    stylers: [
-      { visibility: "on" },
-      { color: "#cccccc" },
-      { lightness: 80 },
-    ],
+    stylers: [{ visibility: "on" }, { color: "#cccccc" }, { lightness: 80 }],
   },
 ];
 
@@ -249,7 +245,8 @@ const MapContainer = () => {
     map.panTo(previousView.center);
     map.setZoom(previousView.zoom);
     if (previousView.tilt !== undefined) map.setTilt(previousView.tilt);
-    if (previousView.heading !== undefined) map.setHeading(previousView.heading);
+    if (previousView.heading !== undefined)
+      map.setHeading(previousView.heading);
 
     // Apply styles based on view
     if (previousView.name === "RouteView") {
@@ -653,8 +650,7 @@ const MapContainer = () => {
           mapTypeControl: false,
           fullscreenControl: false,
           zoomControl: true,
-          gestureHandling:
-            currentView.name === "StationView" ? "none" : "auto",
+          gestureHandling: currentView.name === "StationView" ? "none" : "auto",
           rotateControl: true,
           minZoom: 10,
           draggable: currentView.name !== "StationView",
@@ -775,7 +771,9 @@ const MapContainer = () => {
                 <h3>Driving Route Info</h3>
                 <p>Estimated driving time: {fareInfo.time}</p>
                 <p>Fare: HK${fareInfo.ourFare.toFixed(2)}</p>
-                <p>(Taxi Estimate: HK${fareInfo.taxiFareEstimate.toFixed(2)})</p>
+                <p>
+                  (Taxi Estimate: HK${fareInfo.taxiFareEstimate.toFixed(2)})
+                </p>
               </div>
             </InfoWindow>
           )}
