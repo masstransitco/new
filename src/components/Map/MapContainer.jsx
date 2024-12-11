@@ -552,11 +552,6 @@ const MapContainer = () => {
     fareInfo = { ourFare, taxiFareEstimate, time: route.duration.text };
   }
 
-  // Current view title
-  const viewTitle = useMemo(() => {
-    return getViewTitle(currentView, departureStation, destinationStation);
-  }, [currentView, departureStation, destinationStation]);
-
   // Directions Renderer options
   const directionsOptions = useMemo(() => {
     return {
