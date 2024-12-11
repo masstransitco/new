@@ -7,6 +7,7 @@ import MapContainer from "./components/Map/MapContainer.jsx";
 import MotionMenu from "./components/Menu/MotionMenu.jsx";
 import PulseStrip from "./components/PulseStrip/PulseStrip.jsx";
 import Footer from "./components/Footer/Footer.jsx";
+import "./Index.css";
 import "./App.css";
 
 function App() {
