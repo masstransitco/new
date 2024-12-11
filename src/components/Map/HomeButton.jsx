@@ -1,7 +1,7 @@
-// components/HomeButton.jsx
+// src/components/Map/HomeButton.jsx
 
 import React from "react";
-import "./Button.css"; // Ensure this imports your CSS
+import "./Button.css"; // Import the CSS for styling
 
 const HomeButton = ({ onClick }) => (
   <button className="home-button" onClick={onClick} aria-label="Go Home">

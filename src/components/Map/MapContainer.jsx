@@ -1,4 +1,4 @@
-// MapContainer.jsx
+// src/components/Map/MapContainer.jsx
 
 import React, {
   useState,
@@ -21,14 +21,14 @@ import { FaLocationArrow } from "react-icons/fa";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-import BackButton from "./components/BackButton";
-import HomeButton from "./components/HomeButton";
-import ViewBar from "./components/ViewBar";
+import BackButton from "./BackButton";
+import HomeButton from "./HomeButton";
+import ViewBar from "./ViewBar";
 
-import stationsData from "./data/stations.geojson"; // Ensure the correct path
-import districtsData from "./data/districts.geojson"; // Ensure the correct path if applicable
+import stationsData from "./stations.geojson";
+import districtsData from "./districts.geojson";
 
-import "./MapContainer.css"; // Ensure this imports your CSS
+import "./MapContainer.css";
 
 // Hardcoded API Key
 const GOOGLE_MAPS_API_KEY = "AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours";
@@ -250,6 +250,11 @@ const MapContainer = () => {
       map.setOptions({ styles: STATION_VIEW_STYLES });
     } else {
       map.setOptions({ styles: BASE_STYLES });
+    }
+
+    // Clear selectedStation if navigating back from StationView or other views
+    if (previousView.name !== "StationView") {
+      setSelectedStation(null);
     }
   }, [map, viewHistory]);
 
