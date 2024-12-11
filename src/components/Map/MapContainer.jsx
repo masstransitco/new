@@ -40,16 +40,21 @@ const libraries = ["geometry", "places"];
 // Container style for the map
 const containerStyle = { width: "100%", height: "100vh" };
 
-// Views configuration
+// **1. Updated CityView Center Coordinates**
+const BASE_CITY_CENTER = { lat: 22.236, lng: 114.191 }; // New center coordinates
+
+// Views configuration with displacement
 const CITY_VIEW = {
   name: "CityView",
-  center: { lat: 22.353, lng: 114.076 },
+  center: BASE_CITY_CENTER, // Updated to new center
   zoom: 11,
   tilt: 45,
   heading: 0,
 };
 
-const DISTRICT_VIEW_ZOOM = 12;
+const DISTRICT_VIEW_ZOOM = 12; // Base zoom for DistrictView
+const DISTRICT_VIEW_ZOOM_ADJUSTED = DISTRICT_VIEW_ZOOM + 2; // **+2 levels**
+
 const STATION_VIEW_ZOOM_OFFSET = 2; // For StationView: MeView Zoom +2
 const ME_VIEW_ZOOM = 15;
 const ME_VIEW_TILT = 45;
@@ -102,6 +107,14 @@ const ROUTE_VIEW_STYLES = [
     stylers: [{ visibility: "on" }, { color: "#cccccc" }, { lightness: 80 }],
   },
 ];
+
+// **2. Displacement Function**
+const calculateDisplacement = (baseCenter, deltaLat, deltaLng) => {
+  return {
+    lat: baseCenter.lat + deltaLat,
+    lng: baseCenter.lng + deltaLng,
+  };
+};
 
 // Check if current time is peak hour
 function isPeakHour(date) {
@@ -226,21 +239,34 @@ const MapContainer = () => {
       });
   }, []);
 
-  // Navigate to a given view
+  // **3. Navigate to a given view with displacement applied**
   const navigateToView = useCallback(
     (view) => {
       if (!map) return;
-      setViewHistory((prevHistory) => [...prevHistory, view]);
 
-      map.panTo(view.center);
-      map.setZoom(view.zoom);
-      if (view.tilt !== undefined) map.setTilt(view.tilt);
-      if (view.heading !== undefined) map.setHeading(view.heading);
+      // Apply displacement based on base city center
+      const displacedCenter = calculateDisplacement(
+        BASE_CITY_CENTER,
+        view.deltaLat || 0,
+        view.deltaLng || 0
+      );
+
+      const newView = {
+        ...view,
+        center: displacedCenter,
+      };
+
+      setViewHistory((prevHistory) => [...prevHistory, newView]);
+
+      map.panTo(newView.center);
+      map.setZoom(newView.zoom);
+      if (newView.tilt !== undefined) map.setTilt(newView.tilt);
+      if (newView.heading !== undefined) map.setHeading(newView.heading);
 
       // Apply styles based on the view
-      if (view.name === "RouteView") {
+      if (newView.name === "RouteView") {
         map.setOptions({ styles: ROUTE_VIEW_STYLES });
-      } else if (view.name === "StationView") {
+      } else if (newView.name === "StationView") {
         map.setOptions({ styles: STATION_VIEW_STYLES });
       } else {
         map.setOptions({ styles: BASE_STYLES });
@@ -249,7 +275,7 @@ const MapContainer = () => {
     [map]
   );
 
-  // Go back to the previous view
+  // **4. Go back to the previous view**
   const goBack = useCallback(() => {
     if (viewHistory.length <= 1) return;
     const newHistory = viewHistory.slice(0, -1);
@@ -272,11 +298,26 @@ const MapContainer = () => {
       map.setOptions({ styles: BASE_STYLES });
     }
 
+    // **5. Update ViewBar Display Based on View**
+    if (previousView.name === "CityView") {
+      // Display "Hong Kong" in ViewBar
+      setViewBarText("Hong Kong");
+    } else if (previousView.name === "DistrictView") {
+      // Display selected district name in ViewBar
+      setViewBarText(previousView.districtName || "District");
+    } else {
+      // Default or other views
+      setViewBarText("");
+    }
+
     // Clear selectedStation if navigating back from StationView or other views
     if (previousView.name !== "StationView") {
       setSelectedStation(null);
     }
   }, [map, viewHistory]);
+
+  // **6. ViewBar Text State**
+  const [viewBarText, setViewBarText] = useState("Hong Kong"); // Default to "Hong Kong"
 
   // Compute distance between user and a position (used for station filters)
   const computeDistance = useCallback(
@@ -303,11 +344,22 @@ const MapContainer = () => {
     return stations.filter((st) => computeDistance(st.position) <= 1000);
   }, [inMeView, userLocation, stations, computeDistance]);
 
-  // Handle clicking on a station marker
+  // **7. Handle Clicking on a Station Marker**
   const handleMarkerClick = useCallback(
     (station) => {
-      if (selectedStation && selectedStation.id === station.id) {
-        // Second click on the same station: navigate to StationView
+      if (currentView.name === "DistrictView") {
+        // **Directly navigate to StationView on first click from DistrictView**
+        const stationView = {
+          name: "StationView",
+          center: station.position,
+          zoom: DISTRICT_VIEW_ZOOM_ADJUSTED, // **+2 levels**
+          stationName: station.place || "Unnamed Station",
+        };
+        navigateToView(stationView);
+        setSelectedStation(station);
+        setShowChooseDestinationButton(true);
+      } else if (selectedStation && selectedStation.id === station.id) {
+        // Second click logic remains for other scenarios
         if (currentView.name === "MeView") {
           // If within 1000m, try to get walking directions
           const dist = computeDistance(station.position);
@@ -350,15 +402,8 @@ const MapContainer = () => {
             setShowChooseDestinationButton(true);
           }
         } else if (currentView.name === "DistrictView") {
-          // From DistrictView directly to StationView (no walking route)
+          // From DistrictView directly to StationView (handled above)
           setDirections(null);
-          const stationView = {
-            name: "StationView",
-            center: station.position,
-            zoom: DISTRICT_VIEW_ZOOM + STATION_VIEW_ZOOM_OFFSET,
-            stationName: station.place || "Unnamed Station",
-          };
-          navigateToView(stationView);
           setShowChooseDestinationButton(true);
         }
       } else {
@@ -367,10 +412,10 @@ const MapContainer = () => {
       }
     },
     [
-      selectedStation,
       currentView.name,
       computeDistance,
       navigateToView,
+      selectedStation,
       userLocation,
     ]
   );
@@ -426,7 +471,7 @@ const MapContainer = () => {
     // Navigate back to CityView
     const homeView = {
       name: "CityView",
-      center: CITY_VIEW.center,
+      center: BASE_CITY_CENTER, // Updated base center
       zoom: CITY_VIEW.zoom,
       tilt: CITY_VIEW.tilt,
       heading: CITY_VIEW.heading,
@@ -443,6 +488,7 @@ const MapContainer = () => {
     setDirections(null);
     setShowChooseDestinationButton(false);
     setShowCircles(false);
+    setViewBarText("Hong Kong"); // **Update ViewBar text**
   }, [map]);
 
   // Handle map load
@@ -451,7 +497,7 @@ const MapContainer = () => {
     setMap(mapInstance);
   }, []);
 
-  // Invoke locateMe when map is set
+  // **Invoke locateMe when map is set**
   useEffect(() => {
     if (map) {
       console.log("Invoking locateMe after map is set");
@@ -467,10 +513,11 @@ const MapContainer = () => {
         const dv = {
           name: "DistrictView",
           center: d.position,
-          zoom: DISTRICT_VIEW_ZOOM,
+          zoom: DISTRICT_VIEW_ZOOM_ADJUSTED, // **+2 levels**
           districtName: d.name,
         };
         navigateToView(dv);
+        setViewBarText(d.name); // **Update ViewBar text with district name**
       };
 
       return (
@@ -544,7 +591,7 @@ const MapContainer = () => {
     };
   }, []);
 
-  // Handle "Choose your destination" button click
+  // **8. Handle "Choose your destination" button click**
   const handleChooseDestinationClick = useCallback(() => {
     if (selectedStation) {
       setDepartureStation(selectedStation);
@@ -557,7 +604,7 @@ const MapContainer = () => {
     navigateToView(CITY_VIEW);
   }, [selectedStation, navigateToView]);
 
-  // If we are in DriveView and have directions + stations, compute fare info
+  // **9. Fare Information After Destination Selection**
   let fareInfo = null;
   if (
     currentView.name === "DriveView" &&
@@ -710,12 +757,8 @@ const MapContainer = () => {
         {/* Home Button */}
         <HomeButton onClick={handleHomeClick} />
 
-        {/* ViewBar */}
-        <ViewBar
-          stationName={
-            selectedStation ? selectedStation.place : "Unnamed Station"
-          }
-        />
+        {/* **5. Updated ViewBar with Dynamic Text** */}
+        <ViewBar stationName={viewBarText} />
       </div>
 
       {/* "Choose your destination" Button */}
