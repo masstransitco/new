@@ -354,6 +354,7 @@ const MapContainer = () => {
   const handleMapClick = useCallback(() => {
     // Do not clear selectedStation here
     // Clearing is only allowed via Back and Home buttons
+    // Optionally, provide feedback or keep the selection
   }, []);
 
   // Locate the user
@@ -675,7 +676,7 @@ const MapContainer = () => {
   return (
     <div
       className="map-container"
-      style={{ position: "relative", width: "100%", height: "100%" }}
+      style={{ position: "relative", width: "100%", height: "100vh" }}
       ref={mapRef}
     >
       {/* ToastContainer for toast notifications */}
@@ -683,8 +684,13 @@ const MapContainer = () => {
 
       {/* Top Bar with Back and Home Buttons and ViewBar */}
       <div className="top-bar">
-        <BackButton onClick={goBack} />
+        {/* Back Button */}
+        {viewHistory.length > 1 && <BackButton onClick={goBack} />}
+
+        {/* Home Button */}
         <HomeButton onClick={handleHomeClick} />
+
+        {/* ViewBar */}
         <ViewBar
           stationName={
             selectedStation ? selectedStation.place : "Unnamed Station"
