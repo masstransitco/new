@@ -65,26 +65,6 @@ const PEAK_HOURS = [
   { start: 18, end: 20 },
 ];
 
-// Determine the title text for the current view
-function getViewTitle(view, departureStation, destinationStation) {
-  if (view.name === "CityView") {
-    if (departureStation) {
-      return `🌏 Hong Kong\n🔵 ${departureStation.place}\n🟢 ${
-        destinationStation ? destinationStation.place : "Select destination"
-      }`;
-    }
-    return "🌏 Hong Kong";
-  }
-  if (view.name === "MeView") return "🔍 Near me";
-  if (view.name === "DistrictView")
-    return `📍 ${view.districtName || "District"}`;
-  if (view.name === "StationView")
-    return `📍 ${view.stationName || "Unnamed Station"}`;
-  if (view.name === "RouteView") return "🛤 Route View";
-  if (view.name === "DriveView") return "🚗 Driving Route";
-  return "";
-}
-
 // Base map styles (if any)
 const BASE_STYLES = [];
 
