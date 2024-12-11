@@ -15,6 +15,20 @@ const GLBViewerComponent = memo(({ modelPath }) => {
   // Access the Three.js camera and viewport size
   const { camera, size } = useThree();
 
+  // Determine the scale based on the model's name
+  const scale = useMemo(() => {
+    const lowerPath = modelPath.toLowerCase();
+    if (
+      lowerPath.includes("ev5") ||
+      lowerPath.includes("ev7") ||
+      lowerPath.includes("taxi") ||
+      lowerPath.includes("van")
+    ) {
+      return [3, 3, 3]; // Scale specific models to [3, 3, 3]
+    }
+    return [1, 1, 1]; // Default scale
+  }, [modelPath]);
+
   useEffect(() => {
     if (!modelRef.current) return;
 
@@ -44,26 +58,19 @@ const GLBViewerComponent = memo(({ modelPath }) => {
     // Position the camera along the z-axis relative to the model's center
     camera.position.set(center.x, center.y, center.z + adjustedDistance);
 
+    // Conditionally move the camera up on the Y-axis by 3 if scale is between 1 and 10
+    // Assuming uniform scaling, we'll use the first element of the scale array
+    const uniformScale = scale[0];
+    if (uniformScale >= 1 && uniformScale <= 10) {
+      camera.position.y += 3;
+    }
+
     // Make the camera look at the center of the model
     camera.lookAt(center);
 
     // Update the camera's projection matrix
     camera.updateProjectionMatrix();
-  }, [scene, camera, size]);
-
-  // Determine the scale based on the model's name
-  const scale = useMemo(() => {
-    const lowerPath = modelPath.toLowerCase();
-    if (
-      lowerPath.includes("ev5") ||
-      lowerPath.includes("ev7") ||
-      lowerPath.includes("taxi") ||
-      lowerPath.includes("van")
-    ) {
-      return [3, 3, 3]; // Scale specific models to [3, 3, 3]
-    }
-    return [1, 1, 1]; // Default scale
-  }, [modelPath]);
+  }, [scene, camera, size, scale]);
 
   return (
     <primitive
