@@ -20,11 +20,9 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 // Hardcoded Google Maps API key as requested
-// Make sure that this API key has the necessary permissions on your Google Cloud console.
-// Additionally, ensure that you have enabled the required APIs (Maps JavaScript API, etc.)
 const GOOGLE_MAPS_API_KEY = "AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours";
 
-// Vector map ID (check that the mapId exists and is associated with your project)
+// Vector map ID (ensure it's correct or consider removing for testing)
 const mapId = "94527c02bbb6243";
 
 // Libraries needed by the Google Maps instance
@@ -163,7 +161,7 @@ const MapContainer = () => {
   const mapRef = useRef(null);
 
   // Load Google Maps API
-  const { isLoaded } = useJsApiLoader({
+  const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: GOOGLE_MAPS_API_KEY,
     libraries,
   });
@@ -423,23 +421,18 @@ const MapContainer = () => {
   }, [map, navigateToView]);
 
   // Handle map load
-  const onLoadMap = useCallback(
-    (mapInstance) => {
-      mapRef.current = mapInstance;
-      setMap(mapInstance);
+  const onLoadMap = useCallback((mapInstance) => {
+    console.log("Map loaded");
+    setMap(mapInstance);
+  }, []);
 
-      // After map loads, show CityView initially
-      navigateToView(CITY_VIEW);
-
-      // Prompt for geolocation after a short delay
-      const timer = setTimeout(() => {
-        locateMe();
-      }, 2000); // 2-second delay
-
-      return () => clearTimeout(timer);
-    },
-    [navigateToView, locateMe]
-  );
+  // Invoke locateMe when map is set
+  useEffect(() => {
+    if (map) {
+      console.log("Invoking locateMe after map is set");
+      locateMe();
+    }
+  }, [map, locateMe]);
 
   // District overlays in CityView
   const districtOverlays = useMemo(() => {
@@ -580,6 +573,15 @@ const MapContainer = () => {
     }
   }, [currentView.name]);
 
+  // Check for load errors
+  if (loadError) {
+    return (
+      <div>
+        Error loading maps. Please check your API key and network connection.
+      </div>
+    );
+  }
+
   // If not loaded yet, show a loading message
   if (!isLoaded) {
     return <div>Loading...</div>;
@@ -649,6 +651,7 @@ const MapContainer = () => {
         center={currentView.center}
         zoom={currentView.zoom}
         options={{
+          // Consider removing mapId for testing
           mapId: mapId,
           tilt: currentView.tilt || 45,
           heading: currentView.heading || 0,
