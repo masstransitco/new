@@ -40,10 +40,11 @@ const CITY_VIEW = {
 };
 
 const DISTRICT_VIEW_ZOOM = 12;
+// Removed ROUTE_VIEW_TILT since it's unused
 const STATION_VIEW_ZOOM_OFFSET = 2; // StationView = MeView Zoom +2
 const ME_VIEW_ZOOM = 15;
 const ME_VIEW_TILT = 45;
-const ROUTE_VIEW_TILT = 65; // for route view
+// ROUTE_VIEW_TILT removed
 
 const CIRCLE_DISTANCES = [500, 1000]; // meters
 
@@ -153,7 +154,8 @@ const MapContainer = () => {
   const mapRef = useRef(null);
 
   const { isLoaded } = useJsApiLoader({
-    googleMapsApiKey: "AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours", // Hardcoded API key
+    // Hardcoded API key as requested, but recommended to use environment variables in production
+    googleMapsApiKey: "AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours",
     libraries,
   });
 
@@ -192,7 +194,7 @@ const MapContainer = () => {
       })
       .then((data) => {
         const districtsData = data.features.map((f) => ({
-          name: f.properties.District, // Updated to match properties.District
+          name: f.properties.District,
           position: {
             lat: f.geometry.coordinates[1],
             lng: f.geometry.coordinates[0],
@@ -251,17 +253,6 @@ const MapContainer = () => {
     }
   }, [map, viewHistory]);
 
-  // Group stations by district
-  const stationsByDistrict = useMemo(() => {
-    const grouping = {};
-    stations.forEach((st) => {
-      const district = st.District || "Unknown";
-      if (!grouping[district]) grouping[district] = [];
-      grouping[district].push(st);
-    });
-    return grouping;
-  }, [stations]);
-
   // Filter stations in MeView by distance <=1000m
   const computeDistance = useCallback(
     (pos) => {
@@ -285,29 +276,6 @@ const MapContainer = () => {
     return stations.filter((st) => computeDistance(st.position) <= 1000);
   }, [inMeView, userLocation, stations, computeDistance]);
 
-  // Function to animate map heading smoothly
-  const animateMapHeading = useCallback(
-    (targetHeading) => {
-      if (!map) return;
-      const currentHeading = map.getHeading() || 0;
-      let newHeading = currentHeading;
-      const step = (targetHeading - currentHeading) / 30; // 30 steps
-      let stepCount = 0;
-      const maxSteps = 30;
-
-      const interval = setInterval(() => {
-        newHeading += step;
-        map.setHeading(newHeading);
-        stepCount++;
-        if (stepCount >= maxSteps) {
-          map.setHeading(targetHeading);
-          clearInterval(interval);
-        }
-      }, 50); // 50ms per step
-    },
-    [map]
-  );
-
   const handleMarkerClick = useCallback(
     (station) => {
       if (selectedStation && selectedStation.id === station.id) {
@@ -329,7 +297,7 @@ const MapContainer = () => {
                   const stationView = {
                     name: "StationView",
                     center: station.position,
-                    zoom: ME_VIEW_ZOOM + STATION_VIEW_ZOOM_OFFSET, // e.g., 15 + 2 = 17
+                    zoom: ME_VIEW_ZOOM + STATION_VIEW_ZOOM_OFFSET,
                     stationName: station.Place || "Unnamed Station",
                   };
                   navigateToView(stationView);
@@ -346,7 +314,7 @@ const MapContainer = () => {
             const stationView = {
               name: "StationView",
               center: station.position,
-              zoom: ME_VIEW_ZOOM + STATION_VIEW_ZOOM_OFFSET, // e.g., 15 + 2 = 17
+              zoom: ME_VIEW_ZOOM + STATION_VIEW_ZOOM_OFFSET,
               stationName: station.Place || "Unnamed Station",
             };
             navigateToView(stationView);
@@ -358,7 +326,7 @@ const MapContainer = () => {
           const stationView = {
             name: "StationView",
             center: station.position,
-            zoom: DISTRICT_VIEW_ZOOM + STATION_VIEW_ZOOM_OFFSET, // e.g., 12 + 2 = 14
+            zoom: DISTRICT_VIEW_ZOOM + STATION_VIEW_ZOOM_OFFSET,
             stationName: station.Place || "Unnamed Station",
           };
           navigateToView(stationView);
@@ -476,7 +444,7 @@ const MapContainer = () => {
           position={d.position}
           onClick={handleDistrictClick}
           icon={{
-            url: "https://maps.google.com/mapfiles/ms/icons/red-dot.png", // Replace with actual icon path if needed
+            url: "https://maps.google.com/mapfiles/ms/icons/red-dot.png",
             scaledSize: new google.maps.Size(20, 20),
           }}
         />
@@ -507,7 +475,6 @@ const MapContainer = () => {
     });
   }, [currentView.name, filteredStations, selectedStation, handleMarkerClick]);
 
-  // User arrow overlay as a custom component
   const userOverlay = useMemo(() => {
     if (!userLocation) return null;
     let tilt = currentView.tilt || 0;
@@ -542,56 +509,19 @@ const MapContainer = () => {
 
   // Handle Choose Destination button:
   const handleChooseDestinationClick = useCallback(() => {
-    if (departureStation) {
-      setDestinationStation(null);
-      setSelectedStation(null);
-      setDirections(null);
-      setShowChooseDestinationButton(false);
-      // Now, prompt user to select a destination from CityView
-      navigateToView(CITY_VIEW);
+    if (selectedStation) {
+      // Set departureStation to the currently selected station
+      setDepartureStation(selectedStation);
     }
-  }, [departureStation, navigateToView]);
+    setDestinationStation(null);
+    setSelectedStation(null);
+    setDirections(null);
+    setShowChooseDestinationButton(false);
+    // Now, prompt user to select a destination from CityView
+    navigateToView(CITY_VIEW);
+  }, [selectedStation, navigateToView]);
 
-  // Handle destination selection
-  const handleDestinationSelect = useCallback(
-    (station) => {
-      setDestinationStation(station);
-      // Compute driving route and go to DriveView
-      if (google?.maps?.DirectionsService && departureStation) {
-        const ds = new google.maps.DirectionsService();
-        ds.route(
-          {
-            origin: departureStation.position,
-            destination: station.position,
-            travelMode: "DRIVING",
-          },
-          (result, status) => {
-            if (status === "OK") {
-              setDirections(result);
-              const driveView = {
-                name: "DriveView",
-                center: {
-                  lat:
-                    (departureStation.position.lat + station.position.lat) / 2,
-                  lng:
-                    (departureStation.position.lng + station.position.lng) / 2,
-                },
-                zoom: ME_VIEW_ZOOM, // Adjust as needed
-                tilt: ME_VIEW_TILT,
-                heading: 0,
-              };
-              navigateToView(driveView);
-              setShowDrivingRouteInfo(true);
-            } else {
-              console.error("Failed to get driving route:", status);
-              toast.error("Unable to compute driving route.");
-            }
-          }
-        );
-      }
-    },
-    [departureStation, navigateToView]
-  );
+  // We removed handleDestinationSelect since it was never called or needed
 
   // Display fare info
   let fareInfo = null;
@@ -615,6 +545,7 @@ const MapContainer = () => {
   );
 
   if (!isLoaded) {
+    // Ensure this return is after all hooks have been called so no hook violation occurs
     return <div>Loading...</div>;
   }
 
@@ -622,7 +553,6 @@ const MapContainer = () => {
   const showChooseDestination =
     currentView.name === "StationView" && showChooseDestinationButton;
 
-  // Directions Renderer options for polylines
   const directionsOptions = useMemo(() => {
     return {
       suppressMarkers: true,
@@ -649,7 +579,7 @@ const MapContainer = () => {
       style={{ position: "relative", width: "100%", height: "100%" }}
       ref={mapRef}
     >
-      {/* ViewBar: Display multiple lines if needed */}
+      {/* ViewBar */}
       <div
         style={{
           position: "absolute",
@@ -766,7 +696,7 @@ const MapContainer = () => {
           />
         )}
 
-        {/* Custom Polyline for Route Click Handling */}
+        {/* Custom Polylines for Route Click Handling */}
         {directions &&
           directions.routes.map((route, routeIndex) =>
             route.legs.map((leg, legIndex) =>
@@ -834,31 +764,6 @@ const MapContainer = () => {
             </InfoWindow>
           )}
       </GoogleMap>
-
-      {/* Choose Destination Button */}
-      {showChooseDestination && (
-        <div
-          onClick={handleChooseDestinationClick}
-          style={{
-            position: "absolute",
-            top: "60px",
-            left: "50%",
-            transform: "translateX(-50%)",
-            background: "#00a500",
-            color: "#fff",
-            padding: "10px 20px",
-            borderRadius: "8px",
-            cursor: "pointer",
-            zIndex: 1200,
-            boxShadow: "0 2px 10px rgba(0,0,0,0.3)",
-            transition: "transform 0.3s, box-shadow 0.3s",
-            animation: "pulse 2s infinite",
-            maxWidth: "80%",
-          }}
-        >
-          💚 Choose your destination
-        </div>
-      )}
 
       {/* Locate Me Button */}
       <div
