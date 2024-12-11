@@ -1,4 +1,5 @@
-/* global google */
+// MapContainer.jsx
+
 import React, {
   useState,
   useEffect,
@@ -20,10 +21,10 @@ import { FaLocationArrow } from "react-icons/fa";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-// Hardcoded Google Maps API key as requested
+// Hardcoded API Key
 const GOOGLE_MAPS_API_KEY = "AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours";
 
-// Reintroduced mapId for custom styling and 3D experience
+// MapId
 const mapId = "94527c02bbb6243";
 
 // Libraries needed by the Google Maps instance
@@ -45,7 +46,7 @@ const DISTRICT_VIEW_ZOOM = 12;
 const STATION_VIEW_ZOOM_OFFSET = 2; // For StationView: MeView Zoom +2
 const ME_VIEW_ZOOM = 15;
 const ME_VIEW_TILT = 45;
-const ROUTE_VIEW_TILT = 65; // For RouteView
+// const ROUTE_VIEW_TILT = 65; // Removed since it's unused
 
 const CIRCLE_DISTANCES = [500, 1000]; // meters
 
@@ -456,7 +457,7 @@ const MapContainer = () => {
           onClick={handleDistrictClick}
           icon={{
             url: "https://maps.google.com/mapfiles/ms/icons/red-dot.png",
-            scaledSize: { width: 20, height: 20 },
+            scaledSize: { width: 24, height: 24 }, // Increased size for visibility
           }}
         />
       );
@@ -478,8 +479,8 @@ const MapContainer = () => {
           icon={{
             url: isSelected
               ? "https://maps.google.com/mapfiles/ms/icons/blue-dot.png"
-              : "https://maps.google.com/mapfiles/ms/icons/white-dot.png",
-            scaledSize: { width: 20, height: 20 },
+              : "https://maps.google.com/mapfiles/ms/icons/green-dot.png", // Changed to green for better visibility
+            scaledSize: { width: 24, height: 24 }, // Increased size for visibility
           }}
         />
       );
@@ -936,6 +937,30 @@ const MapContainer = () => {
               transform: translateX(-50%) scale(1);
               box-shadow: 0 0 5px rgba(0, 165, 0, 0.7);
             }
+          }
+
+          /* Additional CSS for Markers if using OverlayView with custom elements */
+          .district-marker, .station-marker {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 2px solid #fff;
+            cursor: pointer;
+            box-shadow: 0 0 3px rgba(0,0,0,0.3);
+          }
+
+          .district-marker {
+            background-color: red;
+          }
+
+          .station-marker {
+            background-color: blue;
+          }
+
+          /* Ensure markers are visible */
+          .map-container .gm-style-iw {
+            background-color: transparent !important;
+            box-shadow: none !important;
           }
         `}
       </style>
