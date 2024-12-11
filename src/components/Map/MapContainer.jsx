@@ -12,16 +12,25 @@ import {
   DirectionsRenderer,
   Circle,
   OverlayView,
+  InfoWindow,
+  Polyline,
+  Marker,
 } from "@react-google-maps/api";
 import { FaLocationArrow } from "react-icons/fa";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
+// Initialize toast notifications
+toast.configure();
 
 // Vector map ID
 const mapId = "94527c02bbb6243";
 
 // Libraries
-const libraries = ["geometry"];
+const libraries = ["geometry", "places"];
 const containerStyle = { width: "100%", height: "100%" };
 
+// Views
 const CITY_VIEW = {
   name: "CityView",
   center: { lat: 22.353, lng: 114.076 },
@@ -31,22 +40,48 @@ const CITY_VIEW = {
 };
 
 const DISTRICT_VIEW_ZOOM = 12;
-const STATION_VIEW_ZOOM = 17;
-// Increased ME_VIEW_ZOOM by +1 (was 14, now 15)
+const STATION_VIEW_ZOOM_OFFSET = 2; // StationView = MeView Zoom +2
 const ME_VIEW_ZOOM = 15;
 const ME_VIEW_TILT = 45;
-const ROUTE_VIEW_TILT = 65; // For route view
+const ROUTE_VIEW_TILT = 65; // for route view
 
 const CIRCLE_DISTANCES = [500, 1000]; // meters
 
-function getViewTitle(view) {
-  if (view.name === "CityView") return "Hong Kong";
-  if (view.name === "MeView") return "Near me";
-  if (view.name === "DistrictView") return view.districtName || "District";
-  if (view.name === "StationView") return view.stationName || "Unnamed Station";
-  if (view.name === "RouteView") return view.stationName || "Route View";
+// Peak hours assumption
+const PEAK_HOURS = [
+  { start: 8, end: 10 },
+  { start: 18, end: 20 },
+];
+
+function getViewTitle(view, departureStation, destinationStation) {
+  if (view.name === "CityView") {
+    if (departureStation) {
+      return `🌏 Hong Kong\n🔵 ${departureStation.Place}\n🟢 ${
+        destinationStation ? destinationStation.Place : "Select destination"
+      }`;
+    }
+    return "🌏 Hong Kong";
+  }
+  if (view.name === "MeView") return "🔍 Near me";
+  if (view.name === "DistrictView")
+    return `📍 ${view.districtName || "District"}`;
+  if (view.name === "StationView")
+    return `📍 ${view.stationName || "Unnamed Station"}`;
+  if (view.name === "RouteView") return "🛤 Route View";
+  if (view.name === "DriveView") return "🚗 Driving Route";
   return "";
 }
+
+// Base styles
+const BASE_STYLES = [];
+
+// Styles for StationView to hide buildings/labels except the selected station
+const STATION_VIEW_STYLES = [
+  {
+    featureType: "all",
+    stylers: [{ visibility: "off" }],
+  },
+];
 
 // Styles for RouteView to dim buildings
 const ROUTE_VIEW_STYLES = [
@@ -73,76 +108,124 @@ const ROUTE_VIEW_STYLES = [
   },
 ];
 
+function isPeakHour(date) {
+  const hour = date.getHours();
+  return PEAK_HOURS.some((p) => hour >= p.start && hour < p.end);
+}
+
+function calculateFare(distance, duration) {
+  // distance in meters, duration in seconds
+  // Approximate taxi fare logic:
+  // Base fare: HK$24 for first 2km + HK$1 for each 200m beyond 2km
+  const baseTaxi = 24;
+  const extraMeters = Math.max(0, distance - 2000);
+  const increments = Math.floor(extraMeters / 200) * 1;
+  const taxiFareEstimate = baseTaxi + increments;
+
+  // Our pricing:
+  // Peak hours: starting fare = $65, off-peak = $35
+  const startingFare = isPeakHour(new Date()) ? 65 : 35;
+  // Aim for ~50% of taxi fare
+  const target = taxiFareEstimate * 0.5;
+  const ourFare = Math.max(target, startingFare);
+
+  return { ourFare, taxiFareEstimate };
+}
+
 const MapContainer = () => {
   const [map, setMap] = useState(null);
   const [stations, setStations] = useState([]);
+  const [districts, setDistricts] = useState([]);
   const [selectedStation, setSelectedStation] = useState(null);
   const [userLocation, setUserLocation] = useState(null);
   const [directions, setDirections] = useState(null);
-  const [showCircles, setShowCircles] = useState(false);
   const [viewHistory, setViewHistory] = useState([CITY_VIEW]);
+  const [showCircles, setShowCircles] = useState(false);
+
+  const [departureStation, setDepartureStation] = useState(null);
+  const [destinationStation, setDestinationStation] = useState(null);
+  const [showChooseDestinationButton, setShowChooseDestinationButton] =
+    useState(false);
+  const [showWalkingRouteInfo, setShowWalkingRouteInfo] = useState(false);
+  const [showDrivingRouteInfo, setShowDrivingRouteInfo] = useState(false);
+
   const currentView = viewHistory[viewHistory.length - 1];
   const mapRef = useRef(null);
 
   const { isLoaded } = useJsApiLoader({
-    googleMapsApiKey: "AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours",
+    googleMapsApiKey: "AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours", // Hardcoded API key
     libraries,
   });
 
+  // Load stations
   useEffect(() => {
     fetch("/stations.geojson")
-      .then((response) => {
-        if (!response.ok) throw new Error("Failed to load GeoJSON");
-        return response.json();
+      .then((r) => {
+        if (!r.ok) throw new Error("Failed to load stations GeoJSON");
+        return r.json();
       })
       .then((data) => {
-        const features = data.features.map((feature) => ({
-          id: feature.id,
+        const features = data.features.map((f) => ({
+          id: f.id,
           position: {
-            lat: feature.geometry.coordinates[1],
-            lng: feature.geometry.coordinates[0],
+            lat: f.geometry.coordinates[1],
+            lng: f.geometry.coordinates[0],
           },
-          District: feature.properties.District,
-          Place: feature.properties.Place,
-          Address: feature.properties.Address,
+          District: f.properties.District,
+          Place: f.properties.Place,
+          Address: f.properties.Address,
         }));
         setStations(features);
       })
-      .catch((error) => {
-        console.error("Error loading GeoJSON:", error);
+      .catch((err) => {
+        console.error("Error loading stations:", err);
+        toast.error("Failed to load stations data.");
+      });
+  }, []);
+
+  // Load districts
+  useEffect(() => {
+    fetch("/districts.geojson")
+      .then((r) => {
+        if (!r.ok) throw new Error("Failed to load districts GeoJSON");
+        return r.json();
+      })
+      .then((data) => {
+        const districtsData = data.features.map((f) => ({
+          name: f.properties.District, // Updated to match properties.District
+          position: {
+            lat: f.geometry.coordinates[1],
+            lng: f.geometry.coordinates[0],
+          },
+        }));
+        setDistricts(districtsData);
+      })
+      .catch((err) => {
+        console.error("Error loading districts:", err);
+        toast.error("Failed to load districts data.");
       });
   }, []);
 
   const navigateToView = useCallback(
     (view) => {
       if (!map) return;
-      const cameraOptions = {
-        center: view.center,
-        zoom: view.zoom,
-        tilt: view.tilt !== undefined ? view.tilt : currentView.tilt || 45,
-        heading:
-          view.heading !== undefined ? view.heading : currentView.heading || 0,
-      };
-
       setViewHistory((prevHistory) => [...prevHistory, view]);
 
-      if (typeof map.moveCamera === "function") {
-        map.moveCamera(cameraOptions);
-      } else {
-        map.panTo(view.center);
-        map.setZoom(view.zoom);
-        if (view.tilt !== undefined) map.setTilt(view.tilt);
-        if (view.heading !== undefined) map.setHeading(view.heading);
-      }
+      map.panTo(view.center);
+      map.setZoom(view.zoom);
+      if (view.tilt !== undefined) map.setTilt(view.tilt);
+      if (view.heading !== undefined) map.setHeading(view.heading);
 
-      // If RouteView, apply styles
+      // Apply styles based on view
       if (view.name === "RouteView") {
         map.setOptions({ styles: ROUTE_VIEW_STYLES });
+      } else if (view.name === "StationView") {
+        map.setOptions({ styles: STATION_VIEW_STYLES });
       } else {
-        map.setOptions({ styles: [] });
+        map.setOptions({ styles: BASE_STYLES });
       }
     },
-    [map, currentView]
+    [map]
   );
 
   const goBack = useCallback(() => {
@@ -152,31 +235,23 @@ const MapContainer = () => {
     const previousView = newHistory[newHistory.length - 1];
     if (!map) return;
 
-    const cameraOptions = {
-      center: previousView.center,
-      zoom: previousView.zoom,
-      tilt: previousView.tilt !== undefined ? previousView.tilt : 45,
-      heading: previousView.heading !== undefined ? previousView.heading : 0,
-    };
+    map.panTo(previousView.center);
+    map.setZoom(previousView.zoom);
+    if (previousView.tilt !== undefined) map.setTilt(previousView.tilt);
+    if (previousView.heading !== undefined)
+      map.setHeading(previousView.heading);
 
-    if (typeof map.moveCamera === "function") {
-      map.moveCamera(cameraOptions);
-    } else {
-      map.panTo(previousView.center);
-      map.setZoom(previousView.zoom);
-      if (previousView.tilt !== undefined) map.setTilt(previousView.tilt);
-      if (previousView.heading !== undefined)
-        map.setHeading(previousView.heading);
-    }
-
-    // Restore styles if not route view
+    // Apply styles based on view
     if (previousView.name === "RouteView") {
       map.setOptions({ styles: ROUTE_VIEW_STYLES });
+    } else if (previousView.name === "StationView") {
+      map.setOptions({ styles: STATION_VIEW_STYLES });
     } else {
-      map.setOptions({ styles: [] });
+      map.setOptions({ styles: BASE_STYLES });
     }
   }, [map, viewHistory]);
 
+  // Group stations by district
   const stationsByDistrict = useMemo(() => {
     const grouping = {};
     stations.forEach((st) => {
@@ -187,22 +262,7 @@ const MapContainer = () => {
     return grouping;
   }, [stations]);
 
-  const districtClusters = useMemo(() => {
-    return Object.entries(stationsByDistrict).map(([district, stList]) => {
-      let latSum = 0,
-        lngSum = 0;
-      stList.forEach((s) => {
-        latSum += s.position.lat;
-        lngSum += s.position.lng;
-      });
-      const centroid = {
-        lat: latSum / stList.length,
-        lng: lngSum / stList.length,
-      };
-      return { district, position: centroid, count: stList.length };
-    });
-  }, [stationsByDistrict]);
-
+  // Filter stations in MeView by distance <=1000m
   const computeDistance = useCallback(
     (pos) => {
       if (!userLocation || !google?.maps?.geometry?.spherical) return Infinity;
@@ -225,87 +285,118 @@ const MapContainer = () => {
     return stations.filter((st) => computeDistance(st.position) <= 1000);
   }, [inMeView, userLocation, stations, computeDistance]);
 
+  // Function to animate map heading smoothly
+  const animateMapHeading = useCallback(
+    (targetHeading) => {
+      if (!map) return;
+      const currentHeading = map.getHeading() || 0;
+      let newHeading = currentHeading;
+      const step = (targetHeading - currentHeading) / 30; // 30 steps
+      let stepCount = 0;
+      const maxSteps = 30;
+
+      const interval = setInterval(() => {
+        newHeading += step;
+        map.setHeading(newHeading);
+        stepCount++;
+        if (stepCount >= maxSteps) {
+          map.setHeading(targetHeading);
+          clearInterval(interval);
+        }
+      }, 50); // 50ms per step
+    },
+    [map]
+  );
+
   const handleMarkerClick = useCallback(
     (station) => {
-      const stationView = {
-        name: "StationView",
-        center: station.position,
-        zoom: STATION_VIEW_ZOOM,
-        stationName: station.Place || "Unnamed Station",
-      };
-      navigateToView(stationView);
-      setSelectedStation(station);
-      setShowCircles(false);
-
-      if (userLocation && google?.maps?.DirectionsService) {
-        if (computeDistance(station.position) <= 1000) {
-          const directionsService = new google.maps.DirectionsService();
-          directionsService.route(
-            {
-              origin: userLocation,
-              destination: station.position,
-              travelMode: "WALKING",
-            },
-            (result, status) => {
-              if (status === "OK") {
-                setDirections(result);
-
-                // Now that we have a route, go to RouteView:
-                // RouteView: zoom = currentView.zoom -1, tilt=65, heading towards station
-                const userLatLng = new google.maps.LatLng(
-                  userLocation.lat,
-                  userLocation.lng
-                );
-                const stationLatLng = new google.maps.LatLng(
-                  station.position.lat,
-                  station.position.lng
-                );
-                const heading = google.maps.geometry.spherical.computeHeading(
-                  userLatLng,
-                  stationLatLng
-                );
-                const routeView = {
-                  name: "RouteView",
-                  center: {
-                    lat: (userLocation.lat + station.position.lat) / 2,
-                    lng: (userLocation.lng + station.position.lng) / 2,
-                  },
-                  zoom: (currentView.zoom || ME_VIEW_ZOOM) - 1,
-                  tilt: ROUTE_VIEW_TILT,
-                  heading,
-                  stationName: station.Place || "Unnamed Station",
-                };
-                navigateToView(routeView);
-              } else {
-                console.error("Directions request failed:", status);
+      if (selectedStation && selectedStation.id === station.id) {
+        // Second tap: navigate to StationView
+        if (currentView.name === "MeView") {
+          // Show walking route if within 1000m
+          const dist = computeDistance(station.position);
+          if (dist <= 1000 && google?.maps?.DirectionsService) {
+            const directionsService = new google.maps.DirectionsService();
+            directionsService.route(
+              {
+                origin: userLocation,
+                destination: station.position,
+                travelMode: "WALKING",
+              },
+              (result, status) => {
+                if (status === "OK") {
+                  setDirections(result);
+                  const stationView = {
+                    name: "StationView",
+                    center: station.position,
+                    zoom: ME_VIEW_ZOOM + STATION_VIEW_ZOOM_OFFSET, // e.g., 15 + 2 = 17
+                    stationName: station.Place || "Unnamed Station",
+                  };
+                  navigateToView(stationView);
+                  setShowChooseDestinationButton(true);
+                } else {
+                  console.error("Directions request failed:", status);
+                  toast.error("Unable to compute walking route.");
+                }
               }
-            }
-          );
-        } else {
+            );
+          } else {
+            // No walking route if too far, just go to StationView
+            setDirections(null);
+            const stationView = {
+              name: "StationView",
+              center: station.position,
+              zoom: ME_VIEW_ZOOM + STATION_VIEW_ZOOM_OFFSET, // e.g., 15 + 2 = 17
+              stationName: station.Place || "Unnamed Station",
+            };
+            navigateToView(stationView);
+            setShowChooseDestinationButton(true);
+          }
+        } else if (currentView.name === "DistrictView") {
+          // From DistrictView to StationView (no walking routes)
           setDirections(null);
+          const stationView = {
+            name: "StationView",
+            center: station.position,
+            zoom: DISTRICT_VIEW_ZOOM + STATION_VIEW_ZOOM_OFFSET, // e.g., 12 + 2 = 14
+            stationName: station.Place || "Unnamed Station",
+          };
+          navigateToView(stationView);
+          setShowChooseDestinationButton(true);
         }
+      } else {
+        // First tap: select the station
+        setSelectedStation(station);
       }
     },
-    [userLocation, navigateToView, computeDistance, currentView.zoom]
+    [
+      selectedStation,
+      currentView.name,
+      computeDistance,
+      navigateToView,
+      userLocation,
+    ]
   );
 
   const handleMapClick = useCallback(() => {
+    // If user clicks map, deselect station
     setSelectedStation(null);
-    setShowCircles(false);
     setDirections(null);
+    setShowCircles(false);
 
+    // Return to a stable view (MeView if user location known, else CityView)
     if (userLocation) {
       const meView = {
         name: "MeView",
         center: userLocation,
-        zoom: ME_VIEW_ZOOM, // now 15
+        zoom: ME_VIEW_ZOOM,
         tilt: ME_VIEW_TILT,
       };
       navigateToView(meView);
-      return;
+      setShowCircles(true);
+    } else {
+      navigateToView(CITY_VIEW);
     }
-
-    navigateToView(CITY_VIEW);
   }, [userLocation, navigateToView]);
 
   const locateMe = useCallback(() => {
@@ -313,124 +404,114 @@ const MapContainer = () => {
     setSelectedStation(null);
 
     if (!map) {
-      alert("Map is not initialized yet.");
+      toast.error("Map not ready.");
       return;
     }
 
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        (position) => {
+        (pos) => {
           const userPos = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
           };
           setUserLocation(userPos);
-
           const meView = {
             name: "MeView",
             center: userPos,
-            zoom: ME_VIEW_ZOOM, // now 15
+            zoom: ME_VIEW_ZOOM,
             tilt: ME_VIEW_TILT,
           };
           navigateToView(meView);
           setShowCircles(true);
         },
         (error) => {
-          console.error("Error fetching user location:", error);
-          alert(
-            "Unable to access your location. Please ensure location services are enabled."
+          console.error("Location error:", error);
+          toast.error(
+            "Unable to access your location. Please enable location services."
           );
         }
       );
     } else {
-      alert("Geolocation is not supported by your browser.");
+      toast.error("Geolocation not supported by your browser.");
     }
   }, [map, navigateToView]);
 
-  const onLoadMap = useCallback((mapInstance) => {
-    mapRef.current = mapInstance;
-    setMap(mapInstance);
-  }, []);
+  const onLoadMap = useCallback(
+    (mapInstance) => {
+      mapRef.current = mapInstance;
+      setMap(mapInstance);
 
-  const getCircleLabelPosition = useCallback((center, radius) => {
-    const latOffset = radius * 0.000009;
-    return {
-      lat: center.lat + latOffset,
-      lng: center.lng,
-    };
-  }, []);
+      // After map loads, show CityView initially
+      navigateToView(CITY_VIEW);
 
+      // Then prompt for geolocation after a delay
+      const timer = setTimeout(() => {
+        locateMe();
+      }, 2000); // 2-second delay
+
+      return () => clearTimeout(timer);
+    },
+    [navigateToView, locateMe]
+  );
+
+  // District overlays in CityView
   const districtOverlays = useMemo(() => {
     if (currentView.name !== "CityView") return null;
-    return districtClusters.map((cluster) => {
+    return districts.map((d) => {
       const handleDistrictClick = () => {
-        const districtView = {
+        // DistrictView:
+        const dv = {
           name: "DistrictView",
-          center: cluster.position,
+          center: d.position,
           zoom: DISTRICT_VIEW_ZOOM,
-          districtName: cluster.district,
+          districtName: d.name,
         };
-        navigateToView(districtView);
+        navigateToView(dv);
       };
 
       return (
-        <OverlayView
-          key={cluster.district}
-          position={cluster.position}
-          mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
-        >
-          <div
-            onClick={handleDistrictClick}
-            style={{
-              width: "20px",
-              height: "20px",
-              background: "#fff",
-              border: "2px solid #000",
-              borderRadius: "2px",
-              cursor: "pointer",
-            }}
-          ></div>
-        </OverlayView>
+        <Marker
+          key={d.name}
+          position={d.position}
+          onClick={handleDistrictClick}
+          icon={{
+            url: "https://maps.google.com/mapfiles/ms/icons/red-dot.png", // Replace with actual icon path if needed
+            scaledSize: new google.maps.Size(20, 20),
+          }}
+        />
       );
     });
-  }, [currentView.name, districtClusters, navigateToView]);
+  }, [currentView.name, districts, navigateToView]);
 
+  // Station overlays (in MeView and DistrictView)
   const stationOverlays = useMemo(() => {
-    if (currentView.name === "CityView") return null;
-    // Blue border for stations in any view (especially MeView)
+    if (currentView.name !== "MeView" && currentView.name !== "DistrictView")
+      return null;
     return filteredStations.map((station) => {
       const handleClick = () => handleMarkerClick(station);
+      const isSelected = selectedStation && selectedStation.id === station.id;
       return (
-        <OverlayView
+        <Marker
           key={station.id}
           position={station.position}
-          mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
-        >
-          <div
-            onClick={handleClick}
-            style={{
-              width: "20px",
-              height: "20px",
-              background: "#fff",
-              border: "2px solid #2171ec", // blue border
-              borderRadius: "50%",
-              cursor: "pointer",
-            }}
-          ></div>
-        </OverlayView>
+          onClick={handleClick}
+          icon={{
+            url: isSelected
+              ? "https://maps.google.com/mapfiles/ms/icons/blue-dot.png" // Selected station icon
+              : "https://maps.google.com/mapfiles/ms/icons/white-dot.png", // Default station icon
+            scaledSize: new google.maps.Size(20, 20),
+          }}
+        />
       );
     });
-  }, [currentView.name, filteredStations, handleMarkerClick]);
+  }, [currentView.name, filteredStations, selectedStation, handleMarkerClick]);
 
-  // User arrow should point down by default: Just use borderTop instead of borderBottom
-  // We'll adjust its transform based on map tilt
+  // User arrow overlay as a custom component
   const userOverlay = useMemo(() => {
     if (!userLocation) return null;
     let tilt = currentView.tilt || 0;
-    // Slight adjustment to arrow rotation based on tilt
-    // For simplicity, rotate arrow to appear "flattened" as tilt increases
-    const arrowRotation = 180 - (tilt / 65) * 30; // arbitrary math to change angle slightly
-
+    const arrowRotation = 180 - (tilt / 65) * 30;
     return (
       <OverlayView
         position={userLocation}
@@ -442,7 +523,7 @@ const MapContainer = () => {
             height: 0,
             borderLeft: "10px solid transparent",
             borderRight: "10px solid transparent",
-            borderTop: "20px solid #2171ec", // now pointing down by default
+            borderTop: "20px solid #2171ec",
             transform: `rotate(${arrowRotation}deg)`,
             transformOrigin: "center",
           }}
@@ -451,91 +532,124 @@ const MapContainer = () => {
     );
   }, [userLocation, currentView.tilt]);
 
-  useEffect(() => {
-    if (!map) return;
-    const mapDiv = map.getDiv();
-    if (!mapDiv) return;
-
-    let isInteracting = false;
-    let lastX = 0;
-    let lastY = 0;
-
-    const handlePointerDown = (e) => {
-      isInteracting = true;
-      lastX = e.clientX;
-      lastY = e.clientY;
+  const getCircleLabelPosition = useCallback((center, radius) => {
+    const latOffset = radius * 0.000009;
+    return {
+      lat: center.lat + latOffset,
+      lng: center.lng,
     };
+  }, []);
 
-    const handlePointerMove = (e) => {
-      if (!isInteracting) return;
-      const dx = e.clientX - lastX;
-      const dy = e.clientY - lastY;
-      lastX = e.clientX;
-      lastY = e.clientY;
+  // Handle Choose Destination button:
+  const handleChooseDestinationClick = useCallback(() => {
+    if (departureStation) {
+      setDestinationStation(null);
+      setSelectedStation(null);
+      setDirections(null);
+      setShowChooseDestinationButton(false);
+      // Now, prompt user to select a destination from CityView
+      navigateToView(CITY_VIEW);
+    }
+  }, [departureStation, navigateToView]);
 
-      const currentTilt = map.getTilt() || 0;
-      const currentHeading = map.getHeading() || 0;
+  // Handle destination selection
+  const handleDestinationSelect = useCallback(
+    (station) => {
+      setDestinationStation(station);
+      // Compute driving route and go to DriveView
+      if (google?.maps?.DirectionsService && departureStation) {
+        const ds = new google.maps.DirectionsService();
+        ds.route(
+          {
+            origin: departureStation.position,
+            destination: station.position,
+            travelMode: "DRIVING",
+          },
+          (result, status) => {
+            if (status === "OK") {
+              setDirections(result);
+              const driveView = {
+                name: "DriveView",
+                center: {
+                  lat:
+                    (departureStation.position.lat + station.position.lat) / 2,
+                  lng:
+                    (departureStation.position.lng + station.position.lng) / 2,
+                },
+                zoom: ME_VIEW_ZOOM, // Adjust as needed
+                tilt: ME_VIEW_TILT,
+                heading: 0,
+              };
+              navigateToView(driveView);
+              setShowDrivingRouteInfo(true);
+            } else {
+              console.error("Failed to get driving route:", status);
+              toast.error("Unable to compute driving route.");
+            }
+          }
+        );
+      }
+    },
+    [departureStation, navigateToView]
+  );
 
-      let newTilt = currentTilt + dy * 0.1;
-      newTilt = Math.max(0, Math.min(67.5, newTilt));
+  // Display fare info
+  let fareInfo = null;
+  if (
+    currentView.name === "DriveView" &&
+    directions &&
+    departureStation &&
+    destinationStation
+  ) {
+    const route = directions.routes[0].legs[0];
+    const dist = route.distance.value; // meters
+    const dur = route.duration.value; // seconds
+    const { ourFare, taxiFareEstimate } = calculateFare(dist, dur);
+    fareInfo = { ourFare, taxiFareEstimate, time: route.duration.text };
+  }
 
-      let newHeading = currentHeading + dx * 0.5;
-      newHeading = (newHeading + 360) % 360;
-
-      map.setOptions({
-        tilt: newTilt,
-        heading: newHeading,
-      });
-    };
-
-    const handlePointerUp = () => {
-      isInteracting = false;
-    };
-
-    mapDiv.addEventListener("pointerdown", handlePointerDown, {
-      passive: false,
-    });
-    mapDiv.addEventListener("pointermove", handlePointerMove, {
-      passive: false,
-    });
-    mapDiv.addEventListener("pointerup", handlePointerUp, { passive: false });
-    mapDiv.addEventListener("pointercancel", handlePointerUp, {
-      passive: false,
-    });
-    mapDiv.addEventListener("pointerleave", handlePointerUp, {
-      passive: false,
-    });
-
-    return () => {
-      mapDiv.removeEventListener("pointerdown", handlePointerDown);
-      mapDiv.removeEventListener("pointermove", handlePointerMove);
-      mapDiv.removeEventListener("pointerup", handlePointerUp);
-      mapDiv.removeEventListener("pointercancel", handlePointerUp);
-      mapDiv.removeEventListener("pointerleave", handlePointerUp);
-    };
-  }, [map]);
+  const viewTitle = getViewTitle(
+    currentView,
+    departureStation,
+    destinationStation
+  );
 
   if (!isLoaded) {
     return <div>Loading...</div>;
   }
 
-  const viewTitle = getViewTitle(currentView);
+  // Determine if we should show “Choose your destination” button:
+  const showChooseDestination =
+    currentView.name === "StationView" && showChooseDestinationButton;
 
-  // On StationView and RouteView hide the infobox by default.
-  // We previously showed it when selectedStation was defined.
-  // Now, we only show it if we are not in StationView or RouteView.
-  const showInfobox =
-    selectedStation &&
-    currentView.name !== "StationView" &&
-    currentView.name !== "RouteView";
+  // Directions Renderer options for polylines
+  const directionsOptions = useMemo(() => {
+    return {
+      suppressMarkers: true,
+      polylineOptions: {
+        strokeColor: "#276ef1",
+        strokeOpacity: 0.8,
+        strokeWeight: 4,
+      },
+    };
+  }, []);
+
+  const handleRouteClick = useCallback(() => {
+    // Show route info based on current view
+    if (currentView.name === "RouteView") {
+      setShowWalkingRouteInfo(true);
+    } else if (currentView.name === "DriveView") {
+      setShowDrivingRouteInfo(true);
+    }
+  }, [currentView.name]);
 
   return (
     <div
       className="map-container"
-      style={{ position: "relative", width: "100%" }}
+      style={{ position: "relative", width: "100%", height: "100%" }}
       ref={mapRef}
     >
-      {/* ViewBar */}
+      {/* ViewBar: Display multiple lines if needed */}
       <div
         style={{
           position: "absolute",
@@ -550,10 +664,35 @@ const MapContainer = () => {
           fontSize: "16px",
           fontWeight: "500",
           textAlign: "center",
+          whiteSpace: "pre-wrap",
         }}
       >
         {viewTitle}
       </div>
+
+      {showChooseDestination && (
+        <div
+          onClick={handleChooseDestinationClick}
+          style={{
+            position: "absolute",
+            top: "60px",
+            left: "50%",
+            transform: "translateX(-50%)",
+            background: "#00a500",
+            color: "#fff",
+            padding: "10px 20px",
+            borderRadius: "8px",
+            cursor: "pointer",
+            zIndex: 1200,
+            boxShadow: "0 2px 10px rgba(0,0,0,0.3)",
+            transition: "transform 0.3s, box-shadow 0.3s",
+            animation: "pulse 2s infinite",
+            maxWidth: "80%",
+          }}
+        >
+          💚 Choose your destination
+        </div>
+      )}
 
       <GoogleMap
         mapContainerStyle={containerStyle}
@@ -567,93 +706,159 @@ const MapContainer = () => {
           mapTypeControl: false,
           fullscreenControl: false,
           zoomControl: true,
-          gestureHandling: "none",
+          gestureHandling: currentView.name === "StationView" ? "none" : "auto",
           rotateControl: true,
           minZoom: 10,
-          draggable: false,
+          draggable: currentView.name !== "StationView",
         }}
         onLoad={onLoadMap}
         onClick={handleMapClick}
       >
-        {userLocation && (
-          <>
-            {showCircles &&
-              CIRCLE_DISTANCES.map((dist) => (
-                <React.Fragment key={dist}>
-                  <Circle
-                    center={userLocation}
-                    radius={dist}
-                    options={{
-                      strokeColor: "#2171ec",
-                      strokeOpacity: 0.8,
-                      strokeWeight: 2,
-                      fillOpacity: 0,
-                    }}
-                  />
-                  <OverlayView
-                    position={getCircleLabelPosition(userLocation, dist)}
-                    mapPaneName={OverlayView.OVERLAY_LAYER}
-                  >
-                    {/* Removed white pill background, text now blue & more "pop" */}
-                    <div
-                      style={{
-                        color: "#2171ec",
-                        fontSize: "14px",
-                        fontWeight: "bold",
-                        textShadow: "0 0 4px rgba(33,113,236,0.5)",
-                        transform: "translate(-50%, -100%)",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {dist >= 1000 ? `${dist / 1000}km` : `${dist}m`}
-                    </div>
-                  </OverlayView>
-                </React.Fragment>
-              ))}
-          </>
-        )}
+        {/* User Location Circles */}
+        {userLocation &&
+          showCircles &&
+          CIRCLE_DISTANCES.map((dist) => (
+            <React.Fragment key={dist}>
+              <Circle
+                center={userLocation}
+                radius={dist}
+                options={{
+                  strokeColor: "#2171ec",
+                  strokeOpacity: 0.8,
+                  strokeWeight: 2,
+                  fillOpacity: 0,
+                }}
+              />
+              <OverlayView
+                position={getCircleLabelPosition(userLocation, dist)}
+                mapPaneName={OverlayView.OVERLAY_LAYER}
+              >
+                <div
+                  style={{
+                    color: "#2171ec",
+                    fontSize: "14px",
+                    fontWeight: "bold",
+                    textShadow: "0 0 4px rgba(33,113,236,0.5)",
+                    transform: "translate(-50%, -100%)",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {dist >= 1000 ? `${dist / 1000}km` : `${dist}m`}
+                </div>
+              </OverlayView>
+            </React.Fragment>
+          ))}
 
+        {/* District Overlays */}
         {districtOverlays}
+
+        {/* Station Overlays */}
         {stationOverlays}
+
+        {/* User Arrow Overlay */}
         {userOverlay}
 
-        {showInfobox && (
-          <OverlayView
-            position={selectedStation.position}
-            mapPaneName={OverlayView.OVERLAY_LAYER}
+        {/* Directions Renderer */}
+        {directions && (
+          <DirectionsRenderer
+            directions={directions}
+            options={directionsOptions}
+          />
+        )}
+
+        {/* Custom Polyline for Route Click Handling */}
+        {directions &&
+          directions.routes.map((route, routeIndex) =>
+            route.legs.map((leg, legIndex) =>
+              leg.steps.map((step, stepIndex) =>
+                step.path.map((path, pathIndex) => (
+                  <Polyline
+                    key={`${routeIndex}-${legIndex}-${stepIndex}-${pathIndex}`}
+                    path={step.path}
+                    options={{
+                      strokeColor: "#276ef1",
+                      strokeOpacity: 0.8,
+                      strokeWeight: 4,
+                    }}
+                    onClick={handleRouteClick}
+                  />
+                ))
+              )
+            )
+          )}
+
+        {/* Walking Route Info */}
+        {showWalkingRouteInfo && currentView.name === "RouteView" && (
+          <InfoWindow
+            position={selectedStation?.position}
+            onCloseClick={() => setShowWalkingRouteInfo(false)}
           >
             <div
               style={{
                 background: "#fff",
-                padding: "8px",
+                padding: "10px",
                 borderRadius: "4px",
-                boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
               }}
             >
-              <h3 style={{ margin: "0 0 4px 0", fontSize: "14px" }}>
-                {selectedStation.Place || "Unnamed Station"}
-              </h3>
-              <p style={{ margin: 0, fontSize: "12px" }}>
-                {selectedStation.Address || "No address available"}
+              <h3>Walking Route Info</h3>
+              <p>
+                Estimated walking time:{" "}
+                {directions?.routes[0]?.legs[0]?.duration.text}
               </p>
             </div>
-          </OverlayView>
+          </InfoWindow>
         )}
 
-        {directions && (
-          <DirectionsRenderer
-            directions={directions}
-            options={{
-              suppressMarkers: true,
-              polylineOptions: {
-                strokeColor: "#276ef1",
-                strokeOpacity: 0.8,
-                strokeWeight: 4,
-              },
-            }}
-          />
-        )}
+        {/* Driving Route Info */}
+        {showDrivingRouteInfo &&
+          currentView.name === "DriveView" &&
+          fareInfo && (
+            <InfoWindow
+              position={destinationStation?.position}
+              onCloseClick={() => setShowDrivingRouteInfo(false)}
+            >
+              <div
+                style={{
+                  background: "#fff",
+                  padding: "10px",
+                  borderRadius: "4px",
+                }}
+              >
+                <h3>Driving Route Info</h3>
+                <p>Estimated driving time: {fareInfo.time}</p>
+                <p>Fare: HK${fareInfo.ourFare.toFixed(2)}</p>
+                <p>
+                  (Taxi Estimate: HK${fareInfo.taxiFareEstimate.toFixed(2)})
+                </p>
+              </div>
+            </InfoWindow>
+          )}
       </GoogleMap>
+
+      {/* Choose Destination Button */}
+      {showChooseDestination && (
+        <div
+          onClick={handleChooseDestinationClick}
+          style={{
+            position: "absolute",
+            top: "60px",
+            left: "50%",
+            transform: "translateX(-50%)",
+            background: "#00a500",
+            color: "#fff",
+            padding: "10px 20px",
+            borderRadius: "8px",
+            cursor: "pointer",
+            zIndex: 1200,
+            boxShadow: "0 2px 10px rgba(0,0,0,0.3)",
+            transition: "transform 0.3s, box-shadow 0.3s",
+            animation: "pulse 2s infinite",
+            maxWidth: "80%",
+          }}
+        >
+          💚 Choose your destination
+        </div>
+      )}
 
       {/* Locate Me Button */}
       <div
@@ -671,30 +876,53 @@ const MapContainer = () => {
           zIndex: 1000,
         }}
         onClick={locateMe}
+        aria-label="Locate me"
       >
         <FaLocationArrow style={{ color: "#2171ec", fontSize: "24px" }} />
       </div>
 
       {/* Back Button */}
-      <button
-        onClick={goBack}
-        style={{
-          position: "absolute",
-          top: "10px",
-          left: "10px",
-          width: "40px",
-          height: "40px",
-          backgroundColor: "#e7e8ec",
-          color: "#000",
-          border: "none",
-          borderRadius: "4px",
-          cursor: "pointer",
-          zIndex: 1000,
-          display: viewHistory.length > 1 ? "block" : "none",
-        }}
-      >
-        ←
-      </button>
+      {viewHistory.length > 1 && (
+        <button
+          onClick={goBack}
+          style={{
+            position: "absolute",
+            top: "10px",
+            left: "10px",
+            width: "40px",
+            height: "40px",
+            backgroundColor: "#e7e8ec",
+            color: "#000",
+            border: "none",
+            borderRadius: "4px",
+            cursor: "pointer",
+            zIndex: 1000,
+          }}
+          aria-label="Go back"
+        >
+          ←
+        </button>
+      )}
+
+      {/* CSS Keyframes for Pulse Animation */}
+      <style>
+        {`
+          @keyframes pulse {
+            0% {
+              transform: translateX(-50%) scale(1);
+              box-shadow: 0 0 5px rgba(0, 165, 0, 0.7);
+            }
+            50% {
+              transform: translateX(-50%) scale(1.05);
+              box-shadow: 0 0 15px rgba(0, 165, 0, 1);
+            }
+            100% {
+              transform: translateX(-50%) scale(1);
+              box-shadow: 0 0 5px rgba(0, 165, 0, 0.7);
+            }
+          }
+        `}
+      </style>
     </div>
   );
 };
