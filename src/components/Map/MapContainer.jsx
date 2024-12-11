@@ -158,7 +158,7 @@ const MapContainer = () => {
 
   // Load Google Maps API
   const { isLoaded } = useJsApiLoader({
-    googleMapsApiKey: "AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours",
+    googleMapsApiKey: "AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours", // Hardcoded API key as per user request
     libraries,
   });
 
@@ -549,20 +549,9 @@ const MapContainer = () => {
   }
 
   // View title
-  const viewTitle = getViewTitle(
-    currentView,
-    departureStation,
-    destinationStation
-  );
-
-  // Early return after hooks
-  if (!isLoaded) {
-    return <div>Loading...</div>;
-  }
-
-  // Determine if we should show “Choose your destination” button:
-  const showChooseDestination =
-    currentView.name === "StationView" && showChooseDestinationButton;
+  const viewTitle = useMemo(() => {
+    return getViewTitle(currentView, departureStation, destinationStation);
+  }, [currentView, departureStation, destinationStation]);
 
   // Directions Renderer options
   const directionsOptions = useMemo(() => {
@@ -585,6 +574,15 @@ const MapContainer = () => {
       setShowDrivingRouteInfo(true);
     }
   }, [currentView.name]);
+
+  // Early return after hooks
+  if (!isLoaded) {
+    return <div>Loading...</div>;
+  }
+
+  // Determine if we should show “Choose your destination” button:
+  const showChooseDestination =
+    currentView.name === "StationView" && showChooseDestinationButton;
 
   return (
     <div
