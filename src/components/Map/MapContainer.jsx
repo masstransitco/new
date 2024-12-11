@@ -16,20 +16,24 @@ import {
   Marker,
 } from "@react-google-maps/api";
 import { FaLocationArrow } from "react-icons/fa";
-import { toast, ToastContainer } from "react-toastify"; // Import ToastContainer
+import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-// Initialize toast notifications
-// Removed toast.configure() as it's deprecated
+// Hardcoded Google Maps API key as requested
+// Make sure that this API key has the necessary permissions on your Google Cloud console.
+// Additionally, ensure that you have enabled the required APIs (Maps JavaScript API, etc.)
+const GOOGLE_MAPS_API_KEY = "AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours";
 
-// Vector map ID
+// Vector map ID (check that the mapId exists and is associated with your project)
 const mapId = "94527c02bbb6243";
 
-// Libraries
+// Libraries needed by the Google Maps instance
 const libraries = ["geometry", "places"];
+
+// Container style for the map
 const containerStyle = { width: "100%", height: "100%" };
 
-// Views
+// Views configuration
 const CITY_VIEW = {
   name: "CityView",
   center: { lat: 22.353, lng: 114.076 },
@@ -39,7 +43,7 @@ const CITY_VIEW = {
 };
 
 const DISTRICT_VIEW_ZOOM = 12;
-const STATION_VIEW_ZOOM_OFFSET = 2; // StationView = MeView Zoom +2
+const STATION_VIEW_ZOOM_OFFSET = 2; // For StationView: MeView Zoom +2
 const ME_VIEW_ZOOM = 15;
 const ME_VIEW_TILT = 45;
 
@@ -51,6 +55,7 @@ const PEAK_HOURS = [
   { start: 18, end: 20 },
 ];
 
+// Determine the title text for the current view
 function getViewTitle(view, departureStation, destinationStation) {
   if (view.name === "CityView") {
     if (departureStation) {
@@ -70,10 +75,10 @@ function getViewTitle(view, departureStation, destinationStation) {
   return "";
 }
 
-// Base styles
+// Base map styles (if any)
 const BASE_STYLES = [];
 
-// Styles for StationView to hide buildings/labels except the selected station
+// Styles for StationView to hide almost everything except the selected station
 const STATION_VIEW_STYLES = [
   {
     featureType: "all",
@@ -81,7 +86,7 @@ const STATION_VIEW_STYLES = [
   },
 ];
 
-// Styles for RouteView to dim buildings
+// Styles for RouteView to dim buildings and hide unnecessary info
 const ROUTE_VIEW_STYLES = [
   {
     featureType: "poi",
@@ -110,11 +115,13 @@ const ROUTE_VIEW_STYLES = [
   },
 ];
 
+// Check if current time is peak hour
 function isPeakHour(date) {
   const hour = date.getHours();
   return PEAK_HOURS.some((p) => hour >= p.start && hour < p.end);
 }
 
+// Calculate fare estimates
 function calculateFare(distance, duration) {
   // distance in meters, duration in seconds
   // Approximate taxi fare logic:
@@ -157,7 +164,7 @@ const MapContainer = () => {
 
   // Load Google Maps API
   const { isLoaded } = useJsApiLoader({
-    googleMapsApiKey: "AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours", // Hardcoded API key as per user request
+    googleMapsApiKey: GOOGLE_MAPS_API_KEY,
     libraries,
   });
 
@@ -210,7 +217,7 @@ const MapContainer = () => {
       });
   }, []);
 
-  // Navigation to different views
+  // Navigate to a given view
   const navigateToView = useCallback(
     (view) => {
       if (!map) return;
@@ -221,7 +228,7 @@ const MapContainer = () => {
       if (view.tilt !== undefined) map.setTilt(view.tilt);
       if (view.heading !== undefined) map.setHeading(view.heading);
 
-      // Apply styles based on view
+      // Apply styles based on the view
       if (view.name === "RouteView") {
         map.setOptions({ styles: ROUTE_VIEW_STYLES });
       } else if (view.name === "StationView") {
@@ -233,7 +240,7 @@ const MapContainer = () => {
     [map]
   );
 
-  // Go back to previous view
+  // Go back to the previous view
   const goBack = useCallback(() => {
     if (viewHistory.length <= 1) return;
     const newHistory = viewHistory.slice(0, -1);
@@ -247,7 +254,7 @@ const MapContainer = () => {
     if (previousView.heading !== undefined)
       map.setHeading(previousView.heading);
 
-    // Apply styles based on view
+    // Apply styles based on previous view
     if (previousView.name === "RouteView") {
       map.setOptions({ styles: ROUTE_VIEW_STYLES });
     } else if (previousView.name === "StationView") {
@@ -257,7 +264,7 @@ const MapContainer = () => {
     }
   }, [map, viewHistory]);
 
-  // Compute distance between user and station
+  // Compute distance between user and a position (used for station filters)
   const computeDistance = useCallback(
     (pos) => {
       if (!userLocation || !window.google?.maps?.geometry?.spherical)
@@ -275,20 +282,20 @@ const MapContainer = () => {
     [userLocation]
   );
 
-  // Filter stations based on view
+  // Check if we are in MeView to filter stations
   const inMeView = currentView.name === "MeView";
   const filteredStations = useMemo(() => {
     if (!inMeView || !userLocation) return stations;
     return stations.filter((st) => computeDistance(st.position) <= 1000);
   }, [inMeView, userLocation, stations, computeDistance]);
 
-  // Handle marker clicks
+  // Handle clicking on a station marker
   const handleMarkerClick = useCallback(
     (station) => {
       if (selectedStation && selectedStation.id === station.id) {
-        // Second tap: navigate to StationView
+        // Second click on the same station: navigate to StationView
         if (currentView.name === "MeView") {
-          // Show walking route if within 1000m
+          // If within 1000m, try to get walking directions
           const dist = computeDistance(station.position);
           if (dist <= 1000 && window.google?.maps?.DirectionsService) {
             const directionsService =
@@ -305,7 +312,7 @@ const MapContainer = () => {
                   const stationView = {
                     name: "StationView",
                     center: station.position,
-                    zoom: ME_VIEW_ZOOM + STATION_VIEW_ZOOM_OFFSET, // e.g., 15 + 2 = 17
+                    zoom: ME_VIEW_ZOOM + STATION_VIEW_ZOOM_OFFSET,
                     stationName: station.Place || "Unnamed Station",
                   };
                   navigateToView(stationView);
@@ -317,31 +324,31 @@ const MapContainer = () => {
               }
             );
           } else {
-            // No walking route if too far, just go to StationView
+            // Too far for walking route, just go to StationView
             setDirections(null);
             const stationView = {
               name: "StationView",
               center: station.position,
-              zoom: ME_VIEW_ZOOM + STATION_VIEW_ZOOM_OFFSET, // e.g., 15 + 2 = 17
+              zoom: ME_VIEW_ZOOM + STATION_VIEW_ZOOM_OFFSET,
               stationName: station.Place || "Unnamed Station",
             };
             navigateToView(stationView);
             setShowChooseDestinationButton(true);
           }
         } else if (currentView.name === "DistrictView") {
-          // From DistrictView to StationView (no walking routes)
+          // From DistrictView directly to StationView (no walking route)
           setDirections(null);
           const stationView = {
             name: "StationView",
             center: station.position,
-            zoom: DISTRICT_VIEW_ZOOM + STATION_VIEW_ZOOM_OFFSET, // e.g., 12 + 2 = 14
+            zoom: DISTRICT_VIEW_ZOOM + STATION_VIEW_ZOOM_OFFSET,
             stationName: station.Place || "Unnamed Station",
           };
           navigateToView(stationView);
           setShowChooseDestinationButton(true);
         }
       } else {
-        // First tap: select the station
+        // First tap: just select the station
         setSelectedStation(station);
       }
     },
@@ -354,14 +361,14 @@ const MapContainer = () => {
     ]
   );
 
-  // Handle map clicks
+  // Handle map click
   const handleMapClick = useCallback(() => {
-    // If user clicks map, deselect station
+    // Deselect station if map is clicked
     setSelectedStation(null);
     setDirections(null);
     setShowCircles(false);
 
-    // Return to a stable view (MeView if user location known, else CityView)
+    // Return to a stable view (MeView if we have user location, else CityView)
     if (userLocation) {
       const meView = {
         name: "MeView",
@@ -376,7 +383,7 @@ const MapContainer = () => {
     }
   }, [userLocation, navigateToView]);
 
-  // Locate user
+  // Locate the user
   const locateMe = useCallback(() => {
     setDirections(null);
     setSelectedStation(null);
@@ -424,7 +431,7 @@ const MapContainer = () => {
       // After map loads, show CityView initially
       navigateToView(CITY_VIEW);
 
-      // Then prompt for geolocation after a delay
+      // Prompt for geolocation after a short delay
       const timer = setTimeout(() => {
         locateMe();
       }, 2000); // 2-second delay
@@ -439,7 +446,6 @@ const MapContainer = () => {
     if (currentView.name !== "CityView") return null;
     return districts.map((d) => {
       const handleDistrictClick = () => {
-        // DistrictView:
         const dv = {
           name: "DistrictView",
           center: d.position,
@@ -455,15 +461,15 @@ const MapContainer = () => {
           position={d.position}
           onClick={handleDistrictClick}
           icon={{
-            url: "https://maps.google.com/mapfiles/ms/icons/red-dot.png", // District marker icon
-            scaledSize: { width: 20, height: 20 }, // Using size literals
+            url: "https://maps.google.com/mapfiles/ms/icons/red-dot.png",
+            scaledSize: { width: 20, height: 20 },
           }}
         />
       );
     });
   }, [currentView.name, districts, navigateToView]);
 
-  // Station overlays (in MeView and DistrictView)
+  // Station overlays in MeView or DistrictView
   const stationOverlays = useMemo(() => {
     if (currentView.name !== "MeView" && currentView.name !== "DistrictView")
       return null;
@@ -479,14 +485,14 @@ const MapContainer = () => {
             url: isSelected
               ? "https://maps.google.com/mapfiles/ms/icons/blue-dot.png"
               : "https://maps.google.com/mapfiles/ms/icons/white-dot.png",
-            scaledSize: { width: 20, height: 20 }, // Using size literals
+            scaledSize: { width: 20, height: 20 },
           }}
         />
       );
     });
   }, [currentView.name, filteredStations, selectedStation, handleMarkerClick]);
 
-  // User arrow overlay as a custom component
+  // User arrow overlay
   const userOverlay = useMemo(() => {
     if (!userLocation) return null;
     let tilt = currentView.tilt || 0;
@@ -511,9 +517,9 @@ const MapContainer = () => {
     );
   }, [userLocation, currentView.tilt]);
 
-  // Function to get label position for circles
+  // Get label position for radius circles
   const getCircleLabelPosition = useCallback((center, radius) => {
-    const latOffset = radius * 0.000009;
+    const latOffset = radius * 0.000009; // Approx conversion of meters to lat offset
     return {
       lat: center.lat + latOffset,
       lng: center.lng,
@@ -523,18 +529,17 @@ const MapContainer = () => {
   // Handle "Choose your destination" button click
   const handleChooseDestinationClick = useCallback(() => {
     if (selectedStation) {
-      // Set departureStation to the currently selected station
       setDepartureStation(selectedStation);
     }
     setDestinationStation(null);
     setSelectedStation(null);
     setDirections(null);
     setShowChooseDestinationButton(false);
-    // Now, prompt user to select a destination from CityView
+    // Prompt user to select a destination from CityView
     navigateToView(CITY_VIEW);
   }, [selectedStation, navigateToView]);
 
-  // Display fare info
+  // If we are in DriveView and have directions + stations, compute fare info
   let fareInfo = null;
   if (
     currentView.name === "DriveView" &&
@@ -549,7 +554,7 @@ const MapContainer = () => {
     fareInfo = { ourFare, taxiFareEstimate, time: route.duration.text };
   }
 
-  // View title
+  // Current view title
   const viewTitle = useMemo(() => {
     return getViewTitle(currentView, departureStation, destinationStation);
   }, [currentView, departureStation, destinationStation]);
@@ -566,9 +571,8 @@ const MapContainer = () => {
     };
   }, []);
 
-  // Handle route click
+  // Handle route click (to show info windows)
   const handleRouteClick = useCallback(() => {
-    // Show route info based on current view
     if (currentView.name === "RouteView") {
       setShowWalkingRouteInfo(true);
     } else if (currentView.name === "DriveView") {
@@ -576,12 +580,12 @@ const MapContainer = () => {
     }
   }, [currentView.name]);
 
-  // Early return after hooks
+  // If not loaded yet, show a loading message
   if (!isLoaded) {
     return <div>Loading...</div>;
   }
 
-  // Determine if we should show “Choose your destination” button:
+  // Determine if we should show the "Choose your destination" button
   const showChooseDestination =
     currentView.name === "StationView" && showChooseDestinationButton;
 
@@ -592,8 +596,9 @@ const MapContainer = () => {
       ref={mapRef}
     >
       {/* ToastContainer for toast notifications */}
-      <ToastContainer /> {/* Added ToastContainer */}
-      {/* ViewBar */}
+      <ToastContainer />
+
+      {/* ViewBar displaying current view info */}
       <div
         style={{
           position: "absolute",
@@ -613,7 +618,8 @@ const MapContainer = () => {
       >
         {viewTitle}
       </div>
-      {/* Choose Destination Button */}
+
+      {/* "Choose your destination" Button */}
       {showChooseDestination && (
         <div
           onClick={handleChooseDestinationClick}
@@ -637,6 +643,7 @@ const MapContainer = () => {
           💚 Choose your destination
         </div>
       )}
+
       <GoogleMap
         mapContainerStyle={containerStyle}
         center={currentView.center}
@@ -692,10 +699,10 @@ const MapContainer = () => {
             </React.Fragment>
           ))}
 
-        {/* District Overlays */}
+        {/* District Overlays (in CityView) */}
         {districtOverlays}
 
-        {/* Station Overlays */}
+        {/* Station Overlays (in MeView or DistrictView) */}
         {stationOverlays}
 
         {/* User Arrow Overlay */}
@@ -709,7 +716,7 @@ const MapContainer = () => {
           />
         )}
 
-        {/* Custom Polylines for Route Click Handling */}
+        {/* Custom Polylines for Route Click Handling (to show route info) */}
         {directions &&
           directions.routes.map((route, routeIndex) =>
             route.legs.map((leg, legIndex) =>
@@ -730,7 +737,7 @@ const MapContainer = () => {
             )
           )}
 
-        {/* Walking Route Info */}
+        {/* Walking Route Info (on RouteView) */}
         {showWalkingRouteInfo && currentView.name === "RouteView" && (
           <InfoWindow
             position={selectedStation?.position}
@@ -752,7 +759,7 @@ const MapContainer = () => {
           </InfoWindow>
         )}
 
-        {/* Driving Route Info */}
+        {/* Driving Route Info (on DriveView) */}
         {showDrivingRouteInfo &&
           currentView.name === "DriveView" &&
           fareInfo && (
@@ -777,6 +784,7 @@ const MapContainer = () => {
             </InfoWindow>
           )}
       </GoogleMap>
+
       {/* Locate Me Button */}
       <div
         style={{
@@ -797,7 +805,8 @@ const MapContainer = () => {
       >
         <FaLocationArrow style={{ color: "#2171ec", fontSize: "24px" }} />
       </div>
-      {/* Back Button */}
+
+      {/* Back Button (if there is history) */}
       {viewHistory.length > 1 && (
         <button
           onClick={goBack}
@@ -819,6 +828,7 @@ const MapContainer = () => {
           ←
         </button>
       )}
+
       {/* CSS Keyframes for Pulse Animation */}
       <style>
         {`
