@@ -22,8 +22,8 @@ import "react-toastify/dist/ReactToastify.css";
 // Hardcoded Google Maps API key as requested
 const GOOGLE_MAPS_API_KEY = "AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours";
 
-// Vector map ID (ensure it's correct or consider removing for testing)
-const mapId = "94527c02bbb6243";
+// Removed mapId to allow programmatic styling
+// const mapId = "94527c02bbb6243";
 
 // Libraries needed by the Google Maps instance
 const libraries = ["geometry", "places"];
@@ -651,8 +651,8 @@ const MapContainer = () => {
         center={currentView.center}
         zoom={currentView.zoom}
         options={{
-          // Consider removing mapId for testing
-          mapId: mapId,
+          // Removed mapId to allow programmatic styling
+          // mapId: mapId,
           tilt: currentView.tilt || 45,
           heading: currentView.heading || 0,
           streetViewControl: false,
@@ -663,6 +663,12 @@ const MapContainer = () => {
           rotateControl: true,
           minZoom: 10,
           draggable: currentView.name !== "StationView",
+          styles:
+            currentView.name === "RouteView"
+              ? ROUTE_VIEW_STYLES
+              : currentView.name === "StationView"
+              ? STATION_VIEW_STYLES
+              : BASE_STYLES,
         }}
         onLoad={onLoadMap}
         onClick={handleMapClick}
