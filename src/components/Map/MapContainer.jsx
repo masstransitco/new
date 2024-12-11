@@ -21,6 +21,15 @@ import { FaLocationArrow } from "react-icons/fa";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
+import BackButton from "./components/BackButton";
+import HomeButton from "./components/HomeButton";
+import ViewBar from "./components/ViewBar";
+
+import stationsData from "./data/stations.geojson"; // Ensure the correct path
+import districtsData from "./data/districts.geojson"; // Ensure the correct path if applicable
+
+import "./MapContainer.css"; // Ensure this imports your CSS
+
 // Hardcoded API Key
 const GOOGLE_MAPS_API_KEY = "AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours";
 
@@ -31,7 +40,7 @@ const mapId = "94527c02bbb6243";
 const libraries = ["geometry", "places"];
 
 // Container style for the map
-const containerStyle = { width: "100%", height: "100%" };
+const containerStyle = { width: "100%", height: "100vh" };
 
 // Views configuration
 const CITY_VIEW = {
@@ -46,8 +55,8 @@ const DISTRICT_VIEW_ZOOM = 12;
 const STATION_VIEW_ZOOM_OFFSET = 2; // For StationView: MeView Zoom +2
 const ME_VIEW_ZOOM = 15;
 const ME_VIEW_TILT = 45;
-// const ROUTE_VIEW_TILT = 65; // Removed since it's unused
 
+// Circle distances in meters
 const CIRCLE_DISTANCES = [500, 1000]; // meters
 
 // Peak hours assumption
@@ -60,8 +69,8 @@ const PEAK_HOURS = [
 function getViewTitle(view, departureStation, destinationStation) {
   if (view.name === "CityView") {
     if (departureStation) {
-      return `🌏 Hong Kong\n🔵 ${departureStation.Place}\n🟢 ${
-        destinationStation ? destinationStation.Place : "Select destination"
+      return `🌏 Hong Kong\n🔵 ${departureStation.place}\n🟢 ${
+        destinationStation ? destinationStation.place : "Select destination"
       }`;
     }
     return "🌏 Hong Kong";
@@ -170,51 +179,31 @@ const MapContainer = () => {
 
   // Load stations.geojson
   useEffect(() => {
-    fetch("/stations.geojson")
-      .then((r) => {
-        if (!r.ok) throw new Error("Failed to load stations GeoJSON");
-        return r.json();
-      })
-      .then((data) => {
-        const features = data.features.map((f) => ({
-          id: f.id,
-          position: {
-            lat: f.geometry.coordinates[1],
-            lng: f.geometry.coordinates[0],
-          },
-          District: f.properties.District,
-          Place: f.properties.Place,
-          Address: f.properties.Address,
-        }));
-        setStations(features);
-      })
-      .catch((err) => {
-        console.error("Error loading stations:", err);
-        toast.error("Failed to load stations data.");
-      });
+    // Assuming stationsData is already imported
+    const features = stationsData.features.map((f) => ({
+      id: f.id,
+      position: {
+        lat: f.geometry.coordinates[1],
+        lng: f.geometry.coordinates[0],
+      },
+      District: f.properties.District,
+      place: f.properties.place,
+      Address: f.properties.Address,
+    }));
+    setStations(features);
   }, []);
 
-  // Load districts.geojson
+  // Load districts.geojson (if applicable)
   useEffect(() => {
-    fetch("/districts.geojson")
-      .then((r) => {
-        if (!r.ok) throw new Error("Failed to load districts GeoJSON");
-        return r.json();
-      })
-      .then((data) => {
-        const districtsData = data.features.map((f) => ({
-          name: f.properties.District,
-          position: {
-            lat: f.geometry.coordinates[1],
-            lng: f.geometry.coordinates[0],
-          },
-        }));
-        setDistricts(districtsData);
-      })
-      .catch((err) => {
-        console.error("Error loading districts:", err);
-        toast.error("Failed to load districts data.");
-      });
+    // Assuming districtsData is already imported
+    const districtsProcessed = districtsData.features.map((f) => ({
+      name: f.properties.District,
+      position: {
+        lat: f.geometry.coordinates[1],
+        lng: f.geometry.coordinates[0],
+      },
+    }));
+    setDistricts(districtsProcessed);
   }, []);
 
   // Navigate to a given view
@@ -313,7 +302,7 @@ const MapContainer = () => {
                     name: "StationView",
                     center: station.position,
                     zoom: ME_VIEW_ZOOM + STATION_VIEW_ZOOM_OFFSET,
-                    stationName: station.Place || "Unnamed Station",
+                    stationName: station.place || "Unnamed Station",
                   };
                   navigateToView(stationView);
                   setShowChooseDestinationButton(true);
@@ -330,7 +319,7 @@ const MapContainer = () => {
               name: "StationView",
               center: station.position,
               zoom: ME_VIEW_ZOOM + STATION_VIEW_ZOOM_OFFSET,
-              stationName: station.Place || "Unnamed Station",
+              stationName: station.place || "Unnamed Station",
             };
             navigateToView(stationView);
             setShowChooseDestinationButton(true);
@@ -342,7 +331,7 @@ const MapContainer = () => {
             name: "StationView",
             center: station.position,
             zoom: DISTRICT_VIEW_ZOOM + STATION_VIEW_ZOOM_OFFSET,
-            stationName: station.Place || "Unnamed Station",
+            stationName: station.place || "Unnamed Station",
           };
           navigateToView(stationView);
           setShowChooseDestinationButton(true);
@@ -363,30 +352,14 @@ const MapContainer = () => {
 
   // Handle map click
   const handleMapClick = useCallback(() => {
-    // Deselect station if map is clicked
-    setSelectedStation(null);
-    setDirections(null);
-    setShowCircles(false);
-
-    // Return to a stable view (MeView if we have user location, else CityView)
-    if (userLocation) {
-      const meView = {
-        name: "MeView",
-        center: userLocation,
-        zoom: ME_VIEW_ZOOM,
-        tilt: ME_VIEW_TILT,
-      };
-      navigateToView(meView);
-      setShowCircles(true);
-    } else {
-      navigateToView(CITY_VIEW);
-    }
-  }, [userLocation, navigateToView]);
+    // Do not clear selectedStation here
+    // Clearing is only allowed via Back and Home buttons
+  }, []);
 
   // Locate the user
   const locateMe = useCallback(() => {
     setDirections(null);
-    setSelectedStation(null);
+    // Do not clear selectedStation here
 
     if (!map) {
       toast.error("Map not ready.");
@@ -421,6 +394,30 @@ const MapContainer = () => {
       toast.error("Geolocation not supported by your browser.");
     }
   }, [map, navigateToView]);
+
+  // Handle Home button click
+  const handleHomeClick = useCallback(() => {
+    // Navigate back to CityView
+    const homeView = {
+      name: "CityView",
+      center: CITY_VIEW.center,
+      zoom: CITY_VIEW.zoom,
+      tilt: CITY_VIEW.tilt,
+      heading: CITY_VIEW.heading,
+    };
+    setViewHistory([homeView]);
+    map.panTo(homeView.center);
+    map.setZoom(homeView.zoom);
+    if (homeView.tilt !== undefined) map.setTilt(homeView.tilt);
+    if (homeView.heading !== undefined) map.setHeading(homeView.heading);
+    map.setOptions({ styles: BASE_STYLES });
+    setSelectedStation(null);
+    setDepartureStation(null);
+    setDestinationStation(null);
+    setDirections(null);
+    setShowChooseDestinationButton(false);
+    setShowCircles(false);
+  }, [map]);
 
   // Handle map load
   const onLoadMap = useCallback((mapInstance) => {
@@ -684,47 +681,22 @@ const MapContainer = () => {
       {/* ToastContainer for toast notifications */}
       <ToastContainer />
 
-      {/* ViewBar displaying current view info */}
-      <div
-        style={{
-          position: "absolute",
-          top: "10px",
-          left: "50%",
-          transform: "translateX(-50%)",
-          background: "rgba(0,0,0,0.7)",
-          color: "#fff",
-          padding: "6px 12px",
-          borderRadius: "9999px",
-          zIndex: 1100,
-          fontSize: "16px",
-          fontWeight: "500",
-          textAlign: "center",
-          whiteSpace: "pre-wrap",
-        }}
-      >
-        {viewTitle}
+      {/* Top Bar with Back and Home Buttons and ViewBar */}
+      <div className="top-bar">
+        <BackButton onClick={goBack} />
+        <HomeButton onClick={handleHomeClick} />
+        <ViewBar
+          stationName={
+            selectedStation ? selectedStation.place : "Unnamed Station"
+          }
+        />
       </div>
 
       {/* "Choose your destination" Button */}
       {showChooseDestination && (
         <div
           onClick={handleChooseDestinationClick}
-          style={{
-            position: "absolute",
-            top: "60px",
-            left: "50%",
-            transform: "translateX(-50%)",
-            background: "#00a500",
-            color: "#fff",
-            padding: "10px 20px",
-            borderRadius: "8px",
-            cursor: "pointer",
-            zIndex: 1200,
-            boxShadow: "0 2px 10px rgba(0,0,0,0.3)",
-            transition: "transform 0.3s, box-shadow 0.3s",
-            animation: "pulse 2s infinite",
-            maxWidth: "80%",
-          }}
+          className="choose-destination-button"
         >
           💚 Choose your destination
         </div>
@@ -775,16 +747,7 @@ const MapContainer = () => {
                 position={getCircleLabelPosition(userLocation, dist)}
                 mapPaneName={OverlayView.OVERLAY_LAYER}
               >
-                <div
-                  style={{
-                    color: "#2171ec",
-                    fontSize: "14px",
-                    fontWeight: "bold",
-                    textShadow: "0 0 4px rgba(33,113,236,0.5)",
-                    transform: "translate(-50%, -100%)",
-                    whiteSpace: "nowrap",
-                  }}
-                >
+                <div className="circle-label">
                   {dist >= 1000 ? `${dist / 1000}km` : `${dist}m`}
                 </div>
               </OverlayView>
@@ -835,13 +798,7 @@ const MapContainer = () => {
             position={selectedStation?.position}
             onCloseClick={() => setShowWalkingRouteInfo(false)}
           >
-            <div
-              style={{
-                background: "#fff",
-                padding: "10px",
-                borderRadius: "4px",
-              }}
-            >
+            <div className="info-window">
               <h3>Walking Route Info</h3>
               <p>
                 Estimated walking time:{" "}
@@ -859,13 +816,7 @@ const MapContainer = () => {
               position={destinationStation?.position}
               onCloseClick={() => setShowDrivingRouteInfo(false)}
             >
-              <div
-                style={{
-                  background: "#fff",
-                  padding: "10px",
-                  borderRadius: "4px",
-                }}
-              >
+              <div className="info-window">
                 <h3>Driving Route Info</h3>
                 <p>Estimated driving time: {fareInfo.time}</p>
                 <p>Fare: HK${fareInfo.ourFare.toFixed(2)}</p>
@@ -879,91 +830,12 @@ const MapContainer = () => {
 
       {/* Locate Me Button */}
       <div
-        style={{
-          position: "absolute",
-          bottom: "20px",
-          left: "20px",
-          backgroundColor: "#fff",
-          borderRadius: "4px",
-          boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
-          cursor: "pointer",
-          display: "flex",
-          alignItems: "center",
-          padding: "8px",
-          zIndex: 1000,
-        }}
+        className="locate-me-button"
         onClick={locateMe}
         aria-label="Locate me"
       >
-        <FaLocationArrow style={{ color: "#2171ec", fontSize: "24px" }} />
+        <FaLocationArrow />
       </div>
-
-      {/* Back Button (if there is history) */}
-      {viewHistory.length > 1 && (
-        <button
-          onClick={goBack}
-          style={{
-            position: "absolute",
-            top: "10px",
-            left: "10px",
-            width: "40px",
-            height: "40px",
-            backgroundColor: "#e7e8ec",
-            color: "#000",
-            border: "none",
-            borderRadius: "4px",
-            cursor: "pointer",
-            zIndex: 1000,
-          }}
-          aria-label="Go back"
-        >
-          ←
-        </button>
-      )}
-
-      {/* CSS Keyframes for Pulse Animation */}
-      <style>
-        {`
-          @keyframes pulse {
-            0% {
-              transform: translateX(-50%) scale(1);
-              box-shadow: 0 0 5px rgba(0, 165, 0, 0.7);
-            }
-            50% {
-              transform: translateX(-50%) scale(1.05);
-              box-shadow: 0 0 15px rgba(0, 165, 0, 1);
-            }
-            100% {
-              transform: translateX(-50%) scale(1);
-              box-shadow: 0 0 5px rgba(0, 165, 0, 0.7);
-            }
-          }
-
-          /* Additional CSS for Markers if using OverlayView with custom elements */
-          .district-marker, .station-marker {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            border: 2px solid #fff;
-            cursor: pointer;
-            box-shadow: 0 0 3px rgba(0,0,0,0.3);
-          }
-
-          .district-marker {
-            background-color: red;
-          }
-
-          .station-marker {
-            background-color: blue;
-          }
-
-          /* Ensure markers are visible */
-          .map-container .gm-style-iw {
-            background-color: transparent !important;
-            box-shadow: none !important;
-          }
-        `}
-      </style>
     </div>
   );
 };
