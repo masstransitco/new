@@ -456,9 +456,7 @@ const MapContainer = () => {
           onClick={handleDistrictClick}
           icon={{
             url: "https://maps.google.com/mapfiles/ms/icons/red-dot.png", // District marker icon
-            scaledSize: window.google
-              ? new window.google.maps.Size(20, 20)
-              : undefined,
+            scaledSize: { width: 20, height: 20 }, // Using size literals
           }}
         />
       );
@@ -481,9 +479,7 @@ const MapContainer = () => {
             url: isSelected
               ? "https://maps.google.com/mapfiles/ms/icons/blue-dot.png"
               : "https://maps.google.com/mapfiles/ms/icons/white-dot.png",
-            scaledSize: window.google
-              ? new window.google.maps.Size(20, 20)
-              : undefined,
+            scaledSize: { width: 20, height: 20 }, // Using size literals
           }}
         />
       );
