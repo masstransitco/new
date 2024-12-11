@@ -25,12 +25,10 @@ import BackButton from "./BackButton";
 import HomeButton from "./HomeButton";
 import ViewBar from "./ViewBar";
 
-import stationsData from "./stations.geojson";
-import districtsData from "./districts.geojson";
-
 import "./MapContainer.css";
 
-// Hardcoded API Key
+// **Note:** It's a security best practice to use environment variables for API keys.
+// Replace the hardcoded API key with an environment variable in production.
 const GOOGLE_MAPS_API_KEY = "AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours"; // **Ensure you replace this with a valid API key!**
 
 // MapId
@@ -157,41 +155,75 @@ const MapContainer = () => {
     libraries,
   });
 
-  // Load stations.geojson
+  // Fetch stations.geojson from public directory
   useEffect(() => {
-    if (stationsData && Array.isArray(stationsData.features)) {
-      const features = stationsData.features.map((f) => ({
-        id: f.id,
-        position: {
-          lat: f.geometry.coordinates[1],
-          lng: f.geometry.coordinates[0],
-        },
-        District: f.properties.District,
-        place: f.properties.place,
-        Address: f.properties.Address,
-      }));
-      setStations(features);
-    } else {
-      console.error("stationsData.features is undefined or not an array.");
-      setStations([]); // Set to empty array to prevent undefined
-    }
+    fetch("/stations.geojson")
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed to fetch stations.geojson");
+        }
+        return response.json();
+      })
+      .then((data) => {
+        if (data && Array.isArray(data.features)) {
+          const features = data.features.map((f) => ({
+            id:
+              f.id ||
+              `${f.properties.place}-${f.geometry.coordinates[0]}-${f.geometry.coordinates[1]}`,
+            position: {
+              lat: f.geometry.coordinates[1],
+              lng: f.geometry.coordinates[0],
+            },
+            District: f.properties.District,
+            place: f.properties.place,
+            Address: f.properties.Address,
+          }));
+          setStations(features);
+        } else {
+          console.error(
+            "stations.geojson does not contain a valid 'features' array."
+          );
+          setStations([]); // Prevents 'undefined' by setting to empty array
+        }
+      })
+      .catch((error) => {
+        console.error("Error fetching stations.geojson:", error);
+        toast.error("Failed to load station data.");
+        setStations([]); // Prevents 'undefined' by setting to empty array
+      });
   }, []);
 
-  // Load districts.geojson (if applicable)
+  // Fetch districts.geojson from public directory
   useEffect(() => {
-    if (districtsData && Array.isArray(districtsData.features)) {
-      const districtsProcessed = districtsData.features.map((f) => ({
-        name: f.properties.District,
-        position: {
-          lat: f.geometry.coordinates[1],
-          lng: f.geometry.coordinates[0],
-        },
-      }));
-      setDistricts(districtsProcessed);
-    } else {
-      console.error("districtsData.features is undefined or not an array.");
-      setDistricts([]); // Set to empty array to prevent undefined
-    }
+    fetch("/districts.geojson")
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed to fetch districts.geojson");
+        }
+        return response.json();
+      })
+      .then((data) => {
+        if (data && Array.isArray(data.features)) {
+          const districtsProcessed = data.features.map((f) => ({
+            name: f.properties.District,
+            position: {
+              lat: f.geometry.coordinates[1],
+              lng: f.geometry.coordinates[0],
+            },
+          }));
+          setDistricts(districtsProcessed);
+        } else {
+          console.error(
+            "districts.geojson does not contain a valid 'features' array."
+          );
+          setDistricts([]); // Prevents 'undefined' by setting to empty array
+        }
+      })
+      .catch((error) => {
+        console.error("Error fetching districts.geojson:", error);
+        toast.error("Failed to load district data.");
+        setDistricts([]); // Prevents 'undefined' by setting to empty array
+      });
   }, []);
 
   // Navigate to a given view
@@ -708,10 +740,12 @@ const MapContainer = () => {
           mapTypeControl: false,
           fullscreenControl: false,
           zoomControl: true,
-          gestureHandling: currentView.name === "StationView" ? "none" : "auto", // Conditional gesture handling
-          rotateControl: true,
+          gestureHandling: "none", // **Disabled all default gesture handling**
+          rotateControl: false, // Optionally disable rotate control if not needed
           minZoom: 10,
-          draggable: currentView.name !== "StationView",
+          draggable: false, // **Disabled dragging to rely on custom gestures**
+          scrollwheel: false, // **Disabled scrollwheel zooming**
+          disableDoubleClickZoom: true, // **Disabled double-click zooming**
           styles:
             currentView.name === "RouteView"
               ? ROUTE_VIEW_STYLES
