@@ -129,6 +129,41 @@ const MapContainer = () => {
     libraries,
   });
 
+  // **Navigate to a given view**
+  const navigateToView = useCallback(
+    (view) => {
+      if (!map) return;
+
+      setViewHistory((prevHistory) => [...prevHistory, view]);
+
+      map.panTo(view.center);
+      map.setZoom(view.zoom);
+      if (view.tilt !== undefined) map.setTilt(view.tilt);
+      if (view.heading !== undefined) map.setHeading(view.heading);
+
+      // Apply styles based on the view
+      if (view.name === "RouteView") {
+        map.setOptions({ styles: ROUTE_VIEW_STYLES });
+      } else if (view.name === "StationView") {
+        map.setOptions({ styles: STATION_VIEW_STYLES });
+      } else {
+        map.setOptions({ styles: BASE_STYLES });
+      }
+
+      // Update ViewBar text based on view
+      if (view.name === "CityView") {
+        setViewBarText("Hong Kong");
+      } else if (view.name === "DistrictView") {
+        setViewBarText(view.districtName || "District");
+      } else if (view.name === "StationView") {
+        setViewBarText("Near Me");
+      } else if (view.name === "MeView") {
+        setViewBarText("Near Me");
+      }
+    },
+    [map]
+  );
+
   // **Navigate to RouteView and set tilt appropriately**
   const navigateToRouteView = useCallback(() => {
     if (!map || !departureStation) return;
@@ -163,41 +198,6 @@ const MapContainer = () => {
       }
     },
     [userState, map, navigateToRouteView]
-  );
-
-  // **Navigate to a given view**
-  const navigateToView = useCallback(
-    (view) => {
-      if (!map) return;
-
-      setViewHistory((prevHistory) => [...prevHistory, view]);
-
-      map.panTo(view.center);
-      map.setZoom(view.zoom);
-      if (view.tilt !== undefined) map.setTilt(view.tilt);
-      if (view.heading !== undefined) map.setHeading(view.heading);
-
-      // Apply styles based on the view
-      if (view.name === "RouteView") {
-        map.setOptions({ styles: ROUTE_VIEW_STYLES });
-      } else if (view.name === "StationView") {
-        map.setOptions({ styles: STATION_VIEW_STYLES });
-      } else {
-        map.setOptions({ styles: BASE_STYLES });
-      }
-
-      // Update ViewBar text based on view
-      if (view.name === "CityView") {
-        setViewBarText("Hong Kong");
-      } else if (view.name === "DistrictView") {
-        setViewBarText(view.districtName || "District");
-      } else if (view.name === "StationView") {
-        setViewBarText("Near Me");
-      } else if (view.name === "MeView") {
-        setViewBarText("Near Me");
-      }
-    },
-    [map]
   );
 
   // **Go back to the previous view**
