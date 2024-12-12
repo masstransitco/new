@@ -1,12 +1,6 @@
 // src/components/Map/MapContainer.jsx
 
-import React, {
-  useState,
-  useEffect,
-  useCallback,
-  useRef,
-  useMemo,
-} from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   GoogleMap,
   useJsApiLoader,
@@ -17,9 +11,6 @@ import {
   Marker,
   Polyline,
 } from "@react-google-maps/api";
-// Removed unused FaLocationArrow import
-import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 
 import BackButton from "./BackButton";
 import HomeButton from "./HomeButton";
@@ -31,7 +22,7 @@ import "./MapContainer.css";
 // **Note:** Use environment variables for API keys in production.
 const GOOGLE_MAPS_API_KEY = "AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours";
 
-// MapId
+// MapId for custom styling
 const mapId = "94527c02bbb6243";
 
 // Libraries needed by the Google Maps instance
@@ -52,9 +43,7 @@ const CITY_VIEW = {
   heading: 0,
 };
 
-const DISTRICT_VIEW_ZOOM = 12; // Base zoom for DistrictView
-const DISTRICT_VIEW_ZOOM_ADJUSTED = DISTRICT_VIEW_ZOOM + 2; // +2 levels
-
+const DISTRICT_VIEW_ZOOM_ADJUSTED = 14; // Adjusted zoom level for district view
 const ME_VIEW_ZOOM = 15;
 const ME_VIEW_TILT = 45;
 
@@ -132,7 +121,6 @@ const MapContainer = () => {
   const [showDrivingRouteInfo, setShowDrivingRouteInfo] = useState(false);
 
   const currentView = viewHistory[viewHistory.length - 1];
-  const mapRef = useRef(null);
 
   // Load Google Maps API
   const { isLoaded, loadError } = useJsApiLoader({
@@ -173,7 +161,6 @@ const MapContainer = () => {
       })
       .catch((error) => {
         console.error("Error fetching stations.geojson:", error);
-        toast.error("Failed to load station data.");
         setStations([]); // Prevents 'undefined' by setting to empty array
       });
   }, []);
@@ -206,7 +193,6 @@ const MapContainer = () => {
       })
       .catch((error) => {
         console.error("Error fetching districts.geojson:", error);
-        toast.error("Failed to load district data.");
         setDistricts([]); // Prevents 'undefined' by setting to empty array
       });
   }, []);
@@ -230,6 +216,17 @@ const MapContainer = () => {
         map.setOptions({ styles: STATION_VIEW_STYLES });
       } else {
         map.setOptions({ styles: BASE_STYLES });
+      }
+
+      // Update ViewBar text based on view
+      if (view.name === "CityView") {
+        setViewBarText("Hong Kong");
+      } else if (view.name === "DistrictView") {
+        setViewBarText(view.districtName || "District");
+      } else if (view.name === "StationView") {
+        setViewBarText("Near Me");
+      } else if (view.name === "MeView") {
+        setViewBarText("Near Me");
       }
     },
     [map]
@@ -293,12 +290,10 @@ const MapContainer = () => {
         map.panTo(station.position);
         map.setZoom(18);
         map.setTilt(65);
-        toast.success(`Set departure to ${station.place}`);
         setUserState(USER_STATES.SELECTING_ARRIVAL);
       } else if (userState === USER_STATES.SELECTING_ARRIVAL) {
         setDestinationStation(station);
         setViewBarText(`Arrival: ${station.place}`);
-        toast.success(`Set arrival to ${station.place}`);
         setUserState(USER_STATES.DISPLAY_FARE);
       }
     },
@@ -321,8 +316,18 @@ const MapContainer = () => {
 
   // **Handle "Choose Destination" button click**
   const handleChooseDestination = () => {
-    setViewBarText("Choose your destination");
+    const cityView = {
+      name: "CityView",
+      center: BASE_CITY_CENTER,
+      zoom: CITY_VIEW.zoom,
+      tilt: CITY_VIEW.tilt,
+      heading: CITY_VIEW.heading,
+    };
+    navigateToView(cityView);
     setUserState(USER_STATES.SELECTING_ARRIVAL);
+    setDestinationStation(null);
+    setDirections(null);
+    setFareInfo(null);
   };
 
   // **Compute fare once both departure and arrival are selected**
@@ -346,8 +351,7 @@ const MapContainer = () => {
             const fare = calculateFare(distance, duration);
             setFareInfo(fare);
           } else {
-            console.error(`error fetching directions ${result}`);
-            toast.error("Failed to fetch directions.");
+            console.error(`Error fetching directions: ${result}`);
           }
         }
       );
@@ -386,7 +390,7 @@ const MapContainer = () => {
     // Do not clear selectedStation here
 
     if (!map) {
-      toast.error("Map not ready.");
+      console.error("Map not ready.");
       return;
     }
 
@@ -406,18 +410,17 @@ const MapContainer = () => {
           };
           navigateToView(meView);
           setShowCircles(true);
-          setViewBarText("You are here");
-          toast.success("Located you successfully!");
+          setViewBarText("Near Me");
         },
         (error) => {
-          console.error("Location error:", error);
-          toast.error(
-            "Unable to access your location. Please enable location services."
+          console.error(
+            "Unable to access your location. Please enable location services.",
+            error
           );
         }
       );
     } else {
-      toast.error("Geolocation not supported by your browser.");
+      console.error("Geolocation not supported by your browser.");
     }
   }, [map, navigateToView]);
 
@@ -444,6 +447,26 @@ const MapContainer = () => {
     setViewBarText("Hong Kong");
     setUserState(USER_STATES.SELECTING_DEPARTURE); // Reset to selecting departure on Home
   }, [map]);
+
+  // **Handle Clear Departure Selection**
+  const handleClearDeparture = () => {
+    setDepartureStation(null);
+    setDirections(null);
+    setFareInfo(null);
+    setViewBarText("Hong Kong");
+    setUserState(USER_STATES.SELECTING_DEPARTURE);
+  };
+
+  // **Handle Clear Arrival Selection**
+  const handleClearArrival = () => {
+    setDestinationStation(null);
+    setDirections(null);
+    setFareInfo(null);
+    setViewBarText(
+      departureStation ? `Departure: ${departureStation.place}` : "Hong Kong"
+    );
+    setUserState(USER_STATES.SELECTING_Arrival);
+  };
 
   // **Handle map load**
   const onLoadMap = useCallback((mapInstance) => {
@@ -569,7 +592,7 @@ const MapContainer = () => {
         />
       </OverlayView>
     );
-  }, [userLocation, currentView.tilt]);
+  }, [userLocation, map]);
 
   // **Get label position for radius circles**
   const getCircleLabelPosition = useCallback((center, radius) => {
@@ -701,18 +724,16 @@ const MapContainer = () => {
     <div
       className="map-container"
       style={{ position: "relative", width: "100%", height: "100vh" }}
-      ref={mapRef}
     >
-      {/* ToastContainer for toast notifications */}
-      <ToastContainer />
-
       {/* Top Bar with Back and Home Buttons and ViewBar */}
       <div className="top-bar">
         {/* Back Button */}
         {viewHistory.length > 1 && <BackButton onClick={goBack} />}
 
-        {/* Home Button */}
-        <HomeButton onClick={handleHomeClick} />
+        {/* Home Button - Hidden in CityView */}
+        {currentView.name !== "CityView" && (
+          <HomeButton onClick={handleHomeClick} />
+        )}
 
         {/* ViewBar with Dynamic Text and Locate Me Button */}
         <ViewBar
@@ -720,14 +741,16 @@ const MapContainer = () => {
           arrival={destinationStation?.place}
           onLocateMe={locateMe}
           viewBarText={viewBarText}
+          onClearDeparture={handleClearDeparture}
+          onClearArrival={handleClearArrival}
+          showChooseDestination={
+            departureStation &&
+            !destinationStation &&
+            userState !== USER_STATES.SELECTING_Arrival
+          }
+          onChooseDestination={handleChooseDestination}
+          userState={userState}
         />
-
-        {/* View Route Button */}
-        {departureStation && destinationStation && (
-          <button className="view-route-button" onClick={navigateToRouteView}>
-            View Route
-          </button>
-        )}
       </div>
 
       <GoogleMap
@@ -874,13 +897,6 @@ const MapContainer = () => {
           </InfoWindow>
         )}
       </GoogleMap>
-
-      {/* Render "Choose Destination" button */}
-      {departureStation && !destinationStation && (
-        <div className="choose-destination-button">
-          <button onClick={handleChooseDestination}>Choose Destination</button>
-        </div>
-      )}
 
       {/* MotionMenu for displaying fare information */}
       <MotionMenu fareInfo={fareInfo} />

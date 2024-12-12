@@ -2,22 +2,75 @@
 
 import React from "react";
 import PropTypes from "prop-types";
-import { FaLocationArrow } from "react-icons/fa";
+import { FaLocationArrow, FaHome, FaTimes } from "react-icons/fa";
 import "./ViewBar.css"; // Ensure this CSS file exists and is correctly imported
 
-const ViewBar = ({ departure, arrival, onLocateMe, viewBarText }) => {
+const ViewBar = ({
+  departure,
+  arrival,
+  onLocateMe,
+  viewBarText,
+  onClearDeparture,
+  onClearArrival,
+  showChooseDestination,
+  onChooseDestination,
+  userState,
+}) => {
   return (
-    <div className="view-bar">
-      <div className="view-bar-text">
-        {departure && <span className="departure">Departure: {departure}</span>}
-        {arrival && <span className="arrival">Arrival: {arrival}</span>}
-        {!departure && !arrival && (
-          <span className="default-text">{viewBarText}</span>
-        )}
+    <div className="viewbar-container">
+      {/* Main ViewBar */}
+      <div className="view-bar">
+        {/* Locate Me Button */}
+        <button
+          className="icon-button locate-me-button"
+          onClick={onLocateMe}
+          aria-label="Locate Me"
+        >
+          <FaLocationArrow />
+        </button>
+
+        {/* View Title */}
+        <div className="view-title">{viewBarText}</div>
       </div>
-      <button className="locate-me-button" onClick={onLocateMe}>
-        <FaLocationArrow className="locate-me-icon" /> Locate Me
-      </button>
+
+      {/* Choose Destination Button */}
+      {showChooseDestination && (
+        <button
+          className="choose-destination-button"
+          onClick={onChooseDestination}
+          aria-label="Choose Destination"
+        >
+          Choose Destination
+        </button>
+      )}
+
+      {/* Departure Bar */}
+      {departure && (
+        <div className="selection-bar">
+          <button
+            className="icon-button clear-button"
+            onClick={onClearDeparture}
+            aria-label="Clear Departure"
+          >
+            <FaTimes />
+          </button>
+          <span className="selection-text">Departure: {departure}</span>
+        </div>
+      )}
+
+      {/* Arrival Bar */}
+      {arrival && (
+        <div className="selection-bar">
+          <button
+            className="icon-button clear-button"
+            onClick={onClearArrival}
+            aria-label="Clear Arrival"
+          >
+            <FaTimes />
+          </button>
+          <span className="selection-text">Arrival: {arrival}</span>
+        </div>
+      )}
     </div>
   );
 };
@@ -27,14 +80,18 @@ ViewBar.propTypes = {
   departure: PropTypes.string,
   arrival: PropTypes.string,
   onLocateMe: PropTypes.func.isRequired,
-  viewBarText: PropTypes.string,
+  viewBarText: PropTypes.string.isRequired,
+  onClearDeparture: PropTypes.func.isRequired,
+  onClearArrival: PropTypes.func.isRequired,
+  showChooseDestination: PropTypes.bool.isRequired,
+  onChooseDestination: PropTypes.func.isRequired,
+  userState: PropTypes.string.isRequired,
 };
 
 // Default props in case some props are not provided
 ViewBar.defaultProps = {
   departure: null,
   arrival: null,
-  viewBarText: "Hong Kong",
 };
 
 export default ViewBar;
