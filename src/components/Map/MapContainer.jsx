@@ -15,6 +15,7 @@ import {
   OverlayView,
   InfoWindow,
   Marker,
+  Polyline,
 } from "@react-google-maps/api";
 import { FaLocationArrow } from "react-icons/fa";
 import { toast, ToastContainer } from "react-toastify";
@@ -761,6 +762,25 @@ const MapContainer = () => {
             options={directionsOptions}
           />
         )}
+
+        {/* Polyline for Clickable Route */}
+        {directions &&
+          directions.routes.map((route, routeIndex) =>
+            route.legs.map((leg, legIndex) =>
+              leg.steps.map((step, stepIndex) => (
+                <Polyline
+                  key={`${routeIndex}-${legIndex}-${stepIndex}`}
+                  path={step.path}
+                  options={{
+                    strokeColor: "#276ef1",
+                    strokeOpacity: 0.8,
+                    strokeWeight: 4,
+                  }}
+                  onClick={handleRouteClick}
+                />
+              ))
+            )
+          )}
 
         {/* Fare Info Window */}
         {fareInfo && userState === USER_STATES.DISPLAY_FARE && (
