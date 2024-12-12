@@ -17,7 +17,7 @@ import {
   Marker,
   Polyline,
 } from "@react-google-maps/api";
-import { FaLocationArrow } from "react-icons/fa";
+// Removed unused FaLocationArrow import
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -307,18 +307,14 @@ const MapContainer = () => {
 
   // **Navigate to RouteView and set tilt appropriately**
   const navigateToRouteView = useCallback(() => {
-    if (!map) return;
-    map.setTilt(65); // Try setting the tilt to 65
-    const currentTilt = map.getTilt() || 0;
-    if (currentTilt > 65) {
-      map.setTilt(45); // Fall back to 45 if 65 exceeds max tilt
-    }
+    if (!map || !departureStation) return;
+
     const routeView = {
       name: "RouteView",
-      center: departureStation.position, // Assuming departureStation is defined
+      center: departureStation.position,
       zoom: 15,
-      tilt: map.getTilt(),
-      heading: map.getHeading(),
+      tilt: 45,
+      heading: 0,
     };
     navigateToView(routeView);
   }, [map, navigateToView, departureStation]);
@@ -725,6 +721,13 @@ const MapContainer = () => {
           onLocateMe={locateMe}
           viewBarText={viewBarText}
         />
+
+        {/* View Route Button */}
+        {departureStation && destinationStation && (
+          <button className="view-route-button" onClick={navigateToRouteView}>
+            View Route
+          </button>
+        )}
       </div>
 
       <GoogleMap

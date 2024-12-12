@@ -1,12 +1,57 @@
 /* src/components/Map/ViewBar.css */
 
 .view-bar {
-  flex-grow: 1;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  background-color: rgba(
+    255,
+    255,
+    255,
+    0.9
+  ); /* Semi-transparent white background */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-radius: 8px;
+  z-index: 1000; /* Ensure it stays above other elements */
+}
+
+.view-bar-text {
+  display: flex;
+  flex-direction: column;
   font-size: 16px;
-  font-weight: bold;
-  color: #000000;
-  padding: 0 10px;
+  font-weight: 500;
+  color: #333;
+}
+
+.departure,
+.arrival,
+.default-text {
+  margin: 2px 0;
+}
+
+.locate-me-button {
+  display: flex;
+  align-items: center;
+  background-color: #2171ec; /* Blue background */
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s ease;
+}
+
+.locate-me-button:hover {
+  background-color: #1a5bb8; /* Darker blue on hover */
+}
+
+.locate-me-icon {
+  margin-right: 6px; /* Space between icon and text */
+  font-size: 16px;
 }
