@@ -24,7 +24,7 @@ import "react-toastify/dist/ReactToastify.css";
 import BackButton from "./BackButton";
 import HomeButton from "./HomeButton";
 import ViewBar from "./ViewBar";
-import MotionMenu from "./src/components/Menu/MotionMenu"; // Ensure this component exists and is correctly implemented
+import MotionMenu from "../Menu/MotionMenu";
 
 import "./MapContainer.css";
 
