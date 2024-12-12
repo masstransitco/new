@@ -24,7 +24,7 @@ import "react-toastify/dist/ReactToastify.css";
 import BackButton from "./BackButton";
 import HomeButton from "./HomeButton";
 import ViewBar from "./ViewBar";
-import MotionMenu from "./Menu/MotionMenu"; // Ensure this component exists and is correctly implemented
+import MotionMenu from "./src/components/Menu/MotionMenu"; // Ensure this component exists and is correctly implemented
 
 import "./MapContainer.css";
 
@@ -552,8 +552,8 @@ const MapContainer = () => {
   // **User arrow overlay**
   const userOverlay = useMemo(() => {
     if (!userLocation) return null;
-    let tilt = currentView.tilt || 0;
-    const arrowRotation = 180 - (tilt / 65) * 30;
+
+    const arrowRotation = map?.getHeading() || 0; // Rotate based on map heading
     return (
       <OverlayView
         position={userLocation}
@@ -565,11 +565,12 @@ const MapContainer = () => {
             height: 0,
             borderLeft: "10px solid transparent",
             borderRight: "10px solid transparent",
-            borderTop: "20px solid #2171ec",
+            borderTop: "20px solid #2171ec", // Adjusted color for visibility
             transform: `rotate(${arrowRotation}deg)`,
             transformOrigin: "center",
+            zIndex: 10, // Ensure it's above other overlays
           }}
-        ></div>
+        />
       </OverlayView>
     );
   }, [userLocation, currentView.tilt]);
