@@ -39,20 +39,20 @@ const libraries = ["geometry", "places"];
 // Container style for the map
 const containerStyle = { width: "100%", height: "100vh" };
 
-// **1. Updated CityView Center Coordinates**
-const BASE_CITY_CENTER = { lat: 22.236, lng: 114.191 }; // New center coordinates
+// Base city center coordinates (e.g., Hong Kong)
+const BASE_CITY_CENTER = { lat: 22.236, lng: 114.191 };
 
-// Views configuration with displacement
+// Views configuration
 const CITY_VIEW = {
   name: "CityView",
-  center: BASE_CITY_CENTER, // Updated to new center
+  center: BASE_CITY_CENTER,
   zoom: 11,
   tilt: 45,
   heading: 0,
 };
 
 const DISTRICT_VIEW_ZOOM = 12; // Base zoom for DistrictView
-const DISTRICT_VIEW_ZOOM_ADJUSTED = DISTRICT_VIEW_ZOOM + 2; // **+2 levels**
+const DISTRICT_VIEW_ZOOM_ADJUSTED = DISTRICT_VIEW_ZOOM + 2; // +2 levels
 
 const ME_VIEW_ZOOM = 15;
 const ME_VIEW_TILT = 45;
@@ -106,44 +106,11 @@ const ROUTE_VIEW_STYLES = [
   },
 ];
 
-// **2. Displacement Function**
-const calculateDisplacement = (baseCenter, deltaLat, deltaLng) => {
-  return {
-    lat: baseCenter.lat + deltaLat,
-    lng: baseCenter.lng + deltaLng,
-  };
-};
-
-// Check if current time is peak hour
-function isPeakHour(date) {
-  const hour = date.getHours();
-  return PEAK_HOURS.some((p) => hour >= p.start && hour < p.end);
-}
-
-// Calculate fare estimates
-function calculateFare(distance, duration) {
-  // distance in meters, duration in seconds
-  // Approximate taxi fare logic:
-  // Base fare: HK$24 for first 2km + HK$1 for each 200m beyond 2km
-  const baseTaxi = 24;
-  const extraMeters = Math.max(0, distance - 2000);
-  const increments = Math.floor(extraMeters / 200) * 1;
-  const taxiFareEstimate = baseTaxi + increments;
-
-  // Our pricing:
-  // Peak hours: starting fare = $65, off-peak = $35
-  const startingFare = isPeakHour(new Date()) ? 65 : 35;
-  // Aim for ~50% of taxi fare
-  const target = taxiFareEstimate * 0.5;
-  const ourFare = Math.max(target, startingFare);
-
-  return { ourFare, taxiFareEstimate };
-}
-
-// Define user states
+// **User States**
 const USER_STATES = {
-  DEPARTURE: "UserChooseDeparture",
-  ARRIVAL: "UserChooseArrival",
+  SELECTING_DEPARTURE: "SelectingDeparture",
+  SELECTING_ARRIVAL: "SelectingArrival",
+  DISPLAY_FARE: "DisplayFare",
 };
 
 const MapContainer = () => {
@@ -158,12 +125,8 @@ const MapContainer = () => {
   const [showCircles, setShowCircles] = useState(false);
   const [departureStation, setDepartureStation] = useState(null);
   const [destinationStation, setDestinationStation] = useState(null);
-  const [showChooseDestinationButton, setShowChooseDestinationButton] =
-    useState(false);
-  const [showWalkingRouteInfo, setShowWalkingRouteInfo] = useState(false);
-  const [showDrivingRouteInfo, setShowDrivingRouteInfo] = useState(false);
-
-  const [userState, setUserState] = useState(USER_STATES.DEPARTURE); // Default to UserChooseDeparture
+  const [fareInfo, setFareInfo] = useState(null);
+  const [userState, setUserState] = useState(USER_STATES.SELECTING_DEPARTURE);
   const [viewBarText, setViewBarText] = useState("Hong Kong"); // Default to "Hong Kong"
 
   const currentView = viewHistory[viewHistory.length - 1];
@@ -246,34 +209,22 @@ const MapContainer = () => {
       });
   }, []);
 
-  // **3. Navigate to a given view with displacement applied**
+  // **Navigate to a given view**
   const navigateToView = useCallback(
     (view) => {
       if (!map) return;
 
-      // Apply displacement based on base city center
-      const displacedCenter = calculateDisplacement(
-        BASE_CITY_CENTER,
-        view.deltaLat || 0,
-        view.deltaLng || 0
-      );
+      setViewHistory((prevHistory) => [...prevHistory, view]);
 
-      const newView = {
-        ...view,
-        center: displacedCenter,
-      };
-
-      setViewHistory((prevHistory) => [...prevHistory, newView]);
-
-      map.panTo(newView.center);
-      map.setZoom(newView.zoom);
-      if (newView.tilt !== undefined) map.setTilt(newView.tilt);
-      if (newView.heading !== undefined) map.setHeading(newView.heading);
+      map.panTo(view.center);
+      map.setZoom(view.zoom);
+      if (view.tilt !== undefined) map.setTilt(view.tilt);
+      if (view.heading !== undefined) map.setHeading(view.heading);
 
       // Apply styles based on the view
-      if (newView.name === "RouteView") {
+      if (view.name === "RouteView") {
         map.setOptions({ styles: ROUTE_VIEW_STYLES });
-      } else if (newView.name === "StationView") {
+      } else if (view.name === "StationView") {
         map.setOptions({ styles: STATION_VIEW_STYLES });
       } else {
         map.setOptions({ styles: BASE_STYLES });
@@ -282,7 +233,7 @@ const MapContainer = () => {
     [map]
   );
 
-  // **4. Go back to the previous view**
+  // **Go back to the previous view**
   const goBack = useCallback(() => {
     if (viewHistory.length <= 1) return;
     const newHistory = viewHistory.slice(0, -1);
@@ -305,22 +256,18 @@ const MapContainer = () => {
       map.setOptions({ styles: BASE_STYLES });
     }
 
-    // **5. Updated ViewBar Display Based on View**
+    // **Updated ViewBar Display Based on View**
     if (previousView.name === "CityView") {
       // Display "Hong Kong" in ViewBar
       setViewBarText("Hong Kong");
-      setUserState(USER_STATES.DEPARTURE); // Reset to UserChooseDeparture if returning to CityView
+      setUserState(USER_STATES.SELECTING_DEPARTURE); // Reset to selecting departure if returning to CityView
     } else if (previousView.name === "DistrictView") {
       // Display selected district name in ViewBar
       setViewBarText(previousView.districtName || "District");
-      setUserState(USER_STATES.DEPARTURE); // Ensure state remains UserChooseDeparture
+      setUserState(USER_STATES.SELECTING_DEPARTURE); // Ensure state remains selecting departure
     } else if (previousView.name === "StationView") {
       // When going back to StationView, maintain current userState
       // No action needed
-    } else if (previousView.name === "MeView") {
-      // If implemented, handle accordingly
-      // Example:
-      // setUserState(USER_STATES.DEPARTURE);
     } else {
       // Default or other views
       setViewBarText("");
@@ -332,61 +279,81 @@ const MapContainer = () => {
     }
   }, [map, viewHistory]);
 
-  // **6. Handle "Choose your destination" button click**
-  const handleChooseDestinationClick = useCallback(() => {
-    if (selectedStation) {
-      setDepartureStation(selectedStation);
-    }
-    setDestinationStation(null);
-    setSelectedStation(null);
-    setDirections(null);
-    setShowChooseDestinationButton(false);
-    setUserState(USER_STATES.ARRIVAL); // Change state to UserChooseArrival
-    navigateToView(CITY_VIEW);
-  }, [selectedStation, navigateToView]);
-
-  // **7. Handle marker click with user states**
-  const handleMarkerClick = useCallback(
+  // **Handle station selection based on user state**
+  const handleStationSelection = useCallback(
     (station) => {
-      if (currentView.name === "DistrictView") {
-        const stationView = {
-          name: "StationView",
-          center: station.position,
-          zoom: DISTRICT_VIEW_ZOOM_ADJUSTED,
-          stationName: station.place || "Unnamed Station",
-        };
-        navigateToView(stationView);
-        setSelectedStation(station);
-        setShowChooseDestinationButton(true);
-
-        if (userState === USER_STATES.DEPARTURE) {
-          setDepartureStation(station);
-        } else if (userState === USER_STATES.ARRIVAL) {
-          setDestinationStation(station);
-          // Optionally, proceed to show route or perform other actions
-        }
-      } else if (currentView.name === "MeView") {
-        // Existing logic for MeView
-        // For example, navigating to RouteView
-        const stationView = {
-          name: "RouteView",
-          center: station.position,
-          zoom: DISTRICT_VIEW_ZOOM_ADJUSTED,
-          stationName: station.place || "Unnamed Station",
-        };
-        navigateToView(stationView);
-        setSelectedStation(station);
-        setShowChooseDestinationButton(true);
+      if (userState === USER_STATES.SELECTING_DEPARTURE) {
         setDepartureStation(station);
+        setUserState(USER_STATES.SELECTING_ARRIVAL);
+        toast.success(`Departure set to ${station.place}`);
+      } else if (userState === USER_STATES.SELECTING_ARRIVAL) {
+        setDestinationStation(station);
+        setUserState(USER_STATES.DISPLAY_FARE);
+        toast.success(`Arrival set to ${station.place}`);
       }
-      // Additional logic based on other views if necessary
     },
-    [currentView.name, navigateToView, userState]
+    [userState]
   );
 
-  // **8. Locate the user**
+  // **Compute fare once both departure and arrival are selected**
+  useEffect(() => {
+    if (departureStation && destinationStation) {
+      // Fetch directions between departure and arrival
+      const directionsService = new window.google.maps.DirectionsService();
+      directionsService.route(
+        {
+          origin: departureStation.position,
+          destination: destinationStation.position,
+          travelMode: window.google.maps.TravelMode.DRIVING,
+        },
+        (result, status) => {
+          if (status === window.google.maps.DirectionsStatus.OK) {
+            setDirections(result);
+            // Compute fare based on distance and duration
+            const route = result.routes[0].legs[0];
+            const distance = route.distance.value; // in meters
+            const duration = route.duration.value; // in seconds
+            const fare = calculateFare(distance, duration);
+            setFareInfo(fare);
+          } else {
+            console.error(`error fetching directions ${result}`);
+            toast.error("Failed to fetch directions.");
+          }
+        }
+      );
+    }
+  }, [departureStation, destinationStation]);
+
+  // **Fare Calculation Function**
+  const calculateFare = (distance, duration) => {
+    // distance in meters, duration in seconds
+    // Approximate taxi fare logic:
+    // Base fare: HK$24 for first 2km + HK$1 for each 200m beyond 2km
+    const baseTaxi = 24;
+    const extraMeters = Math.max(0, distance - 2000);
+    const increments = Math.floor(extraMeters / 200) * 1;
+    const taxiFareEstimate = baseTaxi + increments;
+
+    // Our pricing:
+    // Peak hours: starting fare = $65, off-peak = $35
+    const isPeak = isPeakHour(new Date());
+    const startingFare = isPeak ? 65 : 35;
+    // Aim for ~50% of taxi fare
+    const ourFare = Math.max(taxiFareEstimate * 0.5, startingFare);
+
+    return { ourFare, taxiFareEstimate };
+  };
+
+  // **Check if current time is peak hour**
+  const isPeakHour = (date) => {
+    const hour = date.getHours();
+    return PEAK_HOURS.some((p) => hour >= p.start && hour < p.end);
+  };
+
+  // **Locate the user**
   const locateMe = useCallback(() => {
     setDirections(null);
+    setFareInfo(null);
     // Do not clear selectedStation here
 
     if (!map) {
@@ -423,7 +390,7 @@ const MapContainer = () => {
     }
   }, [map, navigateToView]);
 
-  // **9. Handle Home button click**
+  // **Handle Home button click**
   const handleHomeClick = useCallback(() => {
     const homeView = {
       name: "CityView",
@@ -442,19 +409,19 @@ const MapContainer = () => {
     setDepartureStation(null);
     setDestinationStation(null);
     setDirections(null);
-    setShowChooseDestinationButton(false);
+    setFareInfo(null);
     setShowCircles(false);
     setViewBarText("Hong Kong");
-    setUserState(USER_STATES.DEPARTURE); // Reset to UserChooseDeparture on Home
+    setUserState(USER_STATES.SELECTING_DEPARTURE); // Reset to selecting departure on Home
   }, [map]);
 
-  // **10. Handle map load**
+  // **Handle map load**
   const onLoadMap = useCallback((mapInstance) => {
     console.log("Map loaded");
     setMap(mapInstance);
   }, []);
 
-  // **11. Invoke locateMe when map is set**
+  // **Invoke locateMe when map is set**
   useEffect(() => {
     if (map) {
       console.log("Invoking locateMe after map is set");
@@ -462,7 +429,7 @@ const MapContainer = () => {
     }
   }, [map, locateMe]);
 
-  // **12. Compute distance between user and a position (used for station filters)**
+  // **Compute distance between user and a position (used for station filters)**
   const computeDistance = useCallback(
     (pos) => {
       if (!userLocation || !window.google?.maps?.geometry?.spherical)
@@ -480,14 +447,14 @@ const MapContainer = () => {
     [userLocation]
   );
 
-  // **13. Check if we are in MeView to filter stations**
+  // **Check if we are in MeView to filter stations**
   const inMeView = currentView.name === "MeView";
   const filteredStations = useMemo(() => {
     if (!inMeView || !userLocation) return stations;
     return stations.filter((st) => computeDistance(st.position) <= 1000);
   }, [inMeView, userLocation, stations, computeDistance]);
 
-  // **14. District overlays in CityView**
+  // **District overlays in CityView**
   const districtOverlays = useMemo(() => {
     if (currentView.name !== "CityView") return null;
     return districts.map((d) => {
@@ -495,12 +462,12 @@ const MapContainer = () => {
         const dv = {
           name: "DistrictView",
           center: d.position,
-          zoom: DISTRICT_VIEW_ZOOM_ADJUSTED, // **+2 levels**
+          zoom: DISTRICT_VIEW_ZOOM_ADJUSTED,
           districtName: d.name,
         };
         navigateToView(dv);
         setViewBarText(d.name || "District");
-        setUserState(USER_STATES.DEPARTURE); // Ensure state remains UserChooseDeparture
+        setUserState(USER_STATES.SELECTING_DEPARTURE); // Ensure state remains selecting departure
       };
 
       return (
@@ -517,17 +484,15 @@ const MapContainer = () => {
     });
   }, [currentView.name, districts, navigateToView]);
 
-  // **15. Station overlays in MeView or DistrictView**
+  // **Station overlays in MeView or DistrictView**
   const stationOverlays = useMemo(() => {
-    if (
-      currentView.name !== "MeView" &&
-      currentView.name !== "DistrictView" &&
-      currentView.name !== "UserChooseArrival"
-    )
+    if (currentView.name !== "MeView" && currentView.name !== "DistrictView")
       return null;
     return filteredStations.map((station) => {
-      const handleClick = () => handleMarkerClick(station);
-      const isSelected = selectedStation && selectedStation.id === station.id;
+      const handleClick = () => handleStationSelection(station);
+      const isSelected =
+        (departureStation && departureStation.id === station.id) ||
+        (destinationStation && destinationStation.id === station.id);
       return (
         <Marker
           key={station.id}
@@ -542,9 +507,15 @@ const MapContainer = () => {
         />
       );
     });
-  }, [currentView.name, filteredStations, selectedStation, handleMarkerClick]);
+  }, [
+    currentView.name,
+    filteredStations,
+    departureStation,
+    destinationStation,
+    handleStationSelection,
+  ]);
 
-  // **16. User arrow overlay**
+  // **User arrow overlay**
   const userOverlay = useMemo(() => {
     if (!userLocation) return null;
     let tilt = currentView.tilt || 0;
@@ -569,7 +540,7 @@ const MapContainer = () => {
     );
   }, [userLocation, currentView.tilt]);
 
-  // **17. Get label position for radius circles**
+  // **Get label position for radius circles**
   const getCircleLabelPosition = useCallback((center, radius) => {
     const latOffset = radius * 0.000009; // Approx conversion of meters to lat offset
     return {
@@ -578,22 +549,7 @@ const MapContainer = () => {
     };
   }, []);
 
-  // **18. Fare Information After Destination Selection**
-  let fareInfo = null;
-  if (
-    currentView.name === "DriveView" &&
-    directions &&
-    departureStation &&
-    destinationStation
-  ) {
-    const route = directions.routes[0].legs[0];
-    const dist = route.distance.value; // meters
-    const dur = route.duration.value; // seconds
-    const { ourFare, taxiFareEstimate } = calculateFare(dist, dur);
-    fareInfo = { ourFare, taxiFareEstimate, time: route.duration.text };
-  }
-
-  // **19. Directions Renderer options**
+  // **Directions Renderer options**
   const directionsOptions = useMemo(() => {
     return {
       suppressMarkers: true,
@@ -605,7 +561,7 @@ const MapContainer = () => {
     };
   }, []);
 
-  // **20. Handle route click (to show info windows)**
+  // **Handle route click (to show info windows)**
   const handleRouteClick = useCallback(() => {
     if (currentView.name === "RouteView") {
       setShowWalkingRouteInfo(true);
@@ -614,7 +570,7 @@ const MapContainer = () => {
     }
   }, [currentView.name]);
 
-  // **21. Gesture Handling Logic**
+  // **Gesture Handling Logic**
   useEffect(() => {
     if (!map) return;
     const mapDiv = map.getDiv();
@@ -696,7 +652,7 @@ const MapContainer = () => {
     };
   }, [map]);
 
-  // **22. Check for load errors**
+  // **Check for load errors**
   if (loadError) {
     return (
       <div>
@@ -705,14 +661,10 @@ const MapContainer = () => {
     );
   }
 
-  // **23. If not loaded yet, show a loading message**
+  // **If not loaded yet, show a loading message**
   if (!isLoaded) {
     return <div>Loading...</div>;
   }
-
-  // **24. Determine if we should show the "Choose your destination" button**
-  const showChooseDestination =
-    currentView.name === "StationView" && showChooseDestinationButton;
 
   return (
     <div
@@ -734,16 +686,6 @@ const MapContainer = () => {
         {/* ViewBar with Dynamic Text */}
         <ViewBar stationName={viewBarText} />
       </div>
-
-      {/* "Choose your destination" Button */}
-      {showChooseDestination && (
-        <div
-          onClick={handleChooseDestinationClick}
-          className="choose-destination-button"
-        >
-          💚 Choose your destination
-        </div>
-      )}
 
       <GoogleMap
         mapContainerStyle={containerStyle}
@@ -818,61 +760,23 @@ const MapContainer = () => {
           />
         )}
 
-        {/* Custom Polylines for Route Click Handling (to show route info) */}
-        {directions &&
-          directions.routes.map((route, routeIndex) =>
-            route.legs.map((leg, legIndex) =>
-              leg.steps.map((step, stepIndex) =>
-                step.path.map((path, pathIndex) => (
-                  <Polyline
-                    key={`${routeIndex}-${legIndex}-${stepIndex}-${pathIndex}`}
-                    path={step.path}
-                    options={{
-                      strokeColor: "#276ef1",
-                      strokeOpacity: 0.8,
-                      strokeWeight: 4,
-                    }}
-                    onClick={handleRouteClick}
-                  />
-                ))
-              )
-            )
-          )}
-
-        {/* Walking Route Info (on RouteView) */}
-        {showWalkingRouteInfo && currentView.name === "RouteView" && (
+        {/* Fare Info Window */}
+        {fareInfo && userState === USER_STATES.DISPLAY_FARE && (
           <InfoWindow
-            position={selectedStation?.position}
-            onCloseClick={() => setShowWalkingRouteInfo(false)}
+            position={destinationStation.position}
+            onCloseClick={() => setFareInfo(null)}
           >
             <div className="info-window">
-              <h3>Walking Route Info</h3>
+              <h3>Fare Information</h3>
               <p>
-                Estimated walking time:{" "}
-                {directions?.routes[0]?.legs[0]?.duration.text}
+                Estimated driving time:{" "}
+                {directions.routes[0].legs[0].duration.text}
               </p>
+              <p>Fare: HK${fareInfo.ourFare.toFixed(2)}</p>
+              <p>(Taxi Estimate: HK${fareInfo.taxiFareEstimate.toFixed(2)})</p>
             </div>
           </InfoWindow>
         )}
-
-        {/* Driving Route Info (on DriveView) */}
-        {showDrivingRouteInfo &&
-          currentView.name === "DriveView" &&
-          fareInfo && (
-            <InfoWindow
-              position={destinationStation?.position}
-              onCloseClick={() => setShowDrivingRouteInfo(false)}
-            >
-              <div className="info-window">
-                <h3>Driving Route Info</h3>
-                <p>Estimated driving time: {fareInfo.time}</p>
-                <p>Fare: HK${fareInfo.ourFare.toFixed(2)}</p>
-                <p>
-                  (Taxi Estimate: HK${fareInfo.taxiFareEstimate.toFixed(2)})
-                </p>
-              </div>
-            </InfoWindow>
-          )}
       </GoogleMap>
 
       {/* Locate Me Button */}
