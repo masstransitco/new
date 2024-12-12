@@ -297,7 +297,7 @@ const MapContainer = () => {
         setUserState(USER_STATES.DISPLAY_FARE);
       }
     },
-    [userState, map]
+    [userState, map, navigateToRouteView]
   );
 
   // **Navigate to RouteView and set tilt appropriately**

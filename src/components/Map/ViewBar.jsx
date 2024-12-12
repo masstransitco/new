@@ -2,7 +2,7 @@
 
 import React from "react";
 import PropTypes from "prop-types";
-import { FaLocationArrow, FaHome, FaTimes } from "react-icons/fa";
+import { FaLocationArrow, FaHome, FaTimes } from "react-icons/fa"; // FaHome is now used
 import "./ViewBar.css"; // Ensure this CSS file exists and is correctly imported
 
 const ViewBar = ({
@@ -15,11 +15,21 @@ const ViewBar = ({
   showChooseDestination,
   onChooseDestination,
   userState,
+  onHomeClick, // New prop for Home button
 }) => {
   return (
     <div className="viewbar-container">
       {/* Main ViewBar */}
       <div className="view-bar">
+        {/* Home Button */}
+        <button
+          className="icon-button home-button"
+          onClick={onHomeClick}
+          aria-label="Home"
+        >
+          <FaHome />
+        </button>
+
         {/* Locate Me Button */}
         <button
           className="icon-button locate-me-button"
@@ -86,6 +96,7 @@ ViewBar.propTypes = {
   showChooseDestination: PropTypes.bool.isRequired,
   onChooseDestination: PropTypes.func.isRequired,
   userState: PropTypes.string.isRequired,
+  onHomeClick: PropTypes.func.isRequired, // New prop type
 };
 
 // Default props in case some props are not provided
