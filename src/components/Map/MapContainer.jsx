@@ -28,7 +28,7 @@ import ViewBar from "./ViewBar";
 import "./MapContainer.css";
 
 // **Note:** Use environment variables for API keys in production.
-const GOOGLE_MAPS_API_KEY = "YOUR_GOOGLE_MAPS_API_KEY"; // Replace with env variable
+const GOOGLE_MAPS_API_KEY = "AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours"; // Replace with env variable
 
 // MapId
 const mapId = "94527c02bbb6243";
@@ -54,7 +54,6 @@ const CITY_VIEW = {
 const DISTRICT_VIEW_ZOOM = 12; // Base zoom for DistrictView
 const DISTRICT_VIEW_ZOOM_ADJUSTED = DISTRICT_VIEW_ZOOM + 2; // **+2 levels**
 
-const STATION_VIEW_ZOOM_OFFSET = 2; // For StationView: MeView Zoom +2
 const ME_VIEW_ZOOM = 15;
 const ME_VIEW_TILT = 45;
 
