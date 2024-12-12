@@ -44,9 +44,7 @@ const CITY_VIEW = {
   heading: 0,
 };
 
-const DISTRICT_VIEW_ZOOM_ADJUSTED = 14; // Adjusted zoom level for district view
-const ME_VIEW_ZOOM = 15;
-const ME_VIEW_TILT = 45;
+// Additional view configurations can be added here...
 
 // Circle distances in meters
 const CIRCLE_DISTANCES = [500, 1000]; // meters
@@ -128,6 +126,63 @@ const MapContainer = () => {
     googleMapsApiKey: GOOGLE_MAPS_API_KEY,
     libraries,
   });
+
+  // **Fetch Stations Data**
+  useEffect(() => {
+    const fetchStations = async () => {
+      try {
+        const response = await fetch("/stations.geojson");
+        if (!response.ok) {
+          throw new Error("Failed to fetch stations data");
+        }
+        const data = await response.json();
+        // Transform GeoJSON to desired format if necessary
+        const transformedStations = data.features.map((feature) => ({
+          id: feature.id,
+          place: feature.properties.Place,
+          address: feature.properties.Address,
+          position: {
+            lat: feature.geometry.coordinates[1],
+            lng: feature.geometry.coordinates[0],
+          },
+          district: feature.properties.District,
+        }));
+        setStations(transformedStations);
+      } catch (error) {
+        console.error("Error fetching stations:", error);
+      }
+    };
+
+    fetchStations();
+  }, []);
+
+  // **Fetch Districts Data**
+  useEffect(() => {
+    const fetchDistricts = async () => {
+      try {
+        const response = await fetch("/districts.geojson");
+        if (!response.ok) {
+          throw new Error("Failed to fetch districts data");
+        }
+        const data = await response.json();
+        // Transform GeoJSON to desired format if necessary
+        const transformedDistricts = data.features.map((feature) => ({
+          id: feature.id,
+          name: feature.properties.DistrictName,
+          position: {
+            lat: feature.geometry.coordinates[1],
+            lng: feature.geometry.coordinates[0],
+          },
+          description: feature.properties.Description,
+        }));
+        setDistricts(transformedDistricts);
+      } catch (error) {
+        console.error("Error fetching districts:", error);
+      }
+    };
+
+    fetchDistricts();
+  }, []);
 
   // **Navigate to a given view**
   const navigateToView = useCallback(
@@ -259,7 +314,7 @@ const MapContainer = () => {
       heading: CITY_VIEW.heading,
     };
     navigateToView(cityView);
-    setUserState(USER_STATES.SELECTING_Arrival);
+    setUserState(USER_STATES.SELECTING_ARRIVAL);
     setDestinationStation(null);
     setDirections(null);
     setFareInfo(null);
@@ -340,8 +395,8 @@ const MapContainer = () => {
           const meView = {
             name: "MeView",
             center: userPos,
-            zoom: ME_VIEW_ZOOM,
-            tilt: ME_VIEW_TILT,
+            zoom: 15,
+            tilt: 45,
           };
           navigateToView(meView);
           setShowCircles(true);
@@ -450,7 +505,7 @@ const MapContainer = () => {
         const dv = {
           name: "DistrictView",
           center: d.position,
-          zoom: DISTRICT_VIEW_ZOOM_ADJUSTED,
+          zoom: 14, // Adjusted zoom level for district view
           districtName: d.name,
         };
         navigateToView(dv);
@@ -460,7 +515,7 @@ const MapContainer = () => {
 
       return (
         <Marker
-          key={d.name}
+          key={d.id}
           position={d.position}
           onClick={handleDistrictClick}
           icon={{
