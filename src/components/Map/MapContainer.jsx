@@ -27,9 +27,8 @@ import ViewBar from "./ViewBar";
 
 import "./MapContainer.css";
 
-// **Note:** It's a security best practice to use environment variables for API keys.
-// Replace the hardcoded API key with an environment variable in production.
-const GOOGLE_MAPS_API_KEY = "AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours"; // **Ensure you replace this with a valid API key!**
+// **Note:** Use environment variables for API keys in production.
+const GOOGLE_MAPS_API_KEY = "YOUR_GOOGLE_MAPS_API_KEY"; // Replace with env variable
 
 // MapId
 const mapId = "94527c02bbb6243";
@@ -142,6 +141,12 @@ function calculateFare(distance, duration) {
   return { ourFare, taxiFareEstimate };
 }
 
+// Define user states
+const USER_STATES = {
+  DEPARTURE: "UserChooseDeparture",
+  ARRIVAL: "UserChooseArrival",
+};
+
 const MapContainer = () => {
   // State Hooks
   const [map, setMap] = useState(null);
@@ -158,6 +163,9 @@ const MapContainer = () => {
     useState(false);
   const [showWalkingRouteInfo, setShowWalkingRouteInfo] = useState(false);
   const [showDrivingRouteInfo, setShowDrivingRouteInfo] = useState(false);
+
+  const [userState, setUserState] = useState(USER_STATES.DEPARTURE); // Default to UserChooseDeparture
+  const [viewBarText, setViewBarText] = useState("Hong Kong"); // Default to "Hong Kong"
 
   const currentView = viewHistory[viewHistory.length - 1];
   const mapRef = useRef(null);
@@ -298,13 +306,22 @@ const MapContainer = () => {
       map.setOptions({ styles: BASE_STYLES });
     }
 
-    // **5. Update ViewBar Display Based on View**
+    // **5. Updated ViewBar Display Based on View**
     if (previousView.name === "CityView") {
       // Display "Hong Kong" in ViewBar
       setViewBarText("Hong Kong");
+      setUserState(USER_STATES.DEPARTURE); // Reset to UserChooseDeparture if returning to CityView
     } else if (previousView.name === "DistrictView") {
       // Display selected district name in ViewBar
       setViewBarText(previousView.districtName || "District");
+      setUserState(USER_STATES.DEPARTURE); // Ensure state remains UserChooseDeparture
+    } else if (previousView.name === "StationView") {
+      // When going back to StationView, maintain current userState
+      // No action needed
+    } else if (previousView.name === "MeView") {
+      // If implemented, handle accordingly
+      // Example:
+      // setUserState(USER_STATES.DEPARTURE);
     } else {
       // Default or other views
       setViewBarText("");
@@ -316,118 +333,59 @@ const MapContainer = () => {
     }
   }, [map, viewHistory]);
 
-  // **6. ViewBar Text State**
-  const [viewBarText, setViewBarText] = useState("Hong Kong"); // Default to "Hong Kong"
+  // **6. Handle "Choose your destination" button click**
+  const handleChooseDestinationClick = useCallback(() => {
+    if (selectedStation) {
+      setDepartureStation(selectedStation);
+    }
+    setDestinationStation(null);
+    setSelectedStation(null);
+    setDirections(null);
+    setShowChooseDestinationButton(false);
+    setUserState(USER_STATES.ARRIVAL); // Change state to UserChooseArrival
+    navigateToView(CITY_VIEW);
+  }, [selectedStation, navigateToView]);
 
-  // Compute distance between user and a position (used for station filters)
-  const computeDistance = useCallback(
-    (pos) => {
-      if (!userLocation || !window.google?.maps?.geometry?.spherical)
-        return Infinity;
-      const userLatLng = new window.google.maps.LatLng(
-        userLocation.lat,
-        userLocation.lng
-      );
-      const stationLatLng = new window.google.maps.LatLng(pos.lat, pos.lng);
-      return window.google.maps.geometry.spherical.computeDistanceBetween(
-        userLatLng,
-        stationLatLng
-      );
-    },
-    [userLocation]
-  );
-
-  // Check if we are in MeView to filter stations
-  const inMeView = currentView.name === "MeView";
-  const filteredStations = useMemo(() => {
-    if (!inMeView || !userLocation) return stations;
-    return stations.filter((st) => computeDistance(st.position) <= 1000);
-  }, [inMeView, userLocation, stations, computeDistance]);
-
-  // **7. Handle Clicking on a Station Marker**
+  // **7. Handle marker click with user states**
   const handleMarkerClick = useCallback(
     (station) => {
       if (currentView.name === "DistrictView") {
-        // **Directly navigate to StationView on first click from DistrictView**
         const stationView = {
           name: "StationView",
           center: station.position,
-          zoom: DISTRICT_VIEW_ZOOM_ADJUSTED, // **+2 levels**
+          zoom: DISTRICT_VIEW_ZOOM_ADJUSTED,
           stationName: station.place || "Unnamed Station",
         };
         navigateToView(stationView);
         setSelectedStation(station);
         setShowChooseDestinationButton(true);
-      } else if (selectedStation && selectedStation.id === station.id) {
-        // Second click logic remains for other scenarios
-        if (currentView.name === "MeView") {
-          // If within 1000m, try to get walking directions
-          const dist = computeDistance(station.position);
-          if (dist <= 1000 && window.google?.maps?.DirectionsService) {
-            const directionsService =
-              new window.google.maps.DirectionsService();
-            directionsService.route(
-              {
-                origin: userLocation,
-                destination: station.position,
-                travelMode: "WALKING",
-              },
-              (result, status) => {
-                if (status === "OK") {
-                  setDirections(result);
-                  const stationView = {
-                    name: "StationView",
-                    center: station.position,
-                    zoom: ME_VIEW_ZOOM + STATION_VIEW_ZOOM_OFFSET,
-                    stationName: station.place || "Unnamed Station",
-                  };
-                  navigateToView(stationView);
-                  setShowChooseDestinationButton(true);
-                } else {
-                  console.error("Directions request failed:", status);
-                  toast.error("Unable to compute walking route.");
-                }
-              }
-            );
-          } else {
-            // Too far for walking route, just go to StationView
-            setDirections(null);
-            const stationView = {
-              name: "StationView",
-              center: station.position,
-              zoom: ME_VIEW_ZOOM + STATION_VIEW_ZOOM_OFFSET,
-              stationName: station.place || "Unnamed Station",
-            };
-            navigateToView(stationView);
-            setShowChooseDestinationButton(true);
-          }
-        } else if (currentView.name === "DistrictView") {
-          // From DistrictView directly to StationView (handled above)
-          setDirections(null);
-          setShowChooseDestinationButton(true);
+
+        if (userState === USER_STATES.DEPARTURE) {
+          setDepartureStation(station);
+        } else if (userState === USER_STATES.ARRIVAL) {
+          setDestinationStation(station);
+          // Optionally, proceed to show route or perform other actions
         }
-      } else {
-        // First tap: just select the station
+      } else if (currentView.name === "MeView") {
+        // Existing logic for MeView
+        // For example, navigating to RouteView
+        const stationView = {
+          name: "RouteView",
+          center: station.position,
+          zoom: DISTRICT_VIEW_ZOOM_ADJUSTED,
+          stationName: station.place || "Unnamed Station",
+        };
+        navigateToView(stationView);
         setSelectedStation(station);
+        setShowChooseDestinationButton(true);
+        setDepartureStation(station);
       }
+      // Additional logic based on other views if necessary
     },
-    [
-      currentView.name,
-      computeDistance,
-      navigateToView,
-      selectedStation,
-      userLocation,
-    ]
+    [currentView.name, navigateToView, userState]
   );
 
-  // Handle map click
-  const handleMapClick = useCallback(() => {
-    // Do not clear selectedStation here
-    // Clearing is only allowed via Back and Home buttons
-    // Optionally, provide feedback or keep the selection
-  }, []);
-
-  // Locate the user
+  // **8. Locate the user**
   const locateMe = useCallback(() => {
     setDirections(null);
     // Do not clear selectedStation here
@@ -466,12 +424,11 @@ const MapContainer = () => {
     }
   }, [map, navigateToView]);
 
-  // Handle Home button click
+  // **9. Handle Home button click**
   const handleHomeClick = useCallback(() => {
-    // Navigate back to CityView
     const homeView = {
       name: "CityView",
-      center: BASE_CITY_CENTER, // Updated base center
+      center: BASE_CITY_CENTER,
       zoom: CITY_VIEW.zoom,
       tilt: CITY_VIEW.tilt,
       heading: CITY_VIEW.heading,
@@ -488,16 +445,17 @@ const MapContainer = () => {
     setDirections(null);
     setShowChooseDestinationButton(false);
     setShowCircles(false);
-    setViewBarText("Hong Kong"); // **Update ViewBar text**
+    setViewBarText("Hong Kong");
+    setUserState(USER_STATES.DEPARTURE); // Reset to UserChooseDeparture on Home
   }, [map]);
 
-  // Handle map load
+  // **10. Handle map load**
   const onLoadMap = useCallback((mapInstance) => {
     console.log("Map loaded");
     setMap(mapInstance);
   }, []);
 
-  // **Invoke locateMe when map is set**
+  // **11. Invoke locateMe when map is set**
   useEffect(() => {
     if (map) {
       console.log("Invoking locateMe after map is set");
@@ -505,7 +463,32 @@ const MapContainer = () => {
     }
   }, [map, locateMe]);
 
-  // District overlays in CityView
+  // **12. Compute distance between user and a position (used for station filters)**
+  const computeDistance = useCallback(
+    (pos) => {
+      if (!userLocation || !window.google?.maps?.geometry?.spherical)
+        return Infinity;
+      const userLatLng = new window.google.maps.LatLng(
+        userLocation.lat,
+        userLocation.lng
+      );
+      const stationLatLng = new window.google.maps.LatLng(pos.lat, pos.lng);
+      return window.google.maps.geometry.spherical.computeDistanceBetween(
+        userLatLng,
+        stationLatLng
+      );
+    },
+    [userLocation]
+  );
+
+  // **13. Check if we are in MeView to filter stations**
+  const inMeView = currentView.name === "MeView";
+  const filteredStations = useMemo(() => {
+    if (!inMeView || !userLocation) return stations;
+    return stations.filter((st) => computeDistance(st.position) <= 1000);
+  }, [inMeView, userLocation, stations, computeDistance]);
+
+  // **14. District overlays in CityView**
   const districtOverlays = useMemo(() => {
     if (currentView.name !== "CityView") return null;
     return districts.map((d) => {
@@ -517,7 +500,8 @@ const MapContainer = () => {
           districtName: d.name,
         };
         navigateToView(dv);
-        setViewBarText(d.name); // **Update ViewBar text with district name**
+        setViewBarText(d.name || "District");
+        setUserState(USER_STATES.DEPARTURE); // Ensure state remains UserChooseDeparture
       };
 
       return (
@@ -534,9 +518,13 @@ const MapContainer = () => {
     });
   }, [currentView.name, districts, navigateToView]);
 
-  // Station overlays in MeView or DistrictView
+  // **15. Station overlays in MeView or DistrictView**
   const stationOverlays = useMemo(() => {
-    if (currentView.name !== "MeView" && currentView.name !== "DistrictView")
+    if (
+      currentView.name !== "MeView" &&
+      currentView.name !== "DistrictView" &&
+      currentView.name !== "UserChooseArrival"
+    )
       return null;
     return filteredStations.map((station) => {
       const handleClick = () => handleMarkerClick(station);
@@ -557,7 +545,7 @@ const MapContainer = () => {
     });
   }, [currentView.name, filteredStations, selectedStation, handleMarkerClick]);
 
-  // User arrow overlay
+  // **16. User arrow overlay**
   const userOverlay = useMemo(() => {
     if (!userLocation) return null;
     let tilt = currentView.tilt || 0;
@@ -582,7 +570,7 @@ const MapContainer = () => {
     );
   }, [userLocation, currentView.tilt]);
 
-  // Get label position for radius circles
+  // **17. Get label position for radius circles**
   const getCircleLabelPosition = useCallback((center, radius) => {
     const latOffset = radius * 0.000009; // Approx conversion of meters to lat offset
     return {
@@ -591,20 +579,7 @@ const MapContainer = () => {
     };
   }, []);
 
-  // **8. Handle "Choose your destination" button click**
-  const handleChooseDestinationClick = useCallback(() => {
-    if (selectedStation) {
-      setDepartureStation(selectedStation);
-    }
-    setDestinationStation(null);
-    setSelectedStation(null);
-    setDirections(null);
-    setShowChooseDestinationButton(false);
-    // Prompt user to select a destination from CityView
-    navigateToView(CITY_VIEW);
-  }, [selectedStation, navigateToView]);
-
-  // **9. Fare Information After Destination Selection**
+  // **18. Fare Information After Destination Selection**
   let fareInfo = null;
   if (
     currentView.name === "DriveView" &&
@@ -619,7 +594,7 @@ const MapContainer = () => {
     fareInfo = { ourFare, taxiFareEstimate, time: route.duration.text };
   }
 
-  // Directions Renderer options
+  // **19. Directions Renderer options**
   const directionsOptions = useMemo(() => {
     return {
       suppressMarkers: true,
@@ -631,7 +606,7 @@ const MapContainer = () => {
     };
   }, []);
 
-  // Handle route click (to show info windows)
+  // **20. Handle route click (to show info windows)**
   const handleRouteClick = useCallback(() => {
     if (currentView.name === "RouteView") {
       setShowWalkingRouteInfo(true);
@@ -640,7 +615,7 @@ const MapContainer = () => {
     }
   }, [currentView.name]);
 
-  // Gesture Handling Logic
+  // **21. Gesture Handling Logic**
   useEffect(() => {
     if (!map) return;
     const mapDiv = map.getDiv();
@@ -722,7 +697,7 @@ const MapContainer = () => {
     };
   }, [map]);
 
-  // Check for load errors
+  // **22. Check for load errors**
   if (loadError) {
     return (
       <div>
@@ -731,12 +706,12 @@ const MapContainer = () => {
     );
   }
 
-  // If not loaded yet, show a loading message
+  // **23. If not loaded yet, show a loading message**
   if (!isLoaded) {
     return <div>Loading...</div>;
   }
 
-  // Determine if we should show the "Choose your destination" button
+  // **24. Determine if we should show the "Choose your destination" button**
   const showChooseDestination =
     currentView.name === "StationView" && showChooseDestinationButton;
 
@@ -757,7 +732,7 @@ const MapContainer = () => {
         {/* Home Button */}
         <HomeButton onClick={handleHomeClick} />
 
-        {/* **5. Updated ViewBar with Dynamic Text** */}
+        {/* ViewBar with Dynamic Text */}
         <ViewBar stationName={viewBarText} />
       </div>
 
@@ -797,7 +772,9 @@ const MapContainer = () => {
               : BASE_STYLES,
         }}
         onLoad={onLoadMap}
-        onClick={handleMapClick}
+        onClick={() => {
+          /* Optionally handle map clicks */
+        }}
       >
         {/* User Location Circles */}
         {userLocation &&
