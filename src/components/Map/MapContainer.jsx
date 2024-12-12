@@ -24,6 +24,7 @@ import "react-toastify/dist/ReactToastify.css";
 import BackButton from "./BackButton";
 import HomeButton from "./HomeButton";
 import ViewBar from "./ViewBar";
+import MotionMenu from "./MotionMenu"; // Ensure this component exists and is correctly implemented
 
 import "./MapContainer.css";
 
@@ -288,16 +289,45 @@ const MapContainer = () => {
     (station) => {
       if (userState === USER_STATES.SELECTING_DEPARTURE) {
         setDepartureStation(station);
+        setViewBarText(`Departure: ${station.place}`);
+        map.panTo(station.position);
+        map.setZoom(18);
+        map.setTilt(65);
+        toast.success(`Set departure to ${station.place}`);
         setUserState(USER_STATES.SELECTING_ARRIVAL);
-        toast.success(`Departure set to ${station.place}`);
       } else if (userState === USER_STATES.SELECTING_ARRIVAL) {
         setDestinationStation(station);
+        setViewBarText(`Arrival: ${station.place}`);
+        toast.success(`Set arrival to ${station.place}`);
         setUserState(USER_STATES.DISPLAY_FARE);
-        toast.success(`Arrival set to ${station.place}`);
       }
     },
-    [userState]
+    [userState, map]
   );
+
+  // **Navigate to RouteView and set tilt appropriately**
+  const navigateToRouteView = useCallback(() => {
+    if (!map) return;
+    map.setTilt(65); // Try setting the tilt to 65
+    const currentTilt = map.getTilt() || 0;
+    if (currentTilt > 65) {
+      map.setTilt(45); // Fall back to 45 if 65 exceeds max tilt
+    }
+    const routeView = {
+      name: "RouteView",
+      center: departureStation.position, // Assuming departureStation is defined
+      zoom: 15,
+      tilt: map.getTilt(),
+      heading: map.getHeading(),
+    };
+    navigateToView(routeView);
+  }, [map, navigateToView, departureStation]);
+
+  // **Handle "Choose Destination" button click**
+  const handleChooseDestination = () => {
+    setViewBarText("Choose your destination");
+    setUserState(USER_STATES.SELECTING_ARRIVAL);
+  };
 
   // **Compute fare once both departure and arrival are selected**
   useEffect(() => {
@@ -331,7 +361,6 @@ const MapContainer = () => {
   // **Fare Calculation Function**
   const calculateFare = (distance, duration) => {
     // distance in meters, duration in seconds
-    // Approximate taxi fare logic:
     // Base fare: HK$24 for first 2km + HK$1 for each 200m beyond 2km
     const baseTaxi = 24;
     const extraMeters = Math.max(0, distance - 2000);
@@ -381,6 +410,8 @@ const MapContainer = () => {
           };
           navigateToView(meView);
           setShowCircles(true);
+          setViewBarText("You are here");
+          toast.success("Located you successfully!");
         },
         (error) => {
           console.error("Location error:", error);
@@ -686,8 +717,13 @@ const MapContainer = () => {
         {/* Home Button */}
         <HomeButton onClick={handleHomeClick} />
 
-        {/* ViewBar with Dynamic Text */}
-        <ViewBar stationName={viewBarText} />
+        {/* ViewBar with Dynamic Text and Locate Me Button */}
+        <ViewBar
+          departure={departureStation?.place}
+          arrival={destinationStation?.place}
+          onLocateMe={locateMe}
+          viewBarText={viewBarText}
+        />
       </div>
 
       <GoogleMap
@@ -835,14 +871,15 @@ const MapContainer = () => {
         )}
       </GoogleMap>
 
-      {/* Locate Me Button */}
-      <div
-        className="locate-me-button"
-        onClick={locateMe}
-        aria-label="Locate me"
-      >
-        <FaLocationArrow />
-      </div>
+      {/* Render "Choose Destination" button */}
+      {departureStation && !destinationStation && (
+        <div className="choose-destination-button">
+          <button onClick={handleChooseDestination}>Choose Destination</button>
+        </div>
+      )}
+
+      {/* MotionMenu for displaying fare information */}
+      <MotionMenu fareInfo={fareInfo} />
     </div>
   );
 };
