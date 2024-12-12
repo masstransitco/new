@@ -27,7 +27,7 @@ import ViewBar from "./ViewBar";
 import "./MapContainer.css";
 
 // **Note:** Use environment variables for API keys in production.
-const GOOGLE_MAPS_API_KEY = "AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours"; // Replace with env variable
+const GOOGLE_MAPS_API_KEY = "AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours";
 
 // MapId
 const mapId = "94527c02bbb6243";
@@ -117,7 +117,6 @@ const MapContainer = () => {
   const [map, setMap] = useState(null);
   const [stations, setStations] = useState([]);
   const [districts, setDistricts] = useState([]);
-  const [selectedStation, setSelectedStation] = useState(null);
   const [userLocation, setUserLocation] = useState(null);
   const [directions, setDirections] = useState(null);
   const [viewHistory, setViewHistory] = useState([CITY_VIEW]);
@@ -127,6 +126,8 @@ const MapContainer = () => {
   const [fareInfo, setFareInfo] = useState(null);
   const [userState, setUserState] = useState(USER_STATES.SELECTING_DEPARTURE);
   const [viewBarText, setViewBarText] = useState("Hong Kong"); // Default to "Hong Kong"
+  const [showWalkingRouteInfo, setShowWalkingRouteInfo] = useState(false);
+  const [showDrivingRouteInfo, setShowDrivingRouteInfo] = useState(false);
 
   const currentView = viewHistory[viewHistory.length - 1];
   const mapRef = useRef(null);
@@ -272,9 +273,12 @@ const MapContainer = () => {
       setViewBarText("");
     }
 
-    // Clear selectedStation if navigating back from StationView or other views
+    // Clear selected stations if navigating back from StationView or other views
     if (previousView.name !== "StationView") {
-      setSelectedStation(null);
+      setDepartureStation(null);
+      setDestinationStation(null);
+      setDirections(null);
+      setFareInfo(null);
     }
   }, [map, viewHistory]);
 
@@ -404,7 +408,6 @@ const MapContainer = () => {
     if (homeView.tilt !== undefined) map.setTilt(homeView.tilt);
     if (homeView.heading !== undefined) map.setHeading(homeView.heading);
     map.setOptions({ styles: BASE_STYLES });
-    setSelectedStation(null);
     setDepartureStation(null);
     setDestinationStation(null);
     setDirections(null);
@@ -773,6 +776,40 @@ const MapContainer = () => {
               </p>
               <p>Fare: HK${fareInfo.ourFare.toFixed(2)}</p>
               <p>(Taxi Estimate: HK${fareInfo.taxiFareEstimate.toFixed(2)})</p>
+            </div>
+          </InfoWindow>
+        )}
+
+        {/* Walking Route Info Window */}
+        {showWalkingRouteInfo && currentView.name === "RouteView" && (
+          <InfoWindow
+            position={departureStation.position}
+            onCloseClick={() => setShowWalkingRouteInfo(false)}
+          >
+            <div className="info-window">
+              <h3>Walking Route Info</h3>
+              <p>
+                Estimated walking time:{" "}
+                {directions?.routes[0]?.legs[0]?.duration.text}
+              </p>
+            </div>
+          </InfoWindow>
+        )}
+
+        {/* Driving Route Info Window */}
+        {showDrivingRouteInfo && currentView.name === "DriveView" && (
+          <InfoWindow
+            position={destinationStation.position}
+            onCloseClick={() => setShowDrivingRouteInfo(false)}
+          >
+            <div className="info-window">
+              <h3>Driving Route Info</h3>
+              <p>
+                Estimated driving time:{" "}
+                {directions?.routes[0]?.legs[0]?.duration.text}
+              </p>
+              <p>Fare: HK${fareInfo?.ourFare.toFixed(2)}</p>
+              <p>(Taxi Estimate: HK${fareInfo?.taxiFareEstimate.toFixed(2)})</p>
             </div>
           </InfoWindow>
         )}
