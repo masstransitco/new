@@ -14,7 +14,6 @@ import {
   Circle,
   OverlayView,
   InfoWindow,
-  Polyline,
   Marker,
 } from "@react-google-maps/api";
 import { FaLocationArrow } from "react-icons/fa";
