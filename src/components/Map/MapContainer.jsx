@@ -20,6 +20,7 @@ import MotionMenu from "../Menu/MotionMenu";
 import "./MapContainer.css";
 
 // **Note:** Use environment variables for API keys in production.
+// Keeping the API key hardcoded as per your request.
 const GOOGLE_MAPS_API_KEY = "AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours";
 
 // MapId for custom styling
@@ -128,74 +129,41 @@ const MapContainer = () => {
     libraries,
   });
 
-  // Fetch stations.geojson from public directory
-  useEffect(() => {
-    fetch("/stations.geojson")
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("Failed to fetch stations.geojson");
-        }
-        return response.json();
-      })
-      .then((data) => {
-        if (data && Array.isArray(data.features)) {
-          const features = data.features.map((f) => ({
-            id:
-              f.id ||
-              `${f.properties.place}-${f.geometry.coordinates[0]}-${f.geometry.coordinates[1]}`,
-            position: {
-              lat: f.geometry.coordinates[1],
-              lng: f.geometry.coordinates[0],
-            },
-            District: f.properties.District,
-            place: f.properties.place,
-            Address: f.properties.Address,
-          }));
-          setStations(features);
-        } else {
-          console.error(
-            "stations.geojson does not contain a valid 'features' array."
-          );
-          setStations([]); // Prevents 'undefined' by setting to empty array
-        }
-      })
-      .catch((error) => {
-        console.error("Error fetching stations.geojson:", error);
-        setStations([]); // Prevents 'undefined' by setting to empty array
-      });
-  }, []);
+  // **Navigate to RouteView and set tilt appropriately**
+  const navigateToRouteView = useCallback(() => {
+    if (!map || !departureStation) return;
 
-  // Fetch districts.geojson from public directory
-  useEffect(() => {
-    fetch("/districts.geojson")
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("Failed to fetch districts.geojson");
-        }
-        return response.json();
-      })
-      .then((data) => {
-        if (data && Array.isArray(data.features)) {
-          const districtsProcessed = data.features.map((f) => ({
-            name: f.properties.District,
-            position: {
-              lat: f.geometry.coordinates[1],
-              lng: f.geometry.coordinates[0],
-            },
-          }));
-          setDistricts(districtsProcessed);
-        } else {
-          console.error(
-            "districts.geojson does not contain a valid 'features' array."
-          );
-          setDistricts([]); // Prevents 'undefined' by setting to empty array
-        }
-      })
-      .catch((error) => {
-        console.error("Error fetching districts.geojson:", error);
-        setDistricts([]); // Prevents 'undefined' by setting to empty array
-      });
-  }, []);
+    const routeView = {
+      name: "RouteView",
+      center: departureStation.position,
+      zoom: 15,
+      tilt: 45,
+      heading: 0,
+    };
+    navigateToView(routeView);
+  }, [map, navigateToView, departureStation]);
+
+  // **Handle station selection based on user state**
+  const handleStationSelection = useCallback(
+    (station) => {
+      if (userState === USER_STATES.SELECTING_DEPARTURE) {
+        setDepartureStation(station);
+        setViewBarText(`Departure: ${station.place}`);
+        map.panTo(station.position);
+        map.setZoom(18);
+        map.setTilt(65);
+        setUserState(USER_STATES.SELECTING_ARRIVAL);
+      } else if (userState === USER_STATES.SELECTING_ARRIVAL) {
+        setDestinationStation(station);
+        setViewBarText(`Arrival: ${station.place}`);
+        setUserState(USER_STATES.DISPLAY_FARE);
+
+        // **Invoke navigateToRouteView after setting arrival station**
+        navigateToRouteView();
+      }
+    },
+    [userState, map, navigateToRouteView]
+  );
 
   // **Navigate to a given view**
   const navigateToView = useCallback(
@@ -281,39 +249,6 @@ const MapContainer = () => {
     }
   }, [map, viewHistory]);
 
-  // **Handle station selection based on user state**
-  const handleStationSelection = useCallback(
-    (station) => {
-      if (userState === USER_STATES.SELECTING_DEPARTURE) {
-        setDepartureStation(station);
-        setViewBarText(`Departure: ${station.place}`);
-        map.panTo(station.position);
-        map.setZoom(18);
-        map.setTilt(65);
-        setUserState(USER_STATES.SELECTING_ARRIVAL);
-      } else if (userState === USER_STATES.SELECTING_ARRIVAL) {
-        setDestinationStation(station);
-        setViewBarText(`Arrival: ${station.place}`);
-        setUserState(USER_STATES.DISPLAY_FARE);
-      }
-    },
-    [userState, map, navigateToRouteView]
-  );
-
-  // **Navigate to RouteView and set tilt appropriately**
-  const navigateToRouteView = useCallback(() => {
-    if (!map || !departureStation) return;
-
-    const routeView = {
-      name: "RouteView",
-      center: departureStation.position,
-      zoom: 15,
-      tilt: 45,
-      heading: 0,
-    };
-    navigateToView(routeView);
-  }, [map, navigateToView, departureStation]);
-
   // **Handle "Choose Destination" button click**
   const handleChooseDestination = () => {
     const cityView = {
@@ -324,7 +259,7 @@ const MapContainer = () => {
       heading: CITY_VIEW.heading,
     };
     navigateToView(cityView);
-    setUserState(USER_STATES.SELECTING_ARRIVAL);
+    setUserState(USER_STATES.SELECTING_Arrival);
     setDestinationStation(null);
     setDirections(null);
     setFareInfo(null);
