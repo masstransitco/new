@@ -1,4 +1,5 @@
 // src/components/Map/FareInfoWindow.jsx
+
 import React from "react";
 import { InfoWindow } from "@react-google-maps/api";
 

@@ -40,6 +40,14 @@
   gap: 15px;
 }
 
+/* Selection Buttons Container */
+.selection-buttons-container {
+  display: flex;
+  flex-direction: column; /* Stack vertically */
+  align-items: flex-end; /* Align to the end to maintain layout */
+  gap: 5px;
+}
+
 /* Clear Button */
 .clear-button {
   background: none;

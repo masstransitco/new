@@ -25,6 +25,8 @@ const ViewBar = ({
   isCityView, // Determines if HomeButton should be displayed
   userState, // Current user state
   isMeView, // Determines if LocateMe should be displayed
+  distanceKm, // Distance in km
+  estTime, // Estimated time
 }) => {
   // Determine visibility of buttons based on userState and view
   const showLocateMe =
@@ -32,6 +34,10 @@ const ViewBar = ({
 
   const showHomeButton =
     !isCityView && userState === USER_STATES.SELECTING_DEPARTURE;
+
+  // Determine if dynamic title should be shown
+  const dynamicTitle =
+    userState === USER_STATES.DISPLAY_FARE && distanceKm && estTime;
 
   return (
     <div className="view-bar">
@@ -42,39 +48,46 @@ const ViewBar = ({
       </div>
 
       {/* View Title */}
-      <div className="view-title">{viewBarText}</div>
+      <div className="view-title">
+        {dynamicTitle
+          ? `Distance: ${distanceKm} km, Est Time: ${estTime}`
+          : viewBarText}
+      </div>
 
       {/* Buttons Group: Clear Buttons and Choose Destination */}
       <div className="buttons-group">
-        {/* Clear Departure Button */}
-        {departure && (
-          <div className="selection-bar">
-            <button
-              className="clear-button"
-              onClick={onClearDeparture}
-              title="Clear Departure"
-              aria-label="Clear Departure"
-            >
-              ✕
-            </button>
-            <span className="selection-text">Departure: {departure}</span>
-          </div>
-        )}
+        {/* Selection Buttons Container */}
+        <div className="selection-buttons-container">
+          {/* Clear Departure Button */}
+          {departure && (
+            <div className="selection-bar">
+              <button
+                className="clear-button"
+                onClick={onClearDeparture}
+                title="Clear Departure"
+                aria-label="Clear Departure"
+              >
+                ✕
+              </button>
+              <span className="selection-text">Departure: {departure}</span>
+            </div>
+          )}
 
-        {/* Clear Arrival Button */}
-        {arrival && (
-          <div className="selection-bar">
-            <button
-              className="clear-button"
-              onClick={onClearArrival}
-              title="Clear Arrival"
-              aria-label="Clear Arrival"
-            >
-              ✕
-            </button>
-            <span className="selection-text">Arrival: {arrival}</span>
-          </div>
-        )}
+          {/* Clear Arrival Button */}
+          {arrival && (
+            <div className="selection-bar">
+              <button
+                className="clear-button"
+                onClick={onClearArrival}
+                title="Clear Arrival"
+                aria-label="Clear Arrival"
+              >
+                ✕
+              </button>
+              <span className="selection-text">Arrival: {arrival}</span>
+            </div>
+          )}
+        </div>
 
         {/* Choose Destination Button */}
         {showChooseDestination && (

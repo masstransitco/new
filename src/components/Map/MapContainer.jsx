@@ -48,6 +48,8 @@ const CITY_VIEW = {
   heading: 0,
 };
 
+const STATION_VIEW_ZOOM = 12; // Defined zoom level for StationView
+
 // Circle distances in meters
 const CIRCLE_DISTANCES = [500, 1000]; // meters
 
@@ -115,7 +117,7 @@ const MapContainer = () => {
   const [destinationStation, setDestinationStation] = useState(null);
   const [fareInfo, setFareInfo] = useState(null);
   const [userState, setUserState] = useState(USER_STATES.SELECTING_DEPARTURE);
-  const [viewBarText, setViewBarText] = useState("Hong Kong"); // Default to "Hong Kong"
+  const [viewBarText, setViewBarText] = useState("Stations near me"); // Updated to "Stations near me"
   const [routeInfo, setRouteInfo] = useState(null);
 
   const currentView = viewHistory[viewHistory.length - 1];
@@ -196,11 +198,11 @@ const MapContainer = () => {
       } else if (view.name === "DistrictView") {
         setViewBarText(view.districtName || "District");
       } else if (view.name === "StationView") {
-        setViewBarText("Near Me");
+        setViewBarText(view.districtName || "Station"); // Updated to display district name
       } else if (view.name === "MeView") {
-        setViewBarText("Near Me");
+        setViewBarText("Stations near me"); // Updated to "Stations near me"
       } else if (view.name === "DriveView") {
-        setViewBarText("Drive Mode");
+        // This will be updated later with distance and estimated time
       }
     },
     [map]
@@ -239,23 +241,26 @@ const MapContainer = () => {
     (station) => {
       if (userState === USER_STATES.SELECTING_DEPARTURE) {
         setDepartureStation(station);
-        setViewBarText(`Departure: ${station.district}, ${station.place}`);
-        map.panTo(station.position);
-        map.setZoom(18);
-        map.setTilt(65);
-        // Redirect back to CityView
-        navigateToView(CITY_VIEW);
+        setViewBarText(`Stations near me`); // Optional: could remain "Stations near me"
+        // Navigate to StationView
+        const stationView = {
+          name: "StationView",
+          center: station.position,
+          zoom: STATION_VIEW_ZOOM, // Zoom level 12
+          tilt: 0,
+          heading: 0,
+          districtName: station.district, // Pass district name for ViewBar
+        };
+        navigateToView(stationView);
         setUserState(USER_STATES.SELECTING_DEPARTURE); // Remain in SELECTING_DEPARTURE
       } else if (userState === USER_STATES.SELECTING_ARRIVAL) {
         setDestinationStation(station);
-        setViewBarText(`Arrival: ${station.district}, ${station.place}`);
         setUserState(USER_STATES.DISPLAY_FARE);
-
         // **Invoke navigateToDriveView after setting arrival station**
         navigateToDriveView();
       }
     },
-    [userState, map, navigateToView, navigateToDriveView]
+    [userState, navigateToView, navigateToDriveView]
   );
 
   // **Handle "Choose Destination" button click**
@@ -272,6 +277,7 @@ const MapContainer = () => {
     setDestinationStation(null);
     setDirections(null);
     setFareInfo(null);
+    setViewBarText("Select your arrival station"); // Updated title
   };
 
   // **Compute fare once both departure and arrival are selected**
@@ -292,8 +298,18 @@ const MapContainer = () => {
             const route = result.routes[0].legs[0];
             const distance = route.distance.value; // in meters
             const duration = route.duration.text; // formatted text
-            const fare = calculateFare(distance, duration);
+            const fare = calculateFare(distance, route.duration.value); // Pass duration in seconds
             setFareInfo(fare);
+
+            // Update ViewBar title with distance and estimated time
+            const distanceKm = (distance / 1000).toFixed(2);
+            const durationMinutes = Math.floor(route.duration.value / 60);
+            const durationHours = Math.floor(durationMinutes / 60);
+            const remainingMinutes = durationMinutes % 60;
+            const estTime = `${
+              durationHours > 0 ? `${durationHours} hr ` : ""
+            }${remainingMinutes} mins`;
+            setViewBarText(`Distance: ${distanceKm} km, Est Time: ${estTime}`);
           } else {
             console.error(`Error fetching directions: ${result}`);
           }
@@ -303,7 +319,7 @@ const MapContainer = () => {
   }, [departureStation, destinationStation]);
 
   // **Fare Calculation Function**
-  const calculateFare = (distance, duration) => {
+  const calculateFare = (distance, durationInSeconds) => {
     // distance in meters, duration in seconds
     // Base fare: HK$24 for first 2km + HK$1 for each 200m beyond 2km
     const baseTaxi = 24;
@@ -354,7 +370,7 @@ const MapContainer = () => {
           };
           navigateToView(meView);
           setShowCircles(true);
-          setViewBarText("Near Me");
+          setViewBarText("Stations near me"); // Updated title
         },
         (error) => {
           console.error(
@@ -388,8 +404,8 @@ const MapContainer = () => {
     setDirections(null);
     setFareInfo(null);
     setShowCircles(false);
-    setViewBarText("Hong Kong");
-    setUserState(USER_STATES.SELECTING_DEPARTURE); // Reset to selecting departure on Home
+    setViewBarText("Hong Kong"); // Reset to "Hong Kong"
+    setUserState(USER_STATES.SELECTING_DEPARTURE); // Reset to SELECTING_DEPARTURE
   }, [map]);
 
   // **Handle Clear Departure Selection**
@@ -397,7 +413,7 @@ const MapContainer = () => {
     setDepartureStation(null);
     setDirections(null);
     setFareInfo(null);
-    setViewBarText("Hong Kong");
+    setViewBarText("Stations near me"); // Reset to "Stations near me"
     setUserState(USER_STATES.SELECTING_DEPARTURE);
   };
 
@@ -409,7 +425,7 @@ const MapContainer = () => {
     setViewBarText(
       departureStation
         ? `Departure: ${departureStation.district}, ${departureStation.place}`
-        : "Hong Kong"
+        : "Stations near me"
     );
     setUserState(USER_STATES.SELECTING_ARRIVAL);
   };
@@ -424,7 +440,7 @@ const MapContainer = () => {
         districtName: district.name,
       };
       navigateToView(districtView);
-      setViewBarText(district.name || "District");
+      setViewBarText("Select your arrival station"); // Updated title
       // Do not change userState here to prevent reverting from SELECTING_ARRIVAL
     },
     [navigateToView]
@@ -565,6 +581,8 @@ const MapContainer = () => {
         isCityView={currentView.name === "CityView"} // Pass isCityView flag to ViewBar
         userState={userState} // Pass current userState
         isMeView={currentView.name === "MeView"} // Pass isMeView flag
+        distanceKm={fareInfo ? (fareInfo.distanceKm || 0).toFixed(2) : null} // Pass distance
+        estTime={fareInfo ? fareInfo.estTime : null} // Pass estimated time
       />
 
       <GoogleMap
@@ -683,15 +701,16 @@ const MapContainer = () => {
         {routeInfo && (
           <RouteInfoWindow
             position={routeInfo.position}
-            title={routeInfo.title}
-            description={routeInfo.description}
+            info={routeInfo} // Updated to pass 'info' prop
             onClose={() => setRouteInfo(null)}
           />
         )}
       </GoogleMap>
 
       {/* MotionMenu for displaying fare information */}
-      <MotionMenu fareInfo={fareInfo} />
+      {userState === USER_STATES.DISPLAY_FARE && (
+        <MotionMenu fareInfo={fareInfo} />
+      )}
     </div>
   );
 };
