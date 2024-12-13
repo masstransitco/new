@@ -297,7 +297,7 @@ const MapContainer = () => {
             // Compute fare based on distance and duration
             const route = result.routes[0].legs[0];
             const distance = route.distance.value; // in meters
-            const duration = route.duration.text; // formatted text
+            // Removed the unused 'duration' variable
             const fare = calculateFare(distance, route.duration.value); // Pass duration in seconds
             setFareInfo(fare);
 
