@@ -9,6 +9,7 @@ import {
 } from "@react-google-maps/api";
 
 import ViewBar from "./ViewBar";
+import ChooseDestinationButton from "./ChooseDestinationButton"; // Ensure this path is correct
 import MotionMenu from "../Menu/MotionMenu";
 import FareInfoWindow from "./FareInfoWindow";
 import RouteInfoWindow from "./RouteInfoWindow";
@@ -45,6 +46,13 @@ const CITY_VIEW = {
   zoom: 11,
   tilt: 45,
   heading: 0,
+};
+
+const DRIVE_VIEW = {
+  name: "DriveView",
+  zoom: 14,
+  tilt: 0, // Assuming no tilt for DriveView
+  heading: 0, // Will be dynamically set based on departure and arrival
 };
 
 // Circle distances in meters
@@ -185,6 +193,8 @@ const MapContainer = () => {
         map.setOptions({ styles: ROUTE_VIEW_STYLES });
       } else if (view.name === "StationView") {
         map.setOptions({ styles: STATION_VIEW_STYLES });
+      } else if (view.name === "DriveView") {
+        map.setOptions({ styles: BASE_STYLES }); // Assuming DriveView uses base styles
       } else {
         map.setOptions({ styles: BASE_STYLES });
       }
@@ -198,6 +208,8 @@ const MapContainer = () => {
         setViewBarText("Near Me");
       } else if (view.name === "MeView") {
         setViewBarText("Near Me");
+      } else if (view.name === "DriveView") {
+        setViewBarText("Drive Mode");
       }
     },
     [map]
@@ -217,26 +229,56 @@ const MapContainer = () => {
     navigateToView(routeView);
   }, [map, navigateToView, departureStation]);
 
+  // **Navigate to DriveView**
+  const navigateToDriveView = useCallback(() => {
+    if (!map || !departureStation || !destinationStation) return;
+
+    // Calculate heading from departure to destination
+    const departureLatLng = new window.google.maps.LatLng(
+      departureStation.position.lat,
+      departureStation.position.lng
+    );
+    const destinationLatLng = new window.google.maps.LatLng(
+      destinationStation.position.lat,
+      destinationStation.position.lng
+    );
+    const heading = window.google.maps.geometry.spherical.computeHeading(
+      departureLatLng,
+      destinationLatLng
+    );
+
+    const driveView = {
+      name: "DriveView",
+      center: departureStation.position,
+      zoom: 14,
+      tilt: 0,
+      heading: heading,
+    };
+    navigateToView(driveView);
+  }, [map, navigateToView, departureStation, destinationStation]);
+
   // **Handle station selection based on user state**
   const handleStationSelection = useCallback(
     (station) => {
       if (userState === USER_STATES.SELECTING_DEPARTURE) {
         setDepartureStation(station);
-        setViewBarText(`Departure: ${station.place}`);
+        setViewBarText(`Departure: ${station.district}, ${station.place}`);
         map.panTo(station.position);
         map.setZoom(18);
         map.setTilt(65);
-        setUserState(USER_STATES.SELECTING_DEPARTURE);
+        // Redirect back to CityView
+        navigateToView(CITY_VIEW);
+        setUserState(USER_STATES.SELECTING_DEPARTURE); // Remain in SELECTING_DEPARTURE
       } else if (userState === USER_STATES.SELECTING_ARRIVAL) {
         setDestinationStation(station);
-        setViewBarText(`Arrival: ${station.place}`);
+        setViewBarText(`Arrival: ${station.district}, ${station.place}`);
         setUserState(USER_STATES.DISPLAY_FARE);
 
-        // **Invoke navigateToRouteView after setting arrival station**
-        navigateToRouteView();
+        // **Invoke navigateToDriveView after setting arrival station**
+        navigateToDriveView();
       }
     },
-    [userState, map, navigateToRouteView]
+    [userState, map, navigateToView, navigateToDriveView]
   );
 
   // **Go back to the previous view**
@@ -258,6 +300,8 @@ const MapContainer = () => {
       map.setOptions({ styles: ROUTE_VIEW_STYLES });
     } else if (previousView.name === "StationView") {
       map.setOptions({ styles: STATION_VIEW_STYLES });
+    } else if (previousView.name === "DriveView") {
+      map.setOptions({ styles: BASE_STYLES });
     } else {
       map.setOptions({ styles: BASE_STYLES });
     }
@@ -274,13 +318,20 @@ const MapContainer = () => {
     } else if (previousView.name === "StationView") {
       // When going back to StationView, maintain current userState
       // No action needed
+    } else if (previousView.name === "DriveView") {
+      // Display fare information
+      setViewBarText("Drive Mode");
+      setUserState(USER_STATES.DISPLAY_FARE);
     } else {
       // Default or other views
       setViewBarText("");
     }
 
-    // Clear selected stations if navigating back from StationView or other views
-    if (previousView.name !== "StationView") {
+    // Clear selected stations if navigating back from DriveView or other views
+    if (
+      previousView.name !== "StationView" &&
+      previousView.name !== "DriveView"
+    ) {
       setDepartureStation(null);
       setDestinationStation(null);
       setDirections(null);
@@ -290,14 +341,14 @@ const MapContainer = () => {
 
   // **Handle "Choose Destination" button click**
   const handleChooseDestination = () => {
-    const cityView = {
+    const chooseDestinationView = {
       name: "CityView",
       center: BASE_CITY_CENTER,
       zoom: CITY_VIEW.zoom,
       tilt: CITY_VIEW.tilt,
       heading: CITY_VIEW.heading,
     };
-    navigateToView(cityView);
+    navigateToView(chooseDestinationView);
     setUserState(USER_STATES.SELECTING_ARRIVAL);
     setDestinationStation(null);
     setDirections(null);
@@ -437,7 +488,9 @@ const MapContainer = () => {
     setDirections(null);
     setFareInfo(null);
     setViewBarText(
-      departureStation ? `Departure: ${departureStation.place}` : "Hong Kong"
+      departureStation
+        ? `Departure: ${departureStation.district}, ${departureStation.place}`
+        : "Hong Kong"
     );
     setUserState(USER_STATES.SELECTING_ARRIVAL);
   };
@@ -453,7 +506,7 @@ const MapContainer = () => {
       };
       navigateToView(districtView);
       setViewBarText(district.name || "District");
-      setUserState(USER_STATES.SELECTING_DEPARTURE); // Ensure state remains selecting departure
+      // Do not change userState here to prevent reverting from SELECTING_ARRIVAL
     },
     [navigateToView]
   );
@@ -586,7 +639,7 @@ const MapContainer = () => {
         showChooseDestination={
           departureStation &&
           !destinationStation &&
-          userState !== USER_STATES.SELECTING_ARRIVAL
+          userState === USER_STATES.SELECTING_DEPARTURE
         }
         onChooseDestination={handleChooseDestination}
         onBack={goBack} // Pass goBack function to ViewBar
@@ -600,7 +653,7 @@ const MapContainer = () => {
         zoom={currentView.zoom}
         options={{
           mapId: mapId, // Reintroduced mapId for custom styling
-          tilt: currentView.tilt || 45,
+          tilt: currentView.tilt || 0,
           heading: currentView.heading || 0,
           streetViewControl: false,
           mapTypeControl: false,
@@ -617,6 +670,8 @@ const MapContainer = () => {
               ? ROUTE_VIEW_STYLES
               : currentView.name === "StationView"
               ? STATION_VIEW_STYLES
+              : currentView.name === "DriveView"
+              ? BASE_STYLES
               : BASE_STYLES,
         }}
         onLoad={onLoadMap}

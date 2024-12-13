@@ -5,7 +5,7 @@ import "./ViewBar.css"; // Ensure styles are correctly applied
 import LocateMe from "./LocateMe"; // Import the LocateMe component
 import HomeButton from "./HomeButton"; // Import HomeButton component
 import BackButton from "./BackButton"; // Import BackButton component
-import { FaArrowRight } from "react-icons/fa"; // Import the arrow icon
+import ChooseDestinationButton from "./ChooseDestinationButton"; // Import the new component
 
 const ViewBar = ({
   departure,
@@ -69,13 +69,7 @@ const ViewBar = ({
 
       {/* Choose Destination Button */}
       {showChooseDestination && (
-        <button
-          className="choose-destination-button"
-          onClick={onChooseDestination}
-          aria-label="Choose Destination"
-        >
-          Continue to select destination <FaArrowRight />
-        </button>
+        <ChooseDestinationButton onChooseDestination={onChooseDestination} />
       )}
     </div>
   );
