@@ -71,7 +71,7 @@
 }
 
 .choose-destination-button {
-  margin-top: 10px; /* Slightly lower on Y-axis */
+  position: flex;
   padding: 12px 20px;
   background-color: #1e3a8a; /* Uber Blue */
   color: white;
