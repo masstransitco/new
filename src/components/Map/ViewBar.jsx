@@ -1,5 +1,9 @@
+// src/components/Map/ViewBar.jsx
+
 import React from "react";
 import "./ViewBar.css"; // Ensure styles are correctly applied
+import LocateMe from "./LocateMe"; // Import the LocateMe component
+import { FaArrowRight } from "react-icons/fa"; // Import the arrow icon
 
 const ViewBar = ({
   departure,
@@ -10,40 +14,52 @@ const ViewBar = ({
   onClearArrival,
   showChooseDestination,
   onChooseDestination,
-  userState,
 }) => {
   return (
     <div className="view-bar">
       <div className="view-title">{viewBarText}</div>
       <div className="buttons-group">
-        <button className="locate-me-button" onClick={onLocateMe}>
-          Locate Me
-        </button>
+        {/* Locate Me Button */}
+        <LocateMe onLocateMe={onLocateMe} />
+
+        {/* Clear Departure Button */}
         {departure && (
           <div className="selection-bar">
-            <button className="clear-button" onClick={onClearDeparture}>
-              Clear
+            <button
+              className="clear-button"
+              onClick={onClearDeparture}
+              title="Clear Departure"
+            >
+              ✕
             </button>
             <span className="selection-text">Departure: {departure}</span>
           </div>
         )}
+
+        {/* Clear Arrival Button */}
         {arrival && (
           <div className="selection-bar">
-            <button className="clear-button" onClick={onClearArrival}>
-              Clear
+            <button
+              className="clear-button"
+              onClick={onClearArrival}
+              title="Clear Arrival"
+            >
+              ✕
             </button>
             <span className="selection-text">Arrival: {arrival}</span>
           </div>
         )}
-        {showChooseDestination && (
-          <button
-            className="choose-destination-button"
-            onClick={onChooseDestination}
-          >
-            Choose Destination
-          </button>
-        )}
       </div>
+
+      {/* Choose Destination Button */}
+      {showChooseDestination && (
+        <button
+          className="choose-destination-button"
+          onClick={onChooseDestination}
+        >
+          Continue to select destination <FaArrowRight />
+        </button>
+      )}
     </div>
   );
 };

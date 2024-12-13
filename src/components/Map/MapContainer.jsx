@@ -577,33 +577,21 @@ const MapContainer = () => {
       className="map-container"
       style={{ position: "relative", width: "100%", height: "100vh" }}
     >
-      {/* Top Bar with Back and Home Buttons and ViewBar */}
-      <div className="top-bar">
-        {/* Back Button */}
-        {viewHistory.length > 1 && <BackButton onClick={goBack} />}
-
-        {/* Home Button - Hidden in CityView */}
-        {currentView.name !== "CityView" && (
-          <HomeButton onClick={handleHomeClick} />
-        )}
-
-        {/* ViewBar with Dynamic Text and Locate Me Button */}
-        <ViewBar
-          departure={departureStation?.place}
-          arrival={destinationStation?.place}
-          onLocateMe={locateMe}
-          viewBarText={viewBarText}
-          onClearDeparture={handleClearDeparture}
-          onClearArrival={handleClearArrival}
-          showChooseDestination={
-            departureStation &&
-            !destinationStation &&
-            userState !== USER_STATES.SELECTING_ARRival
-          }
-          onChooseDestination={handleChooseDestination}
-          userState={userState}
-        />
-      </div>
+      {/* ViewBar */}
+      <ViewBar
+        departure={departureStation?.place}
+        arrival={destinationStation?.place}
+        onLocateMe={locateMe}
+        viewBarText={viewBarText}
+        onClearDeparture={handleClearDeparture}
+        onClearArrival={handleClearArrival}
+        showChooseDestination={
+          departureStation &&
+          !destinationStation &&
+          userState !== USER_STATES.SELECTING_ARRival
+        }
+        onChooseDestination={handleChooseDestination}
+      />
 
       <GoogleMap
         mapContainerStyle={containerStyle}

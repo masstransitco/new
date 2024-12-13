@@ -94,3 +94,17 @@
   transform: translateX(-50%) scale(1.05);
   box-shadow: 0 0 20px rgba(0, 165, 0, 1);
 }
+
+.error-message {
+  color: red;
+  font-size: 1.2rem;
+  text-align: center;
+  margin-top: 20px;
+}
+
+.loading-message {
+  color: #333;
+  font-size: 1.2rem;
+  text-align: center;
+  margin-top: 20px;
+}

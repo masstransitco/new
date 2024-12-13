@@ -1,66 +1,103 @@
+/* ViewBar.css */
+
 .view-bar {
   display: flex;
+  flex-direction: column; /* Stack elements vertically */
   align-items: center;
   justify-content: space-between;
-  width: 90%;
-  max-width: 600px;
-  padding: 10px;
-  background-color: rgba(255, 255, 255, 0.9);
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  width: 100%; /* Full width */
+  padding: 10px 20px;
+  background-color: #1a1a1a; /* Uber Dark Theme Background */
+  position: absolute; /* Position at the top */
+  top: 0;
+  left: 0;
+  z-index: 1000; /* Ensure it stays on top */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  font-family: Helvetica, Arial, sans-serif; /* Helvetica Font */
 }
 
 .view-title {
-  font-size: 1.2rem;
+  font-size: 1.4rem;
   font-weight: bold;
   text-align: center;
-  flex-grow: 1;
-  color: #000; /* Ensure text is visible */
+  width: 100%;
+  color: #ffffff; /* White text for dark background */
+  margin-bottom: 10px;
 }
 
 .buttons-group {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 15px;
 }
 
-.locate-me-button,
 .clear-button {
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 1rem;
-  color: #2171ec; /* Visible color */
+  font-size: 1.2rem;
+  color: #ffffff; /* White color */
+  transition: color 0.3s ease;
 }
 
-.locate-me-button:hover,
 .clear-button:hover {
-  color: #1a5bb8;
-}
-
-.choose-destination-button {
-  padding: 8px 16px;
-  background-color: #2171ec;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.choose-destination-button:hover {
-  background-color: #1a5bb8;
+  color: #1a5bb8; /* Hover color */
 }
 
 .selection-bar {
   display: flex;
   align-items: center;
   gap: 5px;
-  background-color: rgba(255, 255, 255, 0.85);
+  background-color: rgba(
+    255,
+    255,
+    255,
+    0.1
+  ); /* Slightly transparent for dark theme */
   padding: 5px 10px;
   border-radius: 4px;
 }
 
 .selection-text {
   font-size: 1rem;
-  color: #000; /* Ensure text is visible */
+  color: #ffffff; /* White text */
+}
+
+.choose-destination-button {
+  margin-top: 10px; /* Slightly lower on Y-axis */
+  padding: 12px 20px;
+  background-color: #1e3a8a; /* Uber Blue */
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%; /* Full width */
+  max-width: 400px; /* Optional max width */
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  font-family: Helvetica, Arial, sans-serif; /* Helvetica Font */
+  transition: background-color 0.3s ease;
+}
+
+.choose-destination-button:hover {
+  background-color: #1a5bb8; /* Darker Uber Blue on hover */
+}
+
+/* Optional: Responsive Design for Mobile Devices */
+@media (max-width: 600px) {
+  .view-bar {
+    padding: 8px 12px;
+  }
+
+  .view-title {
+    font-size: 1.2rem;
+    margin-bottom: 8px;
+  }
+
+  .choose-destination-button {
+    padding: 10px 16px;
+    font-size: 0.9rem;
+  }
 }
