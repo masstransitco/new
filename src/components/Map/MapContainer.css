@@ -27,8 +27,8 @@
   top: 60px;
   left: 50%;
   transform: translateX(-50%);
-  background: #00a500;
-  color: #fff;
+  background: #e3e7e3;
+  color: #111111;
   padding: 10px 20px;
   border-radius: 8px;
   cursor: pointer;
@@ -47,7 +47,7 @@
   }
   50% {
     transform: translateX(-50%) scale(1.05);
-    box-shadow: 0 0 15px rgba(0, 165, 0, 1);
+    box-shadow: 0 0 15px rgb(160, 169, 160);
   }
   100% {
     transform: translateX(-50%) scale(1);
@@ -56,18 +56,20 @@
 }
 
 .circle-label {
-  color: #2171ec;
+  color: #e7e8ec;
   font-size: 14px;
   font-weight: bold;
-  text-shadow: 0 0 4px rgba(33, 113, 236, 0.5);
+  text-shadow: 0 0 5px rgba(33, 113, 236, 0.5);
   transform: translate(-50%, -100%);
   white-space: nowrap;
 }
 
 .info-window {
-  background: #fff;
-  padding: 10px;
-  border-radius: 4px;
+  color: #181718;
+  font-size: 8px;
+  background: #adadad;
+  padding: 5px;
+  border-radius: 8px;
 }
 
 .locate-me-button {
