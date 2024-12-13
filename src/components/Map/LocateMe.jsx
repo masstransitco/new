@@ -1,7 +1,7 @@
 // src/components/Map/LocateMe.jsx
 
 import React from "react";
-import "./LocateMe.css"; // Styles specific to LocateMe
+import "./Button.css"; // Styles specific to LocateMe
 import { FaLocationArrow } from "react-icons/fa"; // Icon from react-icons
 
 const LocateMe = ({ onLocateMe }) => {
