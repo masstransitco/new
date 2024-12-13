@@ -48,8 +48,6 @@ const CITY_VIEW = {
   heading: 0,
 };
 
-// Removed unused constant: DRIVE_VIEW
-
 // Circle distances in meters
 const CIRCLE_DISTANCES = [500, 1000]; // meters
 
@@ -259,62 +257,6 @@ const MapContainer = () => {
     },
     [userState, map, navigateToView, navigateToDriveView]
   );
-
-  // **Go back to the previous view**
-  const goBack = useCallback(() => {
-    if (viewHistory.length <= 1) return;
-    const newHistory = viewHistory.slice(0, -1);
-    setViewHistory(newHistory);
-    const previousView = newHistory[newHistory.length - 1];
-    if (!map) return;
-
-    map.panTo(previousView.center);
-    map.setZoom(previousView.zoom);
-    if (previousView.tilt !== undefined) map.setTilt(previousView.tilt);
-    if (previousView.heading !== undefined)
-      map.setHeading(previousView.heading);
-
-    // Apply styles based on previous view
-    if (previousView.name === "RouteView") {
-      map.setOptions({ styles: ROUTE_VIEW_STYLES });
-    } else if (previousView.name === "StationView") {
-      map.setOptions({ styles: STATION_VIEW_STYLES });
-    } else {
-      map.setOptions({ styles: BASE_STYLES });
-    }
-
-    // **Updated ViewBar Display Based on View**
-    if (previousView.name === "CityView") {
-      // Display "Hong Kong" in ViewBar
-      setViewBarText("Hong Kong");
-      setUserState(USER_STATES.SELECTING_DEPARTURE); // Reset to selecting departure if returning to CityView
-    } else if (previousView.name === "DistrictView") {
-      // Display selected district name in ViewBar
-      setViewBarText(previousView.districtName || "District");
-      setUserState(USER_STATES.SELECTING_DEPARTURE); // Ensure state remains selecting departure
-    } else if (previousView.name === "StationView") {
-      // When going back to StationView, maintain current userState
-      // No action needed
-    } else if (previousView.name === "DriveView") {
-      // Display fare information
-      setViewBarText("Drive Mode");
-      setUserState(USER_STATES.DISPLAY_FARE);
-    } else {
-      // Default or other views
-      setViewBarText("");
-    }
-
-    // Clear selected stations if navigating back from DriveView or other views
-    if (
-      previousView.name !== "StationView" &&
-      previousView.name !== "DriveView"
-    ) {
-      setDepartureStation(null);
-      setDestinationStation(null);
-      setDirections(null);
-      setFareInfo(null);
-    }
-  }, [map, viewHistory]);
 
   // **Handle "Choose Destination" button click**
   const handleChooseDestination = () => {
@@ -605,7 +547,7 @@ const MapContainer = () => {
       className="map-container"
       style={{ position: "relative", width: "100%", height: "100vh" }}
     >
-      {/* ViewBar with Back and Home Buttons */}
+      {/* ViewBar without Back Button */}
       <ViewBar
         departure={departureStation?.place}
         arrival={destinationStation?.place}
@@ -619,9 +561,10 @@ const MapContainer = () => {
           userState === USER_STATES.SELECTING_DEPARTURE
         }
         onChooseDestination={handleChooseDestination}
-        onBack={goBack} // Pass goBack function to ViewBar
         onHome={handleHomeClick} // Pass handleHomeClick function to ViewBar
         isCityView={currentView.name === "CityView"} // Pass isCityView flag to ViewBar
+        userState={userState} // Pass current userState
+        isMeView={currentView.name === "MeView"} // Pass isMeView flag
       />
 
       <GoogleMap

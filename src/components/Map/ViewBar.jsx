@@ -4,8 +4,13 @@ import React from "react";
 import "./ViewBar.css"; // Ensure styles are correctly applied
 import LocateMe from "./LocateMe"; // Import the LocateMe component
 import HomeButton from "./HomeButton"; // Import HomeButton component
-import BackButton from "./BackButton"; // Import BackButton component
 import ChooseDestinationButton from "./ChooseDestinationButton"; // Import the new component
+
+const USER_STATES = {
+  SELECTING_DEPARTURE: "SelectingDeparture",
+  SELECTING_ARRIVAL: "SelectingArrival",
+  DISPLAY_FARE: "DisplayFare",
+};
 
 const ViewBar = ({
   departure,
@@ -16,26 +21,31 @@ const ViewBar = ({
   onClearArrival,
   showChooseDestination,
   onChooseDestination,
-  onBack, // Handler for BackButton
   onHome, // Handler for HomeButton
   isCityView, // Determines if HomeButton should be displayed
+  userState, // Current user state
+  isMeView, // Determines if LocateMe should be displayed
 }) => {
+  // Determine visibility of buttons based on userState and view
+  const showLocateMe =
+    !isMeView && userState === USER_STATES.SELECTING_DEPARTURE;
+
+  const showHomeButton =
+    !isCityView && userState === USER_STATES.SELECTING_DEPARTURE;
+
   return (
     <div className="view-bar">
-      {/* Top Buttons Group: Back and Home Buttons */}
+      {/* Top Buttons Group: LocateMe and Home Buttons */}
       <div className="top-buttons-group">
-        <BackButton onClick={onBack} />
-        {!isCityView && <HomeButton onClick={onHome} />}
+        {showLocateMe && <LocateMe onLocateMe={onLocateMe} />}
+        {showHomeButton && <HomeButton onClick={onHome} />}
       </div>
 
       {/* View Title */}
       <div className="view-title">{viewBarText}</div>
 
-      {/* Buttons Group: LocateMe and Clear Buttons */}
+      {/* Buttons Group: Clear Buttons and Choose Destination */}
       <div className="buttons-group">
-        {/* Locate Me Button */}
-        <LocateMe onLocateMe={onLocateMe} />
-
         {/* Clear Departure Button */}
         {departure && (
           <div className="selection-bar">
@@ -65,12 +75,12 @@ const ViewBar = ({
             <span className="selection-text">Arrival: {arrival}</span>
           </div>
         )}
-      </div>
 
-      {/* Choose Destination Button */}
-      {showChooseDestination && (
-        <ChooseDestinationButton onChooseDestination={onChooseDestination} />
-      )}
+        {/* Choose Destination Button */}
+        {showChooseDestination && (
+          <ChooseDestinationButton onChooseDestination={onChooseDestination} />
+        )}
+      </div>
     </div>
   );
 };

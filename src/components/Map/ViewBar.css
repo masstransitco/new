@@ -1,11 +1,12 @@
-/* ViewBar.css */
+/* src/components/Map/ViewBar.css */
 
+/* ViewBar Container */
 .view-bar {
   display: flex;
-  flex-direction: column; /* Stack elements vertically */
+  flex-direction: row; /* Changed from column to row */
   align-items: center;
   justify-content: space-between;
-  width: 100%; /* Full width */
+  width: 100%;
   padding: 10px 20px;
   background-color: #1a1a1a; /* Dark Theme Background */
   position: absolute; /* Position at the top */
@@ -16,28 +17,30 @@
   font-family: Helvetica, Arial, sans-serif; /* Helvetica Font */
 }
 
+/* Top Buttons Group */
 .top-buttons-group {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 10px; /* Space below the buttons */
 }
 
+/* View Title */
 .view-title {
   font-size: 1.4rem;
   font-weight: bold;
   text-align: center;
-  width: 100%;
+  flex-grow: 1; /* Allow title to take up remaining space */
   color: #ffffff; /* White text for dark background */
-  margin-bottom: 10px;
 }
 
+/* Buttons Group */
 .buttons-group {
   display: flex;
   align-items: center;
   gap: 15px;
 }
 
+/* Clear Button */
 .clear-button {
   background: none;
   border: none;
@@ -51,6 +54,7 @@
   color: #1a5bb8; /* Hover color */
 }
 
+/* Selection Bar */
 .selection-bar {
   display: flex;
   align-items: center;
@@ -65,13 +69,14 @@
   border-radius: 4px;
 }
 
+/* Selection Text */
 .selection-text {
   font-size: 1rem;
   color: #ffffff; /* White text */
 }
 
+/* Choose Destination Button */
 .choose-destination-button {
-  position: flex;
   padding: 12px 20px;
   background-color: #1e3a8a; /* Uber Blue */
   color: white;
@@ -81,8 +86,6 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  width: 100%; /* Full width */
-  max-width: 400px; /* Optional max width */
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   font-family: Helvetica, Arial, sans-serif; /* Helvetica Font */
   transition: background-color 0.3s ease;
@@ -100,7 +103,6 @@
 
   .view-title {
     font-size: 1.2rem;
-    margin-bottom: 8px;
   }
 
   .choose-destination-button {
