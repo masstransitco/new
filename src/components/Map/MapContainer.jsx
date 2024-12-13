@@ -226,7 +226,7 @@ const MapContainer = () => {
         map.panTo(station.position);
         map.setZoom(18);
         map.setTilt(65);
-        setUserState(USER_STATES.SELECTING_ARRIVAL);
+        setUserState(USER_STATES.SELECTING_DEPARTURE);
       } else if (userState === USER_STATES.SELECTING_ARRIVAL) {
         setDestinationStation(station);
         setViewBarText(`Arrival: ${station.place}`);
@@ -527,6 +527,9 @@ const MapContainer = () => {
         position: departureStation.position,
       });
     } else if (currentView.name === "DriveView") {
+      if (mapRef?.current) {
+        mapRef.current.setZoom(12); // Adjust zoom level to your desired value
+      }
       setRouteInfo({
         title: "Driving Route Info",
         description: `Estimated driving time: ${
