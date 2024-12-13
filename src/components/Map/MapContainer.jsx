@@ -9,7 +9,7 @@ import {
 } from "@react-google-maps/api";
 
 import ViewBar from "./ViewBar";
-import ChooseDestinationButton from "./ChooseDestinationButton"; // Ensure this path is correct
+// Removed unused import: ChooseDestinationButton
 import MotionMenu from "../Menu/MotionMenu";
 import FareInfoWindow from "./FareInfoWindow";
 import RouteInfoWindow from "./RouteInfoWindow";
@@ -48,12 +48,7 @@ const CITY_VIEW = {
   heading: 0,
 };
 
-const DRIVE_VIEW = {
-  name: "DriveView",
-  zoom: 14,
-  tilt: 0, // Assuming no tilt for DriveView
-  heading: 0, // Will be dynamically set based on departure and arrival
-};
+// Removed unused constant: DRIVE_VIEW
 
 // Circle distances in meters
 const CIRCLE_DISTANCES = [500, 1000]; // meters
@@ -193,8 +188,6 @@ const MapContainer = () => {
         map.setOptions({ styles: ROUTE_VIEW_STYLES });
       } else if (view.name === "StationView") {
         map.setOptions({ styles: STATION_VIEW_STYLES });
-      } else if (view.name === "DriveView") {
-        map.setOptions({ styles: BASE_STYLES }); // Assuming DriveView uses base styles
       } else {
         map.setOptions({ styles: BASE_STYLES });
       }
@@ -214,20 +207,6 @@ const MapContainer = () => {
     },
     [map]
   );
-
-  // **Navigate to RouteView and set tilt appropriately**
-  const navigateToRouteView = useCallback(() => {
-    if (!map || !departureStation) return;
-
-    const routeView = {
-      name: "RouteView",
-      center: departureStation.position,
-      zoom: 15,
-      tilt: 45,
-      heading: 0,
-    };
-    navigateToView(routeView);
-  }, [map, navigateToView, departureStation]);
 
   // **Navigate to DriveView**
   const navigateToDriveView = useCallback(() => {
@@ -300,8 +279,6 @@ const MapContainer = () => {
       map.setOptions({ styles: ROUTE_VIEW_STYLES });
     } else if (previousView.name === "StationView") {
       map.setOptions({ styles: STATION_VIEW_STYLES });
-    } else if (previousView.name === "DriveView") {
-      map.setOptions({ styles: BASE_STYLES });
     } else {
       map.setOptions({ styles: BASE_STYLES });
     }
