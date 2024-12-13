@@ -8,7 +8,7 @@ import React, {
 import "./Header.css";
 import { AuthContext } from "../../context/AuthContext";
 import classNames from "classnames";
-import MTCGameModal from "../MTCGameModal/Game"; // Adjust the path as necessary
+import MTCGameModal from "./Game"; // Adjust the path as necessary
 
 const Header = () => {
   const { user, loading, logout, googleSignIn } = useContext(AuthContext);
