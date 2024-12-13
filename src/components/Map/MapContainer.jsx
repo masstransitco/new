@@ -156,7 +156,7 @@ const MapContainer = () => {
   const districts = useMemo(() => {
     return districtsData.map((feature) => ({
       id: feature.id,
-      name: feature.properties.DistrictName,
+      name: feature.properties.District,
       position: {
         lat: feature.geometry.coordinates[1],
         lng: feature.geometry.coordinates[0],
