@@ -1,39 +1,13 @@
-/* src/components/Map/ViewBar.css */
-
-.viewbar-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
-}
-
 .view-bar {
   display: flex;
   align-items: center;
-  justify-content: center; /* Center all buttons and title */
+  justify-content: space-between;
   width: 90%;
   max-width: 600px;
   padding: 10px;
   background-color: rgba(255, 255, 255, 0.9);
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  gap: 10px; /* Add space between buttons and title */
-}
-
-.icon-button {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 1.2rem;
-  padding: 5px;
-}
-
-.home-button {
-  color: #2171ec; /* Optional: Change color for visibility */
-}
-
-.locate-me-button {
-  color: #2171ec; /* Optional: Change color for visibility */
 }
 
 .view-title {
@@ -41,10 +15,30 @@
   font-weight: bold;
   text-align: center;
   flex-grow: 1;
+  color: #000; /* Ensure text is visible */
+}
+
+.buttons-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.locate-me-button,
+.clear-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  color: #2171ec; /* Visible color */
+}
+
+.locate-me-button:hover,
+.clear-button:hover {
+  color: #1a5bb8;
 }
 
 .choose-destination-button {
-  margin-top: 10px;
   padding: 8px 16px;
   background-color: #2171ec;
   color: white;
@@ -60,22 +54,13 @@
 .selection-bar {
   display: flex;
   align-items: center;
-  margin-top: 5px;
-  width: 90%;
-  max-width: 600px;
-  padding: 8px;
+  gap: 5px;
   background-color: rgba(255, 255, 255, 0.85);
-  border-radius: 6px;
-}
-
-.clear-button {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 1rem;
-  margin-right: 8px;
+  padding: 5px 10px;
+  border-radius: 4px;
 }
 
 .selection-text {
   font-size: 1rem;
+  color: #000; /* Ensure text is visible */
 }
