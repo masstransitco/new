@@ -8,10 +8,12 @@ import React, {
 import "./Header.css";
 import { AuthContext } from "../../context/AuthContext";
 import classNames from "classnames";
+import MTCGameModal from "../MTCGameModal/MTCGameModal"; // Adjust the path as necessary
 
 const Header = () => {
   const { user, loading, logout, googleSignIn } = useContext(AuthContext);
   const [dropdownVisible, setDropdownVisible] = useState(false);
+  const [isGameModalVisible, setIsGameModalVisible] = useState(false); // State for modal visibility
   const dropdownRef = useRef(null);
   const firstDropdownItemRef = useRef(null);
 
@@ -73,96 +75,104 @@ const Header = () => {
     typeof user?.displayName === "string" ? user.displayName : "User";
 
   return (
-    <header className="header">
-      <div className="header-content">
-        {/* Logo Section */}
-        <div className="logo">
-          <img src="/logo.png" alt="ReactMTC Logo" className="logo-image" />
-        </div>
+    <>
+      <header className="header">
+        <div className="header-content">
+          {/* Logo Section */}
+          <div className="logo" onClick={() => setIsGameModalVisible(true)}>
+            <img src="/logo.png" alt="ReactMTC Logo" className="logo-image" />
+          </div>
 
-        {/* User Section */}
-        <div className="user-section">
-          {user ? (
-            <div className="user-info" ref={dropdownRef}>
-              <button
-                className="user-avatar-button"
-                onClick={toggleDropdown}
-                onKeyDown={handleAvatarKeyDown}
-                aria-expanded={dropdownVisible}
-                aria-controls="user-dropdown"
-                aria-haspopup="true"
-              >
-                <img src={avatarSrc} alt="User Avatar" />
-                <span className="user-name">{displayName}</span>
-              </button>
-              <div
-                id="user-dropdown"
-                className={classNames("dropdown-menu", {
-                  show: dropdownVisible,
-                })}
-                role="menu"
-                aria-labelledby="user-avatar-button"
-              >
-                <ul>
-                  <li role="none">
-                    <a
-                      href="/account"
-                      role="menuitem"
-                      ref={firstDropdownItemRef}
-                    >
-                      Account
-                    </a>
-                  </li>
-                  <li role="none">
-                    <a href="/activity" role="menuitem">
-                      Activity
-                    </a>
-                  </li>
-                  <li role="none">
-                    <a href="/payment" role="menuitem">
-                      Payment
-                    </a>
-                  </li>
-                  <li role="none">
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        logout();
-                      }}
-                      className="logout-button"
-                      aria-label="Logout"
-                      role="menuitem"
-                    >
-                      Logout
-                    </button>
-                  </li>
-                </ul>
+          {/* User Section */}
+          <div className="user-section">
+            {user ? (
+              <div className="user-info" ref={dropdownRef}>
+                <button
+                  className="user-avatar-button"
+                  onClick={toggleDropdown}
+                  onKeyDown={handleAvatarKeyDown}
+                  aria-expanded={dropdownVisible}
+                  aria-controls="user-dropdown"
+                  aria-haspopup="true"
+                >
+                  <img src={avatarSrc} alt="User Avatar" />
+                  <span className="user-name">{displayName}</span>
+                </button>
+                <div
+                  id="user-dropdown"
+                  className={classNames("dropdown-menu", {
+                    show: dropdownVisible,
+                  })}
+                  role="menu"
+                  aria-labelledby="user-avatar-button"
+                >
+                  <ul>
+                    <li role="none">
+                      <a
+                        href="/account"
+                        role="menuitem"
+                        ref={firstDropdownItemRef}
+                      >
+                        Account
+                      </a>
+                    </li>
+                    <li role="none">
+                      <a href="/activity" role="menuitem">
+                        Activity
+                      </a>
+                    </li>
+                    <li role="none">
+                      <a href="/payment" role="menuitem">
+                        Payment
+                      </a>
+                    </li>
+                    <li role="none">
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          logout();
+                        }}
+                        className="logout-button"
+                        aria-label="Logout"
+                        role="menuitem"
+                      >
+                        Logout
+                      </button>
+                    </li>
+                  </ul>
+                </div>
               </div>
-            </div>
-          ) : (
-            <div className="button-wrapper">
-              {/* Sign-In Button */}
-              <button
-                className="signin-button"
-                onClick={googleSignIn}
-                disabled={loading}
-                aria-label="Sign in with Google"
-              >
-                {loading ? "Signing in..." : "Sign In"}
-              </button>
+            ) : (
+              <div className="button-wrapper">
+                {/* Sign-In Button */}
+                <button
+                  className="signin-button"
+                  onClick={googleSignIn}
+                  disabled={loading}
+                  aria-label="Sign in with Google"
+                >
+                  {loading ? "Signing in..." : "Sign In"}
+                </button>
 
-              {/* Get Started Button */}
-              <button
-                className="get-started-button"
-                onClick={() => window.open("https://air.city", "_blank")}
-              >
-                Get Started
-              </button>
-            </div>
-          )}
+                {/* Get Started Button */}
+                <button
+                  className="get-started-button"
+                  onClick={() => window.open("https://air.city", "_blank")}
+                >
+                  Get Started
+                </button>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
-    </header>
+      </header>
+
+      {/* Game Modal */}
+      <MTCGameModal
+        show={isGameModalVisible}
+        onClose={() => setIsGameModalVisible(false)}
+      />
+    </>
   );
 };
 
