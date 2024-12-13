@@ -527,9 +527,6 @@ const MapContainer = () => {
         position: departureStation.position,
       });
     } else if (currentView.name === "DriveView") {
-      if (mapRef?.current) {
-        mapRef.current.setZoom(12); // Adjust zoom level to your desired value
-      }
       setRouteInfo({
         title: "Driving Route Info",
         description: `Estimated driving time: ${
