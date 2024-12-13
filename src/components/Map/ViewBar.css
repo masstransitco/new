@@ -7,13 +7,20 @@
   justify-content: space-between;
   width: 100%; /* Full width */
   padding: 10px 20px;
-  background-color: #1a1a1a; /* Uber Dark Theme Background */
+  background-color: #1a1a1a; /* Dark Theme Background */
   position: absolute; /* Position at the top */
   top: 0;
   left: 0;
   z-index: 1000; /* Ensure it stays on top */
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
   font-family: Helvetica, Arial, sans-serif; /* Helvetica Font */
+}
+
+.top-buttons-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px; /* Space below the buttons */
 }
 
 .view-title {

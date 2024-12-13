@@ -8,8 +8,6 @@ import {
   Polyline,
 } from "@react-google-maps/api";
 
-import BackButton from "./BackButton";
-import HomeButton from "./HomeButton";
 import ViewBar from "./ViewBar";
 import MotionMenu from "../Menu/MotionMenu";
 import FareInfoWindow from "./FareInfoWindow";
@@ -441,7 +439,7 @@ const MapContainer = () => {
     setViewBarText(
       departureStation ? `Departure: ${departureStation.place}` : "Hong Kong"
     );
-    setUserState(USER_STATES.SELECTING_ARRival);
+    setUserState(USER_STATES.SELECTING_ARRIVAL);
   };
 
   // **Handle district click**
@@ -577,7 +575,7 @@ const MapContainer = () => {
       className="map-container"
       style={{ position: "relative", width: "100%", height: "100vh" }}
     >
-      {/* ViewBar */}
+      {/* ViewBar with Back and Home Buttons */}
       <ViewBar
         departure={departureStation?.place}
         arrival={destinationStation?.place}
@@ -588,9 +586,12 @@ const MapContainer = () => {
         showChooseDestination={
           departureStation &&
           !destinationStation &&
-          userState !== USER_STATES.SELECTING_ARRival
+          userState !== USER_STATES.SELECTING_ARRIVAL
         }
         onChooseDestination={handleChooseDestination}
+        onBack={goBack} // Pass goBack function to ViewBar
+        onHome={handleHomeClick} // Pass handleHomeClick function to ViewBar
+        isCityView={currentView.name === "CityView"} // Pass isCityView flag to ViewBar
       />
 
       <GoogleMap
