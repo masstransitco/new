@@ -1,4 +1,5 @@
-import React, { useContext, useEffect } from "react";
+// src/App.jsx
+import React, { useContext, useEffect, useState } from "react";
 import { Analytics } from "@vercel/analytics/react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { AuthContext } from "./context/AuthContext";
@@ -25,6 +26,10 @@ const LoadingSpinner = () => {
 
 function App() {
   const { user, loading } = useContext(AuthContext);
+  
+  // State to manage SceneContainer visibility and selected station
+  const [isStationView, setIsStationView] = useState(false);
+  const [selectedStation, setSelectedStation] = useState(null);
 
   // Disable right-click context menu
   useEffect(() => {
@@ -37,6 +42,18 @@ function App() {
     };
   }, []);
 
+  // Handler when a station is selected in MapContainer
+  const handleStationSelect = (station) => {
+    setSelectedStation(station);
+    setIsStationView(true);
+  };
+
+  // Handler when station view is deselected, e.g., navigating away
+  const handleStationDeselect = () => {
+    setSelectedStation(null);
+    setIsStationView(false);
+  };
+
   if (loading) {
     return <LoadingSpinner />;
   }
@@ -46,9 +63,11 @@ function App() {
       <Header user={user} />
       <Analytics />
       <main className="main-content">
-        {/* Ensure content doesn’t overlap with the MotionMenu */}
-        <MapContainer />
-        <SceneContainer />
+        <MapContainer 
+          onStationSelect={handleStationSelect} 
+          onStationDeselect={handleStationDeselect}
+        />
+        {isStationView && <SceneContainer selectedStation={selectedStation} />}
         <PulseStrip className="pulse-strip" />
       </main>
       <MotionMenu className="motion-menu" />
