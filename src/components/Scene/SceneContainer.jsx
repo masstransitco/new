@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 
 const SceneContainer = () => {
   const initialCenter = "22.2982,114.1729"; // Center as a string "lat,lng"
-  const initialTilt = 45; // Desired tilt angle
+  const initialTilt = 67.5; // Desired tilt angle
   const initialHeading = 0; // Initial map rotation (0 = North)
 
   useEffect(() => {
@@ -50,22 +50,26 @@ const SceneContainer = () => {
 
     const removeAlphaPopup = () => {
       const observer = new MutationObserver(() => {
-        const popup = document.querySelector('.gm-style > div[role="dialog"]');
-        if (popup) {
-          popup.remove();
-          console.log("Removed v=alpha pop-up");
-          observer.disconnect(); // Stop observing once the pop-up is removed
-        }
+        const dialogs = document.querySelectorAll(
+          '.gm-style > div[role="dialog"]'
+        );
+        dialogs.forEach((dialog) => {
+          if (
+            dialog.textContent.includes(
+              "Using the alpha channel of the Google Maps JavaScript API"
+            )
+          ) {
+            dialog.remove();
+            console.log("Removed the alpha channel pop-up.");
+          }
+        });
       });
 
-      // Observe the map container for child node changes
-      const mapContainer = document.querySelector(".gm-style");
-      if (mapContainer) {
-        observer.observe(mapContainer, { childList: true, subtree: true });
-      }
+      // Observe changes in the document
+      observer.observe(document.body, { childList: true, subtree: true });
     };
 
-    // Initialize the map and remove pop-up
+    // Initialize the map and remove the pop-up
     initializeMap();
     removeAlphaPopup();
   }, []);
