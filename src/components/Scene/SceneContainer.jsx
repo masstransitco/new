@@ -2,7 +2,8 @@ import React, { useEffect } from "react";
 
 const SceneContainer = () => {
   const initialCenter = "22.2982,114.1729"; // Center as a string "lat,lng"
-  const initialTilt = 67.5; // Desired tilt angle
+  const initialTilt = 45; // Desired tilt angle
+  const initialHeading = 0; // Initial map rotation (0 = North)
 
   useEffect(() => {
     const ensureGoogleMaps = () => {
@@ -19,7 +20,7 @@ const SceneContainer = () => {
 
           setTimeout(() => {
             clearInterval(interval);
-            reject(new Error("3D Maps API failed to load."));
+            reject(new Error("Google Maps API failed to load."));
           }, 5000);
         }
       });
@@ -33,11 +34,12 @@ const SceneContainer = () => {
         const mapElement = document.querySelector("gmp-map-3d");
 
         if (mapElement) {
-          // Set the center, tilt, altitude, and heading attributes
-          mapElement.setAttribute("center", initialCenter); // Center as a string
-          mapElement.setAttribute("tilt", initialTilt); // Tilt as a number
+          // Set the center, tilt, and heading attributes
+          mapElement.setAttribute("center", initialCenter);
+          mapElement.setAttribute("tilt", initialTilt);
+          mapElement.setAttribute("heading", initialHeading);
 
-          console.log("3D environment initialized.");
+          console.log("Google Maps 3D map initialized successfully.");
         } else {
           console.error("gmp-map-3d element not found.");
         }
@@ -46,27 +48,36 @@ const SceneContainer = () => {
       }
     };
 
+    const removeAlphaPopup = () => {
+      const observer = new MutationObserver(() => {
+        const popup = document.querySelector('.gm-style > div[role="dialog"]');
+        if (popup) {
+          popup.remove();
+          console.log("Removed v=alpha pop-up");
+          observer.disconnect(); // Stop observing once the pop-up is removed
+        }
+      });
+
+      // Observe the map container for child node changes
+      const mapContainer = document.querySelector('.gm-style');
+      if (mapContainer) {
+        observer.observe(mapContainer, { childList: true, subtree: true });
+      }
+    };
+
+    // Initialize the map and remove pop-up
     initializeMap();
+    removeAlphaPopup();
   }, []);
 
   return (
-    <>
-      {/* CSS to hide the v=alpha pop-up */}
-      <style>
-        {`
-          .gm-style > div[role="dialog"] {
-            display: none !important;
-          }
-        `}
-      </style>
-      <div style={{ height: "30vh", width: "100%" }}>
-        {/* Render the gmp-map-3d tag directly */}
-        <gmp-map-3d
-          style={{ height: "100%", width: "100%" }}
-          default-labels-disabled
-        ></gmp-map-3d>
-      </div>
-    </>
+    <div style={{ height: "30vh", width: "100%" }}>
+      {/* Render the gmp-map-3d tag directly */}
+      <gmp-map-3d
+        style={{ height: "100%", width: "100%" }}
+        default-labels-disabled
+      ></gmp-map-3d>
+    </div>
   );
 };
 
