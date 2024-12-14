@@ -1,3 +1,5 @@
+/* global google */
+
 import React, { useEffect } from "react";
 import "./SceneContainer.css";
 
