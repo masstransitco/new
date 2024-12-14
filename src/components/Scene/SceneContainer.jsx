@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 
 const SceneContainer = () => {
-  const initialCenter = { lat: 22.2982, lng: 114.1729 }; // Object for latitude and longitude
+  const initialCenter = "22.2982,114.1729"; // Comma-separated lat,lng for gmp-map-3d
   const initialTilt = 67.5; // Desired tilt angle
   const initialAltitude = 1000; // Altitude in meters for zoomed-in view
   const initialHeading = 0; // Initial map rotation (0 = North)
@@ -35,11 +35,11 @@ const SceneContainer = () => {
         const mapElement = document.querySelector("gmp-map-3d");
 
         if (mapElement) {
-          // Programmatically set the center, tilt, altitude, and heading
-          mapElement.center = initialCenter; // Pass an object, not a string
-          mapElement.tilt = initialTilt;
-          mapElement.altitude = initialAltitude; // Adjust altitude for zoom level
-          mapElement.heading = initialHeading;
+          // Programmatically set properties directly on the element
+          mapElement.setAttribute("center", initialCenter); // Center as a string "lat,lng"
+          mapElement.setAttribute("tilt", initialTilt); // Tilt as a number
+          mapElement.setAttribute("altitude", initialAltitude); // Altitude in meters
+          mapElement.setAttribute("heading", initialHeading); // Heading (0 = North)
 
           console.log("Google Maps 3D map initialized successfully.");
         } else {
