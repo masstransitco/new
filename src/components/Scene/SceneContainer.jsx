@@ -3,7 +3,6 @@ import React, { useEffect } from "react";
 const SceneContainer = () => {
   const initialCenter = "22.2982,114.1729"; // Center as a string "lat,lng"
   const initialTilt = 67.5; // Desired tilt angle
-  const initialHeading = 0; // Initial map rotation (0 = North)
 
   useEffect(() => {
     const ensureGoogleMaps = () => {
@@ -37,7 +36,6 @@ const SceneContainer = () => {
           // Set the center, tilt, altitude, and heading attributes
           mapElement.setAttribute("center", initialCenter); // Center as a string
           mapElement.setAttribute("tilt", initialTilt); // Tilt as a number
-          mapElement.setAttribute("heading", initialHeading); // Heading (0 = North)
 
           console.log("Google Maps 3D map initialized successfully.");
         } else {
