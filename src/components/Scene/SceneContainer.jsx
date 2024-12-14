@@ -59,7 +59,7 @@ const SceneContainer = () => {
       });
 
       // Observe the map container for child node changes
-      const mapContainer = document.querySelector('.gm-style');
+      const mapContainer = document.querySelector(".gm-style");
       if (mapContainer) {
         observer.observe(mapContainer, { childList: true, subtree: true });
       }
