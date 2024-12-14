@@ -3,7 +3,7 @@ import React, { useEffect } from "react";
 const SceneContainer = () => {
   const initialCenter = "22.2982,114.1729"; // Center as a string "lat,lng"
   const initialTilt = 67.5; // Desired tilt angle
-  const initialAltitude = "1000"; // Altitude as a string to avoid type coercion issues
+  const initialAltitude = "2000"; // Altitude as a string to avoid type coercion issues
   const initialHeading = 0; // Initial map rotation (0 = North)
 
   useEffect(() => {
@@ -54,9 +54,12 @@ const SceneContainer = () => {
   }, []);
 
   return (
-    <div style={{ height: "20vh", width: "100%" }}>
+    <div style={{ height: "30vh", width: "100%" }}>
       {/* Render the gmp-map-3d tag directly */}
-      <gmp-map-3d style={{ height: "100%", width: "100%" }}></gmp-map-3d>
+      <gmp-map-3d
+        style={{ height: "100%", width: "100%" }}
+        default-labels-disabled
+      ></gmp-map-3d>
     </div>
   );
 };
