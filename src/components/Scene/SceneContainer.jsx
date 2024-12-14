@@ -19,7 +19,7 @@ const SceneContainer = () => {
 
           setTimeout(() => {
             clearInterval(interval);
-            reject(new Error("Google Maps API failed to load."));
+            reject(new Error("3D Maps API failed to load."));
           }, 5000);
         }
       });
@@ -37,7 +37,7 @@ const SceneContainer = () => {
           mapElement.setAttribute("center", initialCenter); // Center as a string
           mapElement.setAttribute("tilt", initialTilt); // Tilt as a number
 
-          console.log("Google Maps 3D map initialized successfully.");
+          console.log("3D environment initialized.");
         } else {
           console.error("gmp-map-3d element not found.");
         }
