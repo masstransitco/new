@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 
 const SceneContainer = () => {
   const initialCenter = "22.2982,114.1729"; // Center as a string "lat,lng"
-  const initialTilt = 45.5; // Desired tilt angle
+  const initialTilt = 67.5; // Desired tilt angle
   const initialHeading = 0; // Initial map rotation (0 = North)
 
   useEffect(() => {
