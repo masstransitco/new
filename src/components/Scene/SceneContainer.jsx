@@ -49,7 +49,7 @@ const SceneContainer = () => {
   }, []);
 
   return (
-    <div style={{ height: "100vh", width: "100%" }}>
+    <div style={{ height: "20vh", width: "100%" }}>
       {/* Render the gmp-map-3d tag directly */}
       <gmp-map-3d style={{ height: "100%", width: "100%" }}></gmp-map-3d>
     </div>
