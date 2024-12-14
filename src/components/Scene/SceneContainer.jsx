@@ -37,7 +37,6 @@ const SceneContainer = () => {
           // Set the center, tilt, altitude, and heading attributes
           mapElement.setAttribute("center", initialCenter); // Center as a string
           mapElement.setAttribute("tilt", initialTilt); // Tilt as a number
-          mapElement.setAttribute("altitude", initialAltitude); // Altitude as a string
           mapElement.setAttribute("heading", initialHeading); // Heading (0 = North)
 
           console.log("Google Maps 3D map initialized successfully.");
