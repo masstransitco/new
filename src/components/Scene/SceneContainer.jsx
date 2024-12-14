@@ -3,6 +3,8 @@ import React, { useEffect } from "react";
 const SceneContainer = () => {
   const initialCenter = "22.2982,114.1729"; // Latitude and Longitude of Tsim Sha Tsui East
   const initialTilt = 67.5; // Desired tilt angle
+  const initialAltitude = 1000; // Altitude in meters for zoomed-in view
+  const initialHeading = 0; // Initial map rotation (0 = North)
 
   useEffect(() => {
     const ensureGoogleMaps = () => {
@@ -33,9 +35,12 @@ const SceneContainer = () => {
         const mapElement = document.querySelector("gmp-map-3d");
 
         if (mapElement) {
-          // Programmatically set the center and tilt
+          // Programmatically set the center, tilt, altitude, and heading
           mapElement.center = initialCenter;
           mapElement.tilt = initialTilt;
+          mapElement.altitude = initialAltitude; // Adjust altitude for zoom level
+          mapElement.heading = initialHeading;
+
           console.log("Google Maps 3D map initialized successfully.");
         } else {
           console.error("gmp-map-3d element not found.");
