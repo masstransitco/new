@@ -26,7 +26,7 @@ const LoadingSpinner = () => {
 
 function App() {
   const { user, loading } = useContext(AuthContext);
-  
+
   // State to manage SceneContainer visibility and selected station
   const [isStationView, setIsStationView] = useState(false);
   const [selectedStation, setSelectedStation] = useState(null);
@@ -63,8 +63,8 @@ function App() {
       <Header user={user} />
       <Analytics />
       <main className="main-content">
-        <MapContainer 
-          onStationSelect={handleStationSelect} 
+        <MapContainer
+          onStationSelect={handleStationSelect}
           onStationDeselect={handleStationDeselect}
         />
         {isStationView && <SceneContainer selectedStation={selectedStation} />}
