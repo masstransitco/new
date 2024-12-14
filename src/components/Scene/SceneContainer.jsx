@@ -50,13 +50,23 @@ const SceneContainer = () => {
   }, []);
 
   return (
-    <div style={{ height: "30vh", width: "100%" }}>
-      {/* Render the gmp-map-3d tag directly */}
-      <gmp-map-3d
-        style={{ height: "100%", width: "100%" }}
-        default-labels-disabled
-      ></gmp-map-3d>
-    </div>
+    <>
+      {/* CSS to hide the v=alpha pop-up */}
+      <style>
+        {`
+          .gm-style > div[role="dialog"] {
+            display: none !important;
+          }
+        `}
+      </style>
+      <div style={{ height: "30vh", width: "100%" }}>
+        {/* Render the gmp-map-3d tag directly */}
+        <gmp-map-3d
+          style={{ height: "100%", width: "100%" }}
+          default-labels-disabled
+        ></gmp-map-3d>
+      </div>
+    </>
   );
 };
 
