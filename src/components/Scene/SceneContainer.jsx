@@ -1,12 +1,11 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 
-const SceneContainer = () => {
-  const initialCenter = "22.2982,114.1729"; // Center as a string "lat,lng"
-  const initialTilt = 67.5; // Desired tilt angle
-  const initialHeading = 0; // Initial map rotation (0 = North)
+const SceneContainer = ({ geojson }) => {
+  const initialStation = geojson.features[0]; // Use the first station by default
+  const [currentStation, setCurrentStation] = useState(initialStation);
 
   useEffect(() => {
-    const ensureGoogleMaps = () => {
+    const loadGoogleMaps = () => {
       return new Promise((resolve, reject) => {
         if (typeof google !== "undefined") {
           resolve();
@@ -28,55 +27,58 @@ const SceneContainer = () => {
 
     const initializeMap = async () => {
       try {
-        await ensureGoogleMaps();
+        await loadGoogleMaps();
 
-        // Access the gmp-map-3d element
+        // Get the 3D map element
         const mapElement = document.querySelector("gmp-map-3d");
 
-        if (mapElement) {
-          // Set the center, tilt, and heading attributes
-          mapElement.setAttribute("center", initialCenter);
-          mapElement.setAttribute("tilt", initialTilt);
-          mapElement.setAttribute("heading", initialHeading);
+        if (mapElement && currentStation) {
+          const { coordinates } = currentStation.geometry;
+          const [lng, lat] = coordinates; // GeoJSON format uses [longitude, latitude]
 
-          console.log("Google Maps 3D map initialized successfully.");
+          // Set initial map properties
+          mapElement.setAttribute("center", `${lat},${lng}`);
+          mapElement.setAttribute("tilt", "67.5");
+          mapElement.setAttribute("heading", "0");
+          mapElement.setAttribute("altitude", "1000");
+          mapElement.setAttribute("range", "1500");
+
+          console.log(`Map initialized at: ${currentStation.properties.Place}`);
         } else {
-          console.error("gmp-map-3d element not found.");
+          console.error("gmp-map-3d element or station not found.");
         }
       } catch (error) {
-        console.error("Failed to load Google Maps API:", error);
+        console.error("Error initializing the map:", error);
       }
     };
 
-    const removeAlphaPopup = () => {
-      const observer = new MutationObserver(() => {
-        const dialogs = document.querySelectorAll(
-          '.gm-style > div[role="dialog"]'
-        );
-        dialogs.forEach((dialog) => {
-          if (
-            dialog.textContent.includes(
-              "Using the alpha channel of the Google Maps JavaScript API"
-            )
-          ) {
-            dialog.remove();
-            console.log("Removed the alpha channel pop-up.");
-          }
-        });
-      });
-
-      // Observe changes in the document
-      observer.observe(document.body, { childList: true, subtree: true });
-    };
-
-    // Initialize the map and remove the pop-up
     initializeMap();
-    removeAlphaPopup();
-  }, []);
+  }, [currentStation]);
+
+  const handleStationChange = (station) => {
+    setCurrentStation(station);
+  };
 
   return (
     <div style={{ height: "30vh", width: "100%" }}>
-      {/* Render the gmp-map-3d tag directly */}
+      {/* Dropdown to select a station */}
+      <select
+        onChange={(e) =>
+          handleStationChange(
+            geojson.features.find(
+              (feature) => feature.properties.Place === e.target.value
+            )
+          )
+        }
+      >
+        {geojson.features.map((feature) => (
+          <option key={feature.id} value={feature.properties.Place}>
+            {feature.properties.Place}
+          </option>
+        ))}
+      </select>
+
+      {/* Render the 3D map */}
       <gmp-map-3d
         style={{ height: "100%", width: "100%" }}
         default-labels-disabled
