@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 
 const SceneContainer = () => {
-  const initialCenter = "22.2982,114.1729"; // Latitude and Longitude of Tsim Sha Tsui East
+  const initialCenter = { lat: 22.2982, lng: 114.1729 }; // Object for latitude and longitude
   const initialTilt = 67.5; // Desired tilt angle
   const initialAltitude = 1000; // Altitude in meters for zoomed-in view
   const initialHeading = 0; // Initial map rotation (0 = North)
@@ -36,7 +36,7 @@ const SceneContainer = () => {
 
         if (mapElement) {
           // Programmatically set the center, tilt, altitude, and heading
-          mapElement.center = initialCenter;
+          mapElement.center = initialCenter; // Pass an object, not a string
           mapElement.tilt = initialTilt;
           mapElement.altitude = initialAltitude; // Adjust altitude for zoom level
           mapElement.heading = initialHeading;
