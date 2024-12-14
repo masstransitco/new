@@ -1,64 +1,59 @@
-/* global google */
 import React, { useEffect } from "react";
-import "./SceneContainer.css";
 
 const SceneContainer = () => {
-  const initialCenter = {
-    lat: 0,
-    lng: 0,
-    altitude: 16000000,
-  };
+  const initialCenter = "22.2982,114.1729"; // Latitude and Longitude of Tsim Sha Tsui East
+  const initialTilt = 67.5; // Desired tilt angle
 
   useEffect(() => {
-    const loadMap = async () => {
-      try {
-        // Wait for Google Maps API to be ready
-        await loadGoogleMapsScript();
+    const ensureGoogleMaps = () => {
+      return new Promise((resolve, reject) => {
+        if (typeof google !== "undefined") {
+          resolve();
+        } else {
+          const interval = setInterval(() => {
+            if (typeof google !== "undefined") {
+              clearInterval(interval);
+              resolve();
+            }
+          }, 100);
 
-        const { Map3DElement } = await google.maps.importLibrary("maps3d");
-
-        if (!Map3DElement) {
-          throw new Error("Map3DElement not available.");
+          setTimeout(() => {
+            clearInterval(interval);
+            reject(new Error("Google Maps API failed to load."));
+          }, 5000);
         }
+      });
+    };
 
-        const map3DElement = new Map3DElement({
-          center: initialCenter,
-        });
+    const initializeMap = async () => {
+      try {
+        await ensureGoogleMaps();
 
-        document.getElementById("scene-container").appendChild(map3DElement);
+        // Access the gmp-map-3d element
+        const mapElement = document.querySelector("gmp-map-3d");
+
+        if (mapElement) {
+          // Programmatically set the center and tilt
+          mapElement.center = initialCenter;
+          mapElement.tilt = initialTilt;
+          console.log("Google Maps 3D map initialized successfully.");
+        } else {
+          console.error("gmp-map-3d element not found.");
+        }
       } catch (error) {
-        console.error("Error loading Google Maps 3D library:", error);
-        document.getElementById("scene-container").innerText =
-          "Failed to load 3D Map. Please try again.";
+        console.error("Failed to load Google Maps API:", error);
       }
     };
 
-    loadMap();
+    initializeMap();
   }, []);
 
   return (
-    <div id="scene-container" style={{ width: "100%", height: "100vh" }} />
+    <div style={{ height: "100vh", width: "100%" }}>
+      {/* Render the gmp-map-3d tag directly */}
+      <gmp-map-3d style={{ height: "100%", width: "100%" }}></gmp-map-3d>
+    </div>
   );
-};
-
-const loadGoogleMapsScript = () => {
-  return new Promise((resolve, reject) => {
-    if (typeof google !== "undefined") {
-      resolve();
-    } else {
-      const interval = setInterval(() => {
-        if (typeof google !== "undefined") {
-          clearInterval(interval);
-          resolve();
-        }
-      }, 100);
-
-      setTimeout(() => {
-        clearInterval(interval);
-        reject(new Error("Google Maps API failed to load."));
-      }, 5000); // Timeout after 5 seconds
-    }
-  });
 };
 
 export default SceneContainer;
