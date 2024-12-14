@@ -1,10 +1,19 @@
+// src/components/Scene/SceneContainer.jsx
 import React, { useEffect, useState } from "react";
 
-const SceneContainer = () => {
+const SceneContainer = ({ selectedStation }) => {
   const [geojson, setGeojson] = useState(null);
   const [currentStation, setCurrentStation] = useState(null);
 
   useEffect(() => {
+    if (selectedStation) {
+      setCurrentStation(selectedStation);
+    }
+  }, [selectedStation]);
+
+  useEffect(() => {
+    if (!selectedStation) return;
+
     // Fetch the GeoJSON file dynamically
     const fetchGeojson = async () => {
       try {
@@ -12,9 +21,12 @@ const SceneContainer = () => {
         const data = await response.json();
         setGeojson(data);
 
-        // Set the first station as the default
-        if (data.features && data.features.length > 0) {
-          setCurrentStation(data.features[0]);
+        // Set the selected station as currentStation if not already set
+        if (data.features && data.features.length > 0 && !currentStation) {
+          const station = data.features.find(
+            (feature) => feature.properties.Place === selectedStation.place
+          );
+          setCurrentStation(station);
         }
       } catch (error) {
         console.error("Error fetching GeoJSON file:", error);
@@ -22,7 +34,7 @@ const SceneContainer = () => {
     };
 
     fetchGeojson();
-  }, []);
+  }, [selectedStation, currentStation]);
 
   useEffect(() => {
     const loadGoogleMaps = () => {
