@@ -1,5 +1,4 @@
 // src/components/Map/MapContainer.jsx
-
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   GoogleMap,
@@ -9,7 +8,6 @@ import {
 } from "@react-google-maps/api";
 
 import ViewBar from "./ViewBar";
-// Removed unused import: ChooseDestinationButton
 import MotionMenu from "../Menu/MotionMenu";
 import FareInfoWindow from "./FareInfoWindow";
 import RouteInfoWindow from "./RouteInfoWindow";
@@ -25,7 +23,7 @@ import "./MapContainer.css";
 
 // **Note:** Use environment variables for API keys in production.
 // Keeping the API key hardcoded as per your request.
-const GOOGLE_MAPS_API_KEY = "AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours";
+const GOOGLE_MAPS_API_KEY = "AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours"; // Replace with your actual API key
 
 // MapId for custom styling
 const mapId = "94527c02bbb6243";
@@ -106,7 +104,7 @@ const USER_STATES = {
   DISPLAY_FARE: "DisplayFare",
 };
 
-const MapContainer = () => {
+const MapContainer = ({ onStationSelect, onStationDeselect }) => {
   // State Hooks
   const [map, setMap] = useState(null);
   const [userLocation, setUserLocation] = useState(null);
@@ -253,6 +251,11 @@ const MapContainer = () => {
         };
         navigateToView(stationView);
         setUserState(USER_STATES.SELECTING_DEPARTURE); // Remain in SELECTING_DEPARTURE
+
+        // Inform App.jsx that a station has been selected
+        if (onStationSelect) {
+          onStationSelect(station);
+        }
       } else if (userState === USER_STATES.SELECTING_ARRIVAL) {
         setDestinationStation(station);
         setUserState(USER_STATES.DISPLAY_FARE);
@@ -260,7 +263,7 @@ const MapContainer = () => {
         navigateToDriveView();
       }
     },
-    [userState, navigateToView, navigateToDriveView]
+    [userState, navigateToView, navigateToDriveView, onStationSelect]
   );
 
   // **Handle "Choose Destination" button click**
@@ -278,6 +281,11 @@ const MapContainer = () => {
     setDirections(null);
     setFareInfo(null);
     setViewBarText("Select your arrival station"); // Updated title
+
+    // Inform App.jsx to hide SceneContainer
+    if (onStationDeselect) {
+      onStationDeselect();
+    }
   };
 
   // **Compute fare once both departure and arrival are selected**
@@ -297,7 +305,6 @@ const MapContainer = () => {
             // Compute fare based on distance and duration
             const route = result.routes[0].legs[0];
             const distance = route.distance.value; // in meters
-            // Removed the unused 'duration' variable
             const fare = calculateFare(distance, route.duration.value); // Pass duration in seconds
             setFareInfo(fare);
 
@@ -406,7 +413,12 @@ const MapContainer = () => {
     setShowCircles(false);
     setViewBarText("Hong Kong"); // Reset to "Hong Kong"
     setUserState(USER_STATES.SELECTING_DEPARTURE); // Reset to SELECTING_DEPARTURE
-  }, [map]);
+
+    // Inform App.jsx to hide SceneContainer
+    if (onStationDeselect) {
+      onStationDeselect();
+    }
+  }, [map, onStationDeselect]);
 
   // **Handle Clear Departure Selection**
   const handleClearDeparture = () => {
@@ -415,6 +427,11 @@ const MapContainer = () => {
     setFareInfo(null);
     setViewBarText("Stations near me"); // Reset to "Stations near me"
     setUserState(USER_STATES.SELECTING_DEPARTURE);
+
+    // Inform App.jsx to hide SceneContainer
+    if (onStationDeselect) {
+      onStationDeselect();
+    }
   };
 
   // **Handle Clear Arrival Selection**
