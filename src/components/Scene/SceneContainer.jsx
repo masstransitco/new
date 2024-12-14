@@ -1,15 +1,15 @@
-import React, { useEffect, useState } from "react";
-import { APIProvider, Map3DElement } from "@vis.gl/react-google-maps";
+import React, { useEffect } from "react";
+import { APIProvider } from "@vis.gl/react-google-maps"; // Only import what you need
 import "./SceneContainer.css";
 
 const SceneContainer = () => {
-  const [map3DElement, setMap3DElement] = useState(null);
   const initialPosition = { lat: 22.295, lng: 114.172 }; // Set your initial position
 
   useEffect(() => {
     const loadMap = async () => {
+      // Load the maps3d library
       const { Map3DElement } = await google.maps.importLibrary("maps3d");
-      const newMap3DElement = new Map3DElement({
+      const map3DElement = new Map3DElement({
         center: {
           lat: initialPosition.lat,
           lng: initialPosition.lng,
@@ -17,8 +17,7 @@ const SceneContainer = () => {
         },
         zoom: 16,
       });
-      setMap3DElement(newMap3DElement);
-      document.getElementById("scene-container").appendChild(newMap3DElement);
+      document.getElementById("scene-container").appendChild(map3DElement);
     };
 
     loadMap();
