@@ -323,16 +323,9 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
       } else if (userState === USER_STATES.SELECTING_ARRIVAL) {
         setDestinationStation(station);
         setUserState(USER_STATES.DISPLAY_FARE);
-        navigateToDriveView();
       }
     },
-    [
-      userState,
-      navigateToView,
-      navigateToDriveView,
-      onStationSelect,
-      threeOverlayRef,
-    ]
+    [userState, navigateToView, onStationSelect, threeOverlayRef]
   );
 
   // -------------------
@@ -388,28 +381,51 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
     )
       return;
 
-    // Calculate heading from departure to destination
-    const departureLatLng = new window.google.maps.LatLng(
-      departureStation.position.lat,
-      departureStation.position.lng
-    );
-    const destinationLatLng = new window.google.maps.LatLng(
-      destinationStation.position.lat,
-      destinationStation.position.lng
-    );
-    const heading = window.google.maps.geometry.spherical.computeHeading(
-      departureLatLng,
-      destinationLatLng
-    );
+    // Fetch directions
+    const directionsService = new window.google.maps.DirectionsService();
+    directionsService.route(
+      {
+        origin: departureStation.position,
+        destination: destinationStation.position,
+        travelMode: window.google.maps.TravelMode.DRIVING,
+      },
+      (result, status) => {
+        if (status === window.google.maps.DirectionsStatus.OK) {
+          setDirections(result);
+          const route = result.routes[0].legs[0];
+          const fare = calculateFare(
+            route.distance.value,
+            route.duration.value
+          );
+          setFareInfo(fare);
 
-    const driveView = {
-      name: "DriveView",
-      center: departureStation.position,
-      zoom: 16,
-      tilt: 35,
-      heading: heading,
-    };
-    navigateToView(driveView);
+          // Update ViewBar title with distance and estimated time
+          setViewBarText(
+            `Distance: ${fare.distanceKm} km, Est Time: ${fare.estTime}`
+          );
+
+          // **Enhancement 3: Animate car on DriveView**
+          navigateToView({
+            name: "DriveView",
+            center: departureStation.position,
+            zoom: 16,
+            tilt: 35,
+            heading: window.google.maps.geometry.spherical.computeHeading(
+              new window.google.maps.LatLng(
+                departureStation.position.lat,
+                departureStation.position.lng
+              ),
+              new window.google.maps.LatLng(
+                destinationStation.position.lat,
+                destinationStation.position.lng
+              )
+            ),
+          });
+        } else {
+          console.error(`Error fetching directions: ${status}`);
+        }
+      }
+    );
 
     // Add 3D car model and animate
     const loader = new GLTFLoader();
@@ -452,6 +468,7 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
     destinationStation,
     navigateToView,
     directions,
+    calculateFare,
     threeOverlayRef,
   ]);
 
@@ -724,7 +741,7 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
           userState === USER_STATES.SELECTING_DEPARTURE
         }
         onChooseDestination={handleChooseDestination}
-        onHome={handleHomeClick} // Passing handleHomeClick here
+        onHome={handleHomeClick}
         isCityView={currentView.name === "CityView"}
         userState={userState}
         isMeView={currentView.name === "MeView"}

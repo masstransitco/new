@@ -1,36 +1,33 @@
 // src/components/Map/UserCircles.jsx
+
 import React from "react";
-import { Circle, OverlayView } from "@react-google-maps/api";
+import PropTypes from "prop-types";
 
 const UserCircles = ({ userLocation, distances, getLabelPosition }) => {
-  if (!userLocation) return null;
-
   return (
     <>
-      {distances.map((dist) => (
-        <React.Fragment key={dist}>
-          <Circle
-            center={userLocation}
-            radius={dist}
-            options={{
-              strokeColor: "#2171ec",
-              strokeOpacity: 0.8,
-              strokeWeight: 2,
-              fillOpacity: 0,
-            }}
-          />
-          <OverlayView
-            position={getLabelPosition(userLocation, dist)}
-            mapPaneName={OverlayView.OVERLAY_LAYER}
-          >
-            <div className="circle-label">
-              {dist >= 1000 ? `${dist / 1000}km` : `${dist}m`}
-            </div>
-          </OverlayView>
-        </React.Fragment>
+      {distances.map((distance) => (
+        <circle
+          key={distance}
+          cx={userLocation.lng}
+          cy={userLocation.lat}
+          r={distance / 1000} // Adjust scaling as needed
+          fill="rgba(52, 152, 219, 0.2)"
+          stroke="#3498db"
+          strokeWidth="2"
+        />
       ))}
     </>
   );
 };
 
-export default React.memo(UserCircles);
+UserCircles.propTypes = {
+  userLocation: PropTypes.shape({
+    lat: PropTypes.number.isRequired,
+    lng: PropTypes.number.isRequired,
+  }).isRequired,
+  distances: PropTypes.arrayOf(PropTypes.number).isRequired,
+  getLabelPosition: PropTypes.func.isRequired,
+};
+
+export default UserCircles;
