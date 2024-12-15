@@ -217,6 +217,49 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
   );
 
   // -------------------
+  // **Handle Home Button Click**
+  // -------------------
+  const handleHomeClick = useCallback(() => {
+    const homeView = {
+      name: "CityView",
+      center: BASE_CITY_CENTER,
+      zoom: CITY_VIEW.zoom,
+      tilt: CITY_VIEW.tilt,
+      heading: CITY_VIEW.heading,
+    };
+    navigateToView(homeView);
+    setDepartureStation(null);
+    setDestinationStation(null);
+    setDirections(null);
+    setFareInfo(null);
+    setShowCircles(false);
+    setViewBarText("Hong Kong");
+    setUserState(USER_STATES.SELECTING_DEPARTURE);
+
+    // Inform App.jsx to hide SceneContainer
+    if (onStationDeselect) {
+      onStationDeselect();
+    }
+
+    // Remove all 3D overlays
+    if (threeOverlayRef.current) {
+      threeOverlayRef.current.clearLabels();
+      threeOverlayRef.current.clearModels();
+    }
+  }, [
+    navigateToView,
+    onStationDeselect,
+    threeOverlayRef,
+    setDepartureStation,
+    setDestinationStation,
+    setDirections,
+    setFareInfo,
+    setShowCircles,
+    setViewBarText,
+    setUserState,
+  ]);
+
+  // -------------------
   // **Handle Station Selection**
   // -------------------
   const handleStationSelection = useCallback(
@@ -681,7 +724,7 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
           userState === USER_STATES.SELECTING_DEPARTURE
         }
         onChooseDestination={handleChooseDestination}
-        onHome={handleHomeClick}
+        onHome={handleHomeClick} // Passing handleHomeClick here
         isCityView={currentView.name === "CityView"}
         userState={userState}
         isMeView={currentView.name === "MeView"}
