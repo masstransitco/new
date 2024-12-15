@@ -30,7 +30,7 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import ThreeJSOverlayView from "../../threejs/ThreeJSOverlayView";
 
 // **Note:** Use environment variables for API keys in production.
-const GOOGLE_MAPS_API_KEY = "AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours"; // Replace "YOUR_API_KEY" with your actual API key or set it in .env
+const GOOGLE_MAPS_API_KEY = "AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours"; // Replace with your actual API key or set it in .env
 
 const mapId = "15431d2b469f209e"; // Your predefined mapId with styles from Google Console
 const libraries = ["geometry", "places"];
@@ -57,7 +57,9 @@ const USER_STATES = {
 };
 
 const MapContainer = ({ onStationSelect, onStationDeselect }) => {
-  // State Hooks
+  // -------------------
+  // **State Hooks**
+  // -------------------
   const [map, setMap] = useState(null);
   const [userLocation, setUserLocation] = useState(null);
   const [directions, setDirections] = useState(null);
@@ -72,17 +74,23 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
 
   const currentView = viewHistory[viewHistory.length - 1];
 
-  // Ref for ThreeJSOverlayView
+  // -------------------
+  // **Refs**
+  // -------------------
   const threeOverlayRef = useRef(null);
 
-  // Load Google Maps API
+  // -------------------
+  // **Google Maps API Loader**
+  // -------------------
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: GOOGLE_MAPS_API_KEY,
     libraries,
     version: "weekly", // Use a stable version
   });
 
+  // -------------------
   // **Fetch GeoJSON Data**
+  // -------------------
   const {
     data: stationsData,
     loading: stationsLoading,
@@ -95,7 +103,9 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
     error: districtsError,
   } = useFetchGeoJSON("/districts.geojson");
 
-  // **Parse and Transform Stations Data**
+  // -------------------
+  // **Parse and Transform Data**
+  // -------------------
   const stations = useMemo(() => {
     return stationsData.map((feature) => ({
       id: feature.id,
@@ -109,7 +119,6 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
     }));
   }, [stationsData]);
 
-  // **Parse and Transform Districts Data**
   const districts = useMemo(() => {
     return districtsData.map((feature) => ({
       id: feature.id,
@@ -122,12 +131,94 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
     }));
   }, [districtsData]);
 
+  // -------------------
   // **Apply Gesture Handling Hook**
+  // -------------------
   useMapGestures(map);
 
+  // -------------------
+  // **Utility Functions**
+  // -------------------
+
   /**
-   * Handle station selection based on user state
+   * Checks if the current time is within peak hours.
+   * @param {Date} date - The current date and time.
+   * @returns {boolean} - True if peak hour, else false.
    */
+  const isPeakHour = useCallback((date) => {
+    const hour = date.getHours();
+    return PEAK_HOURS.some((p) => hour >= p.start && hour < p.end);
+  }, []);
+
+  /**
+   * Calculates fare based on distance and duration.
+   * @param {number} distance - Distance in meters.
+   * @param {number} durationInSeconds - Duration in seconds.
+   * @returns {Object} - Contains ourFare, taxiFareEstimate, distanceKm, estTime.
+   */
+  const calculateFare = useCallback(
+    (distance, durationInSeconds) => {
+      // Base fare: HK$24 for first 2km + HK$1 for each 200m beyond 2km
+      const baseTaxi = 24;
+      const extraMeters = Math.max(0, distance - 2000);
+      const increments = Math.floor(extraMeters / 200) * 1;
+      const taxiFareEstimate = baseTaxi + increments;
+
+      // Our pricing:
+      // Peak hours: starting fare = $65, off-peak = $35
+      const isPeak = isPeakHour(new Date());
+      const startingFare = isPeak ? 65 : 35;
+      // Aim for ~50% of taxi fare
+      const ourFare = Math.max(taxiFareEstimate * 0.5, startingFare);
+
+      // Calculate distanceKm and estTime for ViewBar
+      const distanceKm = (distance / 1000).toFixed(2);
+      const estTime = `${Math.floor(durationInSeconds / 3600)} hr ${Math.floor(
+        (durationInSeconds % 3600) / 60
+      )} mins`;
+
+      return { ourFare, taxiFareEstimate, distanceKm, estTime };
+    },
+    [isPeakHour]
+  );
+
+  // -------------------
+  // **Navigate to a Given View**
+  // -------------------
+  const navigateToView = useCallback(
+    (view) => {
+      if (!map) return;
+
+      setViewHistory((prevHistory) => [...prevHistory, view]);
+
+      map.panTo(view.center);
+      map.setZoom(view.zoom);
+      if (view.tilt !== undefined) map.setTilt(view.tilt);
+      if (view.heading !== undefined) map.setHeading(view.heading);
+
+      // **Removed custom styles application**
+      // Since styles are managed via mapId, no need to set styles here
+
+      // Update ViewBar text based on view
+      if (view.name === "CityView") {
+        setViewBarText("Hong Kong");
+      } else if (view.name === "DistrictView") {
+        setViewBarText(view.districtName || "District");
+      } else if (view.name === "StationView") {
+        setViewBarText(view.districtName || "Station");
+      } else if (view.name === "MeView") {
+        setViewBarText("Stations near me");
+      } else if (view.name === "DriveView") {
+        // Update with distance and estimated time if needed
+        setViewBarText("Driving to destination");
+      }
+    },
+    [map]
+  );
+
+  // -------------------
+  // **Handle Station Selection**
+  // -------------------
   const handleStationSelection = useCallback(
     (station) => {
       if (userState === USER_STATES.SELECTING_DEPARTURE) {
@@ -191,8 +282,6 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
         setUserState(USER_STATES.DISPLAY_FARE);
         navigateToDriveView();
       }
-
-      // No longer need to manage showMarkers since traditional markers are removed
     },
     [
       userState,
@@ -203,10 +292,9 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
     ]
   );
 
-  /**
-   * Handle clicks on 3D models.
-   * @param {String} identifier - Identifier of the clicked model
-   */
+  // -------------------
+  // **Handle Model Click**
+  // -------------------
   const handleModelClick = useCallback(
     (identifier) => {
       // Determine if the clicked model is a station or other entity
@@ -225,7 +313,9 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
     [stations, handleStationSelection]
   );
 
+  // -------------------
   // **Initialize ThreeJSOverlayView**
+  // -------------------
   useEffect(() => {
     if (!isLoaded || !map) return;
 
@@ -243,39 +333,9 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
     };
   }, [isLoaded, map, handleModelClick]);
 
-  // **Navigate to a given view**
-  const navigateToView = useCallback(
-    (view) => {
-      if (!map) return;
-
-      setViewHistory((prevHistory) => [...prevHistory, view]);
-
-      map.panTo(view.center);
-      map.setZoom(view.zoom);
-      if (view.tilt !== undefined) map.setTilt(view.tilt);
-      if (view.heading !== undefined) map.setHeading(view.heading);
-
-      // **Removed custom styles application**
-      // Since styles are managed via mapId, no need to set styles here
-
-      // Update ViewBar text based on view
-      if (view.name === "CityView") {
-        setViewBarText("Hong Kong");
-      } else if (view.name === "DistrictView") {
-        setViewBarText(view.districtName || "District");
-      } else if (view.name === "StationView") {
-        setViewBarText(view.districtName || "Station");
-      } else if (view.name === "MeView") {
-        setViewBarText("Stations near me");
-      } else if (view.name === "DriveView") {
-        // Update with distance and estimated time if needed
-        setViewBarText("Driving to destination");
-      }
-    },
-    [map]
-  );
-
+  // -------------------
   // **Navigate to DriveView**
+  // -------------------
   const navigateToDriveView = useCallback(() => {
     if (
       !map ||
@@ -352,7 +412,9 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
     threeOverlayRef,
   ]);
 
-  // **Enhancement 4: Replace marker with 3D model on MeView**
+  // -------------------
+  // **Replace Marker with 3D Model on MeView**
+  // -------------------
   const replaceMarkerWith3DModel = useCallback(() => {
     if (!threeOverlayRef.current || !userLocation) return;
 
@@ -372,7 +434,9 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
     );
   }, [threeOverlayRef, userLocation]);
 
-  // **Handle "Choose Destination" button click**
+  // -------------------
+  // **Handle "Choose Destination" Button Click**
+  // -------------------
   const handleChooseDestination = () => {
     const chooseDestinationView = {
       name: "CityView",
@@ -400,84 +464,68 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
     }
   };
 
-  // **Check if current time is peak hour**
-  const isPeakHour = (date) => {
-    const hour = date.getHours();
-    return PEAK_HOURS.some((p) => hour >= p.start && hour < p.end);
+  // -------------------
+  // **Handle Clear Departure Selection**
+  // -------------------
+  const handleClearDeparture = () => {
+    setDepartureStation(null);
+    setDirections(null);
+    setFareInfo(null);
+    setViewBarText("Stations near me");
+    setUserState(USER_STATES.SELECTING_DEPARTURE);
+
+    // Inform App.jsx to hide SceneContainer
+    if (onStationDeselect) {
+      onStationDeselect();
+    }
+
+    // Remove departure label and model
+    if (threeOverlayRef.current && departureStation) {
+      threeOverlayRef.current.removeLabel(`label-${departureStation.id}`);
+      threeOverlayRef.current.removeModel(`station-${departureStation.id}`);
+    }
   };
 
-  // **Fare Calculation Function**
-  const calculateFare = useCallback(
-    (distance, durationInSeconds) => {
-      // distance in meters, duration in seconds
-      // Base fare: HK$24 for first 2km + HK$1 for each 200m beyond 2km
-      const baseTaxi = 24;
-      const extraMeters = Math.max(0, distance - 2000);
-      const increments = Math.floor(extraMeters / 200) * 1;
-      const taxiFareEstimate = baseTaxi + increments;
+  // -------------------
+  // **Handle Clear Arrival Selection**
+  // -------------------
+  const handleClearArrival = () => {
+    setDestinationStation(null);
+    setDirections(null);
+    setFareInfo(null);
+    setViewBarText(
+      departureStation
+        ? `Departure: ${departureStation.district}, ${departureStation.place}`
+        : "Stations near me"
+    );
+    setUserState(USER_STATES.SELECTING_ARRIVAL);
+  };
 
-      // Our pricing:
-      // Peak hours: starting fare = $65, off-peak = $35
-      const isPeak = isPeakHour(new Date());
-      const startingFare = isPeak ? 65 : 35;
-      // Aim for ~50% of taxi fare
-      const ourFare = Math.max(taxiFareEstimate * 0.5, startingFare);
+  // -------------------
+  // **Handle Map Load**
+  // -------------------
+  const onLoadMap = useCallback(
+    (mapInstance) => {
+      console.log("Map loaded");
+      setMap(mapInstance);
 
-      // Calculate distanceKm and estTime for ViewBar
-      const distanceKm = (distance / 1000).toFixed(2);
-      const estTime = `${Math.floor(durationInSeconds / 3600)} hr ${Math.floor(
-        (durationInSeconds % 3600) / 60
-      )} mins`;
-
-      return { ourFare, taxiFareEstimate, distanceKm, estTime };
+      // **Add labels to all districts once map is loaded**
+      if (threeOverlayRef.current) {
+        districts.forEach((district) => {
+          threeOverlayRef.current.addLabel(
+            district.position,
+            district.name,
+            `label-${district.id}`
+          );
+        });
+      }
     },
-    [isPeakHour]
+    [districts]
   );
 
-  // **Compute fare once both departure and arrival are selected**
-  useEffect(() => {
-    if (departureStation && destinationStation) {
-      // Fetch directions between departure and arrival
-      const directionsService = new window.google.maps.DirectionsService();
-      directionsService.route(
-        {
-          origin: departureStation.position,
-          destination: destinationStation.position,
-          travelMode: window.google.maps.TravelMode.DRIVING,
-        },
-        (result, status) => {
-          if (status === window.google.maps.DirectionsStatus.OK) {
-            setDirections(result);
-            // Compute fare based on distance and duration
-            const route = result.routes[0].legs[0];
-            // const distance = route.distance.value; // Removed or commented out
-            const fare = calculateFare(
-              route.distance.value,
-              route.duration.value
-            ); // Pass duration in seconds
-            setFareInfo(fare);
-
-            // Update ViewBar title with distance and estimated time
-            setViewBarText(
-              `Distance: ${fare.distanceKm} km, Est Time: ${fare.estTime}`
-            );
-
-            // **Enhancement 3: Animate car on DriveView**
-            navigateToDriveView();
-          } else {
-            console.error(`Error fetching directions: ${result}`);
-          }
-        }
-      );
-    }
-  }, [
-    departureStation,
-    destinationStation,
-    calculateFare,
-    navigateToDriveView,
-  ]);
-
-  // **Locate the user**
+  // -------------------
+  // **Locate the User**
+  // -------------------
   const locateMe = useCallback(() => {
     setDirections(null);
     setFareInfo(null);
@@ -520,96 +568,9 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
     }
   }, [map, navigateToView, replaceMarkerWith3DModel]);
 
-  // **Handle Home button click**
-  const handleHomeClick = useCallback(() => {
-    const homeView = {
-      name: "CityView",
-      center: BASE_CITY_CENTER,
-      zoom: CITY_VIEW.zoom,
-      tilt: CITY_VIEW.tilt,
-      heading: CITY_VIEW.heading,
-    };
-    setViewHistory([homeView]);
-    map.panTo(homeView.center);
-    map.setZoom(homeView.zoom);
-    if (homeView.tilt !== undefined) map.setTilt(homeView.tilt);
-    if (homeView.heading !== undefined) map.setHeading(homeView.heading);
-    // **Removed styles reset**
-    // No need to set styles as they are managed via mapId
-    setDepartureStation(null);
-    setDestinationStation(null);
-    setDirections(null);
-    setFareInfo(null);
-    setShowCircles(false);
-    setViewBarText("Hong Kong");
-    setUserState(USER_STATES.SELECTING_DEPARTURE);
-
-    // Inform App.jsx to hide SceneContainer
-    if (onStationDeselect) {
-      onStationDeselect();
-    }
-
-    // Remove all 3D overlays
-    if (threeOverlayRef.current) {
-      threeOverlayRef.current.clearLabels();
-      threeOverlayRef.current.clearModels();
-    }
-  }, [map, onStationDeselect]);
-
-  // **Handle Clear Departure Selection**
-  const handleClearDeparture = () => {
-    setDepartureStation(null);
-    setDirections(null);
-    setFareInfo(null);
-    setViewBarText("Stations near me");
-    setUserState(USER_STATES.SELECTING_DEPARTURE);
-
-    // Inform App.jsx to hide SceneContainer
-    if (onStationDeselect) {
-      onStationDeselect();
-    }
-
-    // Remove departure label and model
-    if (threeOverlayRef.current && departureStation) {
-      threeOverlayRef.current.removeLabel(`label-${departureStation.id}`);
-      threeOverlayRef.current.removeModel(`station-${departureStation.id}`);
-    }
-  };
-
-  // **Handle Clear Arrival Selection**
-  const handleClearArrival = () => {
-    setDestinationStation(null);
-    setDirections(null);
-    setFareInfo(null);
-    setViewBarText(
-      departureStation
-        ? `Departure: ${departureStation.district}, ${departureStation.place}`
-        : "Stations near me"
-    );
-    setUserState(USER_STATES.SELECTING_ARRIVAL);
-  };
-
-  // **Handle map load**
-  const onLoadMap = useCallback(
-    (mapInstance) => {
-      console.log("Map loaded");
-      setMap(mapInstance);
-
-      // **Add labels to all districts once map is loaded**
-      if (threeOverlayRef.current) {
-        districts.forEach((district) => {
-          threeOverlayRef.current.addLabel(
-            district.position,
-            district.name,
-            `label-${district.id}`
-          );
-        });
-      }
-    },
-    [districts]
-  );
-
-  // **Invoke locateMe when map is set**
+  // -------------------
+  // **Invoke locateMe When Map is Set**
+  // -------------------
   useEffect(() => {
     if (map) {
       console.log("Invoking locateMe after map is set");
@@ -617,7 +578,9 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
     }
   }, [map, locateMe]);
 
-  // **Get label position for radius circles**
+  // -------------------
+  // **Get Label Position for Radius Circles**
+  // -------------------
   const getCircleLabelPosition = useCallback((center, radius) => {
     const latOffset = radius * 0.000009; // Approx conversion of meters to lat offset
     return {
@@ -626,7 +589,9 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
     };
   }, []);
 
-  // **Directions Renderer options**
+  // -------------------
+  // **Directions Renderer Options**
+  // -------------------
   const directionsOptions = useMemo(() => {
     return {
       suppressMarkers: true,
@@ -638,7 +603,9 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
     };
   }, []);
 
-  // **Handle route click (to show info windows)**
+  // -------------------
+  // **Handle Route Click (to Show Info Windows)**
+  // -------------------
   const handleRouteClick = useCallback(() => {
     if (currentView.name === "RouteView") {
       setRouteInfo({
@@ -665,7 +632,9 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
     destinationStation,
   ]);
 
+  // -------------------
   // **Loading and Error States for Data Fetching**
+  // -------------------
   if (loadError) {
     return (
       <div className="error-message">
@@ -690,6 +659,9 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
     );
   }
 
+  // -------------------
+  // **Render Component**
+  // -------------------
   return (
     <div
       className="map-container"
