@@ -271,6 +271,19 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
     navigateToView(driveView);
   }, [map, navigateToView, departureStation, destinationStation]);
 
+  // **Utility Functions to Disable and Enable User Navigation**
+  const disableUserNavigation = () => {
+    if (map) {
+      map.setOptions({ gestureHandling: "none" });
+    }
+  };
+
+  const enableUserNavigation = () => {
+    if (map) {
+      map.setOptions({ gestureHandling: "auto" });
+    }
+  };
+
   // **Handle station selection based on user state**
   const handleStationSelection = useCallback(
     (station) => {
@@ -754,19 +767,6 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
       </div>
     );
   }
-
-  // **Utility Functions to Disable and Enable User Navigation**
-  const disableUserNavigation = () => {
-    if (map) {
-      map.setOptions({ gestureHandling: "none" });
-    }
-  };
-
-  const enableUserNavigation = () => {
-    if (map) {
-      map.setOptions({ gestureHandling: "auto" });
-    }
-  };
 
   return (
     <div
