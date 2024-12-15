@@ -31,7 +31,7 @@ import ThreeJSOverlayView from "../../threejs/ThreeJSOverlayView";
 // **Note:** Use environment variables for API keys in production.
 const GOOGLE_MAPS_API_KEY = "AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours"; // Ensure this is set in your .env file
 
-const MAP_ID = "15431d2b469f209e"; // Your predefined mapId with styles from Google Console
+const MAP_ID = "94527c02bbb6243"; // Updated vector mapId
 const LIBRARIES = ["geometry", "places"];
 const CONTAINER_STYLE = { width: "100%", height: "100vh" };
 const BASE_CITY_CENTER = { lat: 22.236, lng: 114.191 };
@@ -723,7 +723,7 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
         center={currentView.center}
         zoom={currentView.zoom}
         options={{
-          mapId: MAP_ID, // Utilize the predefined mapId for styles
+          mapId: MAP_ID, // Utilize the updated vector mapId
           tilt: currentView.tilt || 0,
           heading: currentView.heading || 0,
           streetViewControl: false,
