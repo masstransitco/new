@@ -83,7 +83,7 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: GOOGLE_MAPS_API_KEY,
     libraries: LIBRARIES,
-    version: "3.47", // Set to at least 3.47 for vector maps
+    version: "3.47", // Ensure this version supports WebGLOverlayView
   });
 
   // -------------------
