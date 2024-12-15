@@ -30,7 +30,7 @@ import ThreeJSOverlayView from "../../threejs/ThreeJSOverlayView";
 // **Note:** Use environment variables for API keys in production.
 const GOOGLE_MAPS_API_KEY = "AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours"; // Secure API key
 
-const MAP_ID = "94527c02bbb6243"; // Updated vector mapId
+const MAP_ID = "94527c02bbb6243"; // Ensure this is correctly associated with a vector map style
 const LIBRARIES = ["geometry", "places"];
 const CONTAINER_STYLE = { width: "100%", height: "100vh" };
 const BASE_CITY_CENTER = { lat: 22.236, lng: 114.191 };
@@ -83,7 +83,7 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: GOOGLE_MAPS_API_KEY,
     libraries: LIBRARIES,
-    version: "beta", // Changed to beta for WebGLOverlayView support
+    version: "3.47", // Set to at least 3.47 for vector maps
   });
 
   // -------------------
