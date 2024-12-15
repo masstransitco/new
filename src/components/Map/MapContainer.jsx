@@ -19,8 +19,9 @@ import MotionMenu from "../Menu/MotionMenu";
 import FareInfoWindow from "./FareInfoWindow";
 import RouteInfoWindow from "./RouteInfoWindow";
 import UserCircles from "./UserCircles";
-import DistrictMarkers from "./DistrictMarkers";
-import StationMarkers from "./StationMarkers";
+// Removed imports for DistrictMarkers and StationMarkers
+// import DistrictMarkers from "./DistrictMarkers";
+// import StationMarkers from "./StationMarkers";
 
 import useFetchGeoJSON from "../../hooks/useFetchGeoJSON";
 import useMapGestures from "../../hooks/useMapGestures";
@@ -29,10 +30,10 @@ import "./MapContainer.css";
 
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
-import ThreeJSOverlayView from "../../threejs/ThreeJSOverlayView";
+import ThreeJSOverlayView from "../../threejs/ThreeJSOverlayView"; // Ensure this is your corrected class
 
 // **Note:** Use environment variables for API keys in production.
-const GOOGLE_MAPS_API_KEY = "YOUR_GOOGLE_MAPS_API_KEY"; // **Replace with your actual API key securely**
+const GOOGLE_MAPS_API_KEY = "AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours"; // **Ensure you have this set in your environment variables**
 
 const mapId = "15431d2b469f209e"; // Your predefined mapId with styles from Google Console
 const libraries = ["geometry", "places"];
@@ -82,6 +83,7 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: GOOGLE_MAPS_API_KEY,
     libraries,
+    version: "weekly", // Use a stable version
   });
 
   // **Fetch GeoJSON Data**
@@ -137,12 +139,7 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
     overlay.setMap(map);
 
     // **Do not override lifecycle methods here.**
-    // Remove the following lines to prevent disrupting ThreeJSOverlayView's internal bindings:
-    /*
-    overlay.onAdd = () => {
-      // Add initial objects or configurations if needed
-    };
-    */
+    // Removed any overriding of onAdd or other methods to prevent conflicts
 
     // Cleanup on unmount
     return () => {
@@ -790,27 +787,27 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
           />
         )}
 
-        {/* District Overlays (in CityView) */}
-        {currentView.name === "CityView" && showMarkers && (
-          <DistrictMarkers
-            districts={districts}
-            onDistrictClick={handleDistrictClick}
-          />
-        )}
+        {/* **Removed DistrictMarkers and StationMarkers to prevent conflicts**
+            {currentView.name === "CityView" && showMarkers && (
+              <DistrictMarkers
+                districts={districts}
+                onDistrictClick={handleDistrictClick}
+              />
+            )}
 
-        {/* Station Overlays (in MeView or DistrictView) */}
-        {(currentView.name === "MeView" ||
-          currentView.name === "DistrictView") &&
-          showMarkers && (
-            <StationMarkers
-              stations={filteredStations}
-              onStationClick={handleStationSelection}
-              selectedStations={{
-                departure: departureStation,
-                destination: destinationStation,
-              }}
-            />
-          )}
+            {(currentView.name === "MeView" ||
+              currentView.name === "DistrictView") &&
+              showMarkers && (
+                <StationMarkers
+                  stations={filteredStations}
+                  onStationClick={handleStationSelection}
+                  selectedStations={{
+                    departure: departureStation,
+                    destination: destinationStation,
+                  }}
+                />
+              )}
+        */}
 
         {/* Directions Renderer */}
         {directions && (
