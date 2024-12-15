@@ -80,7 +80,12 @@ export default class ThreeJSOverlayView extends google.maps.WebGLOverlayView {
    * Called on each frame to render the overlay.
    */
   onDraw({ gl, transformer }) {
-    // **Key Correction: Use getProjectionMatrix instead of getPixelProjectionMatrix**
+    // **Debugging: Inspect transformer methods**
+    console.log(
+      "Available transformer methods:",
+      Object.getOwnPropertyNames(transformer)
+    );
+
     if (typeof transformer.getProjectionMatrix !== "function") {
       console.error("transformer.getProjectionMatrix is not a function.");
       return;
