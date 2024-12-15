@@ -7,18 +7,21 @@ import {
   PerspectiveCamera,
   WebGLRenderer,
   Scene,
-  FontLoader,
-  TextGeometry,
   MeshBasicMaterial,
   Mesh,
   Vector3,
   CatmullRomCurve3,
   Quaternion,
 } from "three";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
+
+import { FontLoader } from "three/examples/jsm/loaders/FontLoader.js"; // Correct import
+import { TextGeometry } from "three/examples/jsm/geometries/TextGeometry.js"; // Correct import
+
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { Line2 } from "three/examples/jsm/lines/Line2.js";
 import { LineMaterial } from "three/examples/jsm/lines/LineMaterial.js";
 import { LineGeometry } from "three/examples/jsm/lines/LineGeometry.js";
+
 import CAR_MODEL_URL from "../models/car.glb"; // Adjust the path as necessary
 import ME_MODEL_URL from "../models/ME.glb"; // Adjust the path as necessary
 
