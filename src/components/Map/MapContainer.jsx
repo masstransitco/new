@@ -183,6 +183,105 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
   );
 
   // -------------------
+  // **Navigate to DriveView**
+  // -------------------
+  const navigateToDriveView = useCallback(() => {
+    if (
+      !map ||
+      !departureStation ||
+      !destinationStation ||
+      !threeOverlayRef.current
+    )
+      return;
+
+    // Fetch directions
+    const directionsService = new window.google.maps.DirectionsService();
+    directionsService.route(
+      {
+        origin: departureStation.position,
+        destination: destinationStation.position,
+        travelMode: window.google.maps.TravelMode.DRIVING,
+      },
+      (result, status) => {
+        if (status === window.google.maps.DirectionsStatus.OK) {
+          setDirections(result);
+          const route = result.routes[0].legs[0];
+          const fare = calculateFare(
+            route.distance.value,
+            route.duration.value
+          );
+          setFareInfo(fare);
+
+          // Update ViewBar title with distance and estimated time
+          setViewBarText(
+            `Distance: ${fare.distanceKm} km, Est Time: ${fare.estTime}`
+          );
+
+          // Update current view to DriveView
+          navigateToView({
+            name: "DriveView",
+            center: departureStation.position,
+            zoom: 16,
+            tilt: 35,
+            heading: window.google.maps.geometry.spherical.computeHeading(
+              new window.google.maps.LatLng(
+                departureStation.position.lat,
+                departureStation.position.lng
+              ),
+              new window.google.maps.LatLng(
+                destinationStation.position.lat,
+                destinationStation.position.lng
+              )
+            ),
+          });
+
+          // Add 3D car model and animate
+          const loader = new GLTFLoader();
+          loader.load(
+            "/models/car.glb",
+            (gltf) => {
+              const carModel = gltf.scene;
+              carModel.scale.set(2, 2, 2); // Adjust scale as needed
+              threeOverlayRef.current.addModel(
+                departureStation.position,
+                carModel,
+                "car"
+              );
+
+              // Animate car along the route
+              const path = route.overview_path.map((latLng) => ({
+                lat: latLng.lat(),
+                lng: latLng.lng(),
+              }));
+              threeOverlayRef.current.animateModelAlongPath(
+                "car",
+                path,
+                12000,
+                () => {
+                  console.log("Car animation completed");
+                }
+              );
+            },
+            undefined,
+            (error) => {
+              console.error("Error loading car.glb model:", error);
+            }
+          );
+        } else {
+          console.error(`Error fetching directions: ${status}`);
+        }
+      }
+    );
+  }, [
+    map,
+    departureStation,
+    destinationStation,
+    threeOverlayRef,
+    calculateFare,
+    navigateToView,
+  ]);
+
+  // -------------------
   // **Navigate to a Given View**
   // -------------------
   const navigateToView = useCallback(
@@ -196,9 +295,6 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
       if (view.tilt !== undefined) map.setTilt(view.tilt);
       if (view.heading !== undefined) map.setHeading(view.heading);
 
-      // **Removed custom styles application**
-      // Since styles are managed via mapId, no need to set styles here
-
       // Update ViewBar text based on view
       if (view.name === "CityView") {
         setViewBarText("Hong Kong");
@@ -209,8 +305,7 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
       } else if (view.name === "MeView") {
         setViewBarText("Stations near me");
       } else if (view.name === "DriveView") {
-        // Update with distance and estimated time if needed
-        setViewBarText("Driving to destination");
+        // Already set above
       }
     },
     [map]
@@ -323,9 +418,16 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
       } else if (userState === USER_STATES.SELECTING_ARRIVAL) {
         setDestinationStation(station);
         setUserState(USER_STATES.DISPLAY_FARE);
+        navigateToDriveView();
       }
     },
-    [userState, navigateToView, onStationSelect, threeOverlayRef]
+    [
+      userState,
+      navigateToView,
+      navigateToDriveView,
+      onStationSelect,
+      threeOverlayRef,
+    ]
   );
 
   // -------------------
@@ -368,109 +470,6 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
       overlay.setMap(null);
     };
   }, [isLoaded, map, handleModelClick]);
-
-  // -------------------
-  // **Navigate to DriveView**
-  // -------------------
-  const navigateToDriveView = useCallback(() => {
-    if (
-      !map ||
-      !departureStation ||
-      !destinationStation ||
-      !threeOverlayRef.current
-    )
-      return;
-
-    // Fetch directions
-    const directionsService = new window.google.maps.DirectionsService();
-    directionsService.route(
-      {
-        origin: departureStation.position,
-        destination: destinationStation.position,
-        travelMode: window.google.maps.TravelMode.DRIVING,
-      },
-      (result, status) => {
-        if (status === window.google.maps.DirectionsStatus.OK) {
-          setDirections(result);
-          const route = result.routes[0].legs[0];
-          const fare = calculateFare(
-            route.distance.value,
-            route.duration.value
-          );
-          setFareInfo(fare);
-
-          // Update ViewBar title with distance and estimated time
-          setViewBarText(
-            `Distance: ${fare.distanceKm} km, Est Time: ${fare.estTime}`
-          );
-
-          // **Enhancement 3: Animate car on DriveView**
-          navigateToView({
-            name: "DriveView",
-            center: departureStation.position,
-            zoom: 16,
-            tilt: 35,
-            heading: window.google.maps.geometry.spherical.computeHeading(
-              new window.google.maps.LatLng(
-                departureStation.position.lat,
-                departureStation.position.lng
-              ),
-              new window.google.maps.LatLng(
-                destinationStation.position.lat,
-                destinationStation.position.lng
-              )
-            ),
-          });
-        } else {
-          console.error(`Error fetching directions: ${status}`);
-        }
-      }
-    );
-
-    // Add 3D car model and animate
-    const loader = new GLTFLoader();
-    loader.load(
-      "/models/car.glb",
-      (gltf) => {
-        const carModel = gltf.scene;
-        carModel.scale.set(2, 2, 2); // Adjust scale as needed
-        threeOverlayRef.current.addModel(
-          departureStation.position,
-          carModel,
-          "car"
-        );
-
-        // Animate car along the route
-        if (directions) {
-          const route = directions.routes[0];
-          const path = route.overview_path.map((latLng) => ({
-            lat: latLng.lat(),
-            lng: latLng.lng(),
-          }));
-          threeOverlayRef.current.animateModelAlongPath(
-            "car",
-            path,
-            12000,
-            () => {
-              console.log("Car animation completed");
-            }
-          );
-        }
-      },
-      undefined,
-      (error) => {
-        console.error("Error loading car.glb model:", error);
-      }
-    );
-  }, [
-    map,
-    departureStation,
-    destinationStation,
-    navigateToView,
-    directions,
-    calculateFare,
-    threeOverlayRef,
-  ]);
 
   // -------------------
   // **Replace Marker with 3D Model on MeView**
@@ -767,8 +766,6 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
           draggable: true,
           scrollwheel: true,
           disableDoubleClickZoom: false,
-          // **Removed custom styles**
-          // Styles are managed via mapId; no need to set 'styles' here
         }}
         onLoad={onLoadMap}
         onClick={() => {
