@@ -14,16 +14,16 @@ import {
   Quaternion,
 } from "three";
 
-import { FontLoader } from "three/examples/jsm/loaders/FontLoader.js"; // Correct import
-import { TextGeometry } from "three/examples/jsm/geometries/TextGeometry.js"; // Correct import
-
+import { FontLoader } from "three/examples/jsm/loaders/FontLoader.js";
+import { TextGeometry } from "three/examples/jsm/geometries/TextGeometry.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { Line2 } from "three/examples/jsm/lines/Line2.js";
 import { LineMaterial } from "three/examples/jsm/lines/LineMaterial.js";
 import { LineGeometry } from "three/examples/jsm/lines/LineGeometry.js";
 
-import CAR_MODEL_URL from "../models/car.glb"; // Adjust the path as necessary
-import ME_MODEL_URL from "../models/ME.glb"; // Adjust the path as necessary
+// Constants for model URLs
+const CAR_MODEL_URL = "/models/car.glb";
+const ME_MODEL_URL = "/models/ME.glb";
 
 const CAR_FRONT = new Vector3(0, 1, 0); // Direction the car model is facing
 
@@ -75,16 +75,19 @@ export default class ThreeJSOverlayView {
     if (!this.scene || !this.renderer) return;
 
     // Update camera projection matrix
-    const projectionMatrix = transformer.fromLatLngAltitude(
-      this.referencePoint || this.map.getCenter()
+    const projectionMatrix = new Float32Array(
+      transformer.getProjectionMatrix()
     );
     this.camera.projectionMatrix.fromArray(projectionMatrix);
+    this.camera.matrixWorldInverse.fromArray(transformer.getViewMatrix());
+    this.camera.matrixWorld.getInverse(this.camera.matrixWorldInverse);
+    this.camera.updateMatrixWorld();
 
     const { width, height } = gl.canvas;
-    this.viewportSize.set(width, height);
     this.renderer.setSize(width, height);
 
     // Render the scene
+    this.renderer.state.reset();
     this.renderer.render(this.scene, this.camera);
     this.renderer.resetState();
   }
@@ -97,72 +100,45 @@ export default class ThreeJSOverlayView {
   }
 
   /**
-   * Utility to add labels above a position.
-   * @param {Object} position - { lat, lng }
-   * @param {String} text - Label text
+   * Convert LatLng to Vector3 using transformer for accurate positioning.
+   * @param {Object} latLng - { lat, lng }
+   * @returns {THREE.Vector3}
    */
-  addLabel(position, text) {
-    const loader = new FontLoader();
-    loader.load(
-      "/fonts/helvetiker_regular.typeface.json", // Ensure this path is correct
-      (font) => {
-        const geometry = new TextGeometry(text, {
-          font: font,
-          size: 1,
-          height: 0.1,
-        });
-        const material = new MeshBasicMaterial({ color: 0xffffff });
-        const mesh = new Mesh(geometry, material);
-        mesh.position.set(position.lng, position.lat, 10); // Adjust z for height
-        this.scene.add(mesh);
-        this.labels[text] = mesh;
-      },
-      undefined,
-      (error) => {
-        console.error("Error loading font for label:", error);
-      }
-    );
-  }
-
-  /**
-   * Utility to remove a label by identifier.
-   * @param {String} identifier - Label identifier (e.g., station name)
-   */
-  removeLabel(identifier) {
-    const label = this.labels[identifier];
-    if (label) {
-      this.scene.remove(label);
-      delete this.labels[identifier];
-    }
-  }
-
-  /**
-   * Utility to clear all labels.
-   */
-  clearLabels() {
-    Object.keys(this.labels).forEach((key) => {
-      this.scene.remove(this.labels[key]);
-      delete this.labels[key];
+  latLngToVector3(latLng) {
+    const transformer = this.overlay.getTransformer();
+    const worldPosition = transformer.fromLatLngAltitude({
+      lat: latLng.lat,
+      lng: latLng.lng,
+      altitude: 0, // Adjust altitude if necessary
     });
+    return new Vector3(worldPosition.x, worldPosition.y, worldPosition.z);
   }
 
   /**
-   * Utility to add a 3D model at a specific position.
+   * Add a 3D model with a unique identifier.
    * @param {Object} position - { lat, lng }
    * @param {THREE.Object3D} model - The 3D model to add
-   * @param {String} identifier - Optional identifier for the model
+   * @param {String} identifier - Unique identifier for the model
    */
   addModel(position, model, identifier = null) {
-    model.position.set(position.lng, position.lat, 0); // Adjust as needed
+    if (identifier && this.models[identifier]) {
+      // Remove existing model with the same identifier
+      this.removeModel(identifier);
+    }
+
+    const vector = this.latLngToVector3(position);
+    model.position.set(vector.x, vector.y, vector.z); // Accurate positioning
     this.scene.add(model);
+
     if (identifier) {
       this.models[identifier] = model;
     }
+
     this.requestRedraw();
   }
 
   /**
-   * Utility to remove a model by identifier.
+   * Remove a model by its unique identifier.
    * @param {String} identifier - Identifier of the model to remove
    */
   removeModel(identifier) {
@@ -175,12 +151,78 @@ export default class ThreeJSOverlayView {
   }
 
   /**
-   * Utility to clear all models.
+   * Clear all models from the scene.
    */
   clearModels() {
-    Object.keys(this.models).forEach((key) => {
-      this.scene.remove(this.models[key]);
-      delete this.models[key];
+    Object.keys(this.models).forEach((identifier) => {
+      const model = this.models[identifier];
+      this.scene.remove(model);
+      delete this.models[identifier];
+    });
+    this.requestRedraw();
+  }
+
+  /**
+   * Add a label with a unique identifier.
+   * @param {Object} position - { lat, lng }
+   * @param {String} text - Label text
+   * @param {String} identifier - Unique identifier for the label
+   */
+  addLabel(position, text, identifier = null) {
+    if (identifier && this.labels[identifier]) {
+      // Remove existing label with the same identifier
+      this.removeLabel(identifier);
+    }
+
+    const loader = new FontLoader();
+    loader.load(
+      "/fonts/helvetiker_regular.typeface.json", // Ensure this path is correct
+      (font) => {
+        const geometry = new TextGeometry(text, {
+          font: font,
+          size: 10, // Adjust size for visibility
+          height: 1, // Adjust height for visibility
+        });
+        const material = new MeshBasicMaterial({ color: 0xffffff });
+        const mesh = new Mesh(geometry, material);
+        const vector = this.latLngToVector3(position);
+        mesh.position.set(vector.x, vector.y, vector.z + 50); // Adjust z for height above the map
+        this.scene.add(mesh);
+
+        if (identifier) {
+          this.labels[identifier] = mesh;
+        }
+
+        this.requestRedraw();
+      },
+      undefined,
+      (error) => {
+        console.error("Error loading font for label:", error);
+      }
+    );
+  }
+
+  /**
+   * Remove a label by its unique identifier.
+   * @param {String} identifier - Identifier of the label to remove
+   */
+  removeLabel(identifier) {
+    const label = this.labels[identifier];
+    if (label) {
+      this.scene.remove(label);
+      delete this.labels[identifier];
+      this.requestRedraw();
+    }
+  }
+
+  /**
+   * Clear all labels from the scene.
+   */
+  clearLabels() {
+    Object.keys(this.labels).forEach((identifier) => {
+      const label = this.labels[identifier];
+      this.scene.remove(label);
+      delete this.labels[identifier];
     });
     this.requestRedraw();
   }
@@ -216,16 +258,16 @@ export default class ThreeJSOverlayView {
    */
   animateModelAlongPath(identifier, path, duration, onComplete) {
     const model = this.models[identifier];
-    if (!model) return;
+    if (!model || this.carAnimationActive) return; // Prevent multiple animations
 
     let startTime = null;
+    this.carAnimationActive = true;
 
     const animate = (timestamp) => {
       if (!startTime) startTime = timestamp;
       const elapsed = timestamp - startTime;
       const progress = Math.min(elapsed / duration, 1);
 
-      // Calculate current position on the path
       const totalPoints = path.length;
       const index = Math.floor(progress * (totalPoints - 1));
       const nextIndex = Math.min(index + 1, totalPoints - 1);
@@ -236,24 +278,24 @@ export default class ThreeJSOverlayView {
         lng: path[index].lng + t * (path[nextIndex].lng - path[index].lng),
       };
 
-      model.position.set(currentPos.lng, currentPos.lat, 0); // Adjust z as needed
+      const vector = this.latLngToVector3(currentPos);
+      model.position.set(vector.x, vector.y, vector.z);
 
-      // Optionally, update model orientation based on path direction
-      const direction = this.latLngToVector3(currentPos).sub(
-        this.latLngToVector3(path[index])
-      );
-      if (direction.length() > 0) {
-        direction.normalize();
-        const quaternion = new Quaternion().setFromUnitVectors(
-          CAR_FRONT,
-          direction
-        );
-        model.quaternion.copy(quaternion);
+      // Update model orientation based on movement direction
+      if (nextIndex < totalPoints - 1) {
+        const direction = new Vector3(
+          path[nextIndex + 1].lng - path[nextIndex].lng,
+          path[nextIndex + 1].lat - path[nextIndex].lat,
+          0
+        ).normalize();
+        const angle = Math.atan2(direction.y, direction.x);
+        model.rotation.z = -angle;
       }
 
       if (progress < 1) {
         this.animationRequest = requestAnimationFrame(animate);
       } else {
+        this.carAnimationActive = false;
         if (onComplete) onComplete();
         this.animationRequest = null;
       }
@@ -261,21 +303,7 @@ export default class ThreeJSOverlayView {
       this.requestRedraw();
     };
 
-    if (!this.carAnimationActive) {
-      this.carAnimationActive = true;
-      this.animationRequest = requestAnimationFrame(animate);
-    }
-  }
-
-  /**
-   * Convert LatLng to Vector3 for Three.js positioning.
-   * @param {Object} latLng - { lat, lng }
-   * @returns {THREE.Vector3}
-   */
-  latLngToVector3(latLng) {
-    // Implement conversion from LatLng to Vector3
-    // Placeholder: x = lng, y = lat, z = 0
-    return new Vector3(latLng.lng, latLng.lat, 0);
+    this.animationRequest = requestAnimationFrame(animate);
   }
 
   /**
@@ -306,129 +334,6 @@ export default class ThreeJSOverlayView {
     trackLine.computeLineDistances();
 
     return trackLine;
-  }
-
-  /**
-   * Load and animate the car model along a predefined path.
-   * @param {Array} animationPoints - Array of { lat, lng } points defining the path
-   */
-  loadAndAnimateCar(animationPoints) {
-    if (this.carAnimationActive) return; // Prevent multiple animations
-
-    const loader = new GLTFLoader();
-
-    loader.load(
-      CAR_MODEL_URL,
-      (gltf) => {
-        const carModel = gltf.scene;
-        carModel.scale.setScalar(1); // Adjust scale as needed
-        carModel.rotation.set(0, 0, 0); // Adjust rotation as needed
-        carModel.name = "car";
-
-        // Add car model to the scene at the starting point
-        const startPosition = animationPoints[0];
-        this.addModel(startPosition, carModel, "car");
-
-        // Create a Catmull-Rom spline from the points to smooth out the corners
-        const points = animationPoints.map((p) => this.latLngToVector3(p));
-        const curve = new CatmullRomCurve3(points, true, "catmullrom", 0.2);
-        curve.updateArcLengths();
-
-        // Create and add the track line
-        const trackLine = this.createTrackLine(curve);
-        this.scene.add(trackLine);
-
-        // Animate the car along the spline
-        this.animateModelAlongPath(
-          "car",
-          animationPoints,
-          12000, // 12 seconds animation
-          () => {
-            // Animation complete callback
-            this.carAnimationActive = false;
-            // Optionally remove the car or perform other actions
-          }
-        );
-      },
-      undefined,
-      (error) => {
-        console.error("Error loading car model:", error);
-      }
-    );
-  }
-
-  /**
-   * Load and replace the default marker with the ME.glb 3D model in MeView.
-   * @param {Object} position - { lat, lng }
-   */
-  loadAndReplaceWithME(position) {
-    const loader = new GLTFLoader();
-
-    loader.load(
-      ME_MODEL_URL,
-      (gltf) => {
-        const meModel = gltf.scene;
-        meModel.scale.setScalar(2); // Adjust scale as needed
-        meModel.rotation.set(0, Math.PI, 0); // Adjust rotation as needed
-        meModel.name = "ME";
-
-        // Remove existing marker if any
-        this.removeModel("ME");
-
-        // Add ME model to the scene at the specified position
-        this.addModel(position, meModel, "ME");
-      },
-      undefined,
-      (error) => {
-        console.error("Error loading ME model:", error);
-      }
-    );
-  }
-
-  /**
-   * Animate the camera to a selected station, disable navigation during animation, and re-enable afterward.
-   * @param {Object} position - { lat, lng }
-   * @param {Number} zoom - Zoom level
-   * @param {Number} tilt - Tilt angle
-   * @param {Number} heading - Heading angle
-   */
-  animateToStation(position, zoom, tilt, heading) {
-    // Disable user navigation
-    this.disableUserNavigation();
-
-    // Animate the camera
-    this.animateCameraTo(position, zoom, tilt, heading, () => {
-      // Re-enable user navigation after animation completes
-      this.enableUserNavigation();
-    });
-  }
-
-  /**
-   * Add district labels to the scene.
-   * @param {Array} districts - Array of district objects with { lat, lng, name }
-   */
-  addDistrictLabels(districts) {
-    districts.forEach((district) => {
-      this.addLabel(district.position, district.name);
-    });
-  }
-
-  /**
-   * Utility to disable user navigation on the map.
-   */
-  disableUserNavigation() {
-    if (this.map) {
-      this.map.setOptions({ gestureHandling: "none" });
-    }
-  }
-
-  /**
-   * Utility to enable user navigation on the map.
-   */
-  enableUserNavigation() {
-    if (this.map) {
-      this.map.setOptions({ gestureHandling: "auto" });
-    }
   }
 
   /**
