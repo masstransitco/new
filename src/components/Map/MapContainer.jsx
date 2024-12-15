@@ -612,27 +612,6 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
     }
   }, [map, locateMe]);
 
-  // **Compute distance between user and a position (used for station filters)**
-  const computeDistance = useCallback(
-    (pos) => {
-      if (!userLocation || !window.google?.maps?.geometry?.spherical)
-        return Infinity;
-      const userLatLng = new window.google.maps.LatLng(
-        userLocation.lat,
-        userLocation.lng
-      );
-      const stationLatLng = new window.google.maps.LatLng(pos.lat, pos.lng);
-      return window.google.maps.geometry.spherical.computeDistanceBetween(
-        userLatLng,
-        stationLatLng
-      );
-    },
-    [userLocation]
-  );
-
-  // **Check if we are in MeView to filter stations**
-  const inMeView = currentView.name === "MeView";
-
   // **Get label position for radius circles**
   const getCircleLabelPosition = useCallback((center, radius) => {
     const latOffset = radius * 0.000009; // Approx conversion of meters to lat offset
