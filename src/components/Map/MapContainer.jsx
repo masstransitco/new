@@ -20,8 +20,6 @@ import FareInfoWindow from "./FareInfoWindow";
 import RouteInfoWindow from "./RouteInfoWindow";
 import UserCircles from "./UserCircles";
 // Removed imports for DistrictMarkers and StationMarkers
-// import DistrictMarkers from "./DistrictMarkers";
-// import StationMarkers from "./StationMarkers";
 
 import useFetchGeoJSON from "../../hooks/useFetchGeoJSON";
 import useMapGestures from "../../hooks/useMapGestures";
@@ -33,7 +31,7 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import ThreeJSOverlayView from "../../threejs/ThreeJSOverlayView"; // Ensure this is your corrected class
 
 // **Note:** Use environment variables for API keys in production.
-const GOOGLE_MAPS_API_KEY = "AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours"; // **Ensure you have this set in your environment variables**
+const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_GOOGLE_MAPS_API_KEY; // Ensure you have this set in your environment variables
 
 const mapId = "15431d2b469f209e"; // Your predefined mapId with styles from Google Console
 const libraries = ["geometry", "places"];
@@ -72,7 +70,6 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
   const [userState, setUserState] = useState(USER_STATES.SELECTING_DEPARTURE);
   const [viewBarText, setViewBarText] = useState("Stations near me");
   const [routeInfo, setRouteInfo] = useState(null);
-  const [showMarkers, setShowMarkers] = useState(true); // Controls visibility of traditional markers
 
   const currentView = viewHistory[viewHistory.length - 1];
 
@@ -136,6 +133,9 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
     const overlay = new ThreeJSOverlayView(map, THREE);
     threeOverlayRef.current = overlay;
 
+    // Define a callback to handle model clicks
+    overlay.onModelClick = handleModelClick;
+
     overlay.setMap(map);
 
     // **Do not override lifecycle methods here.**
@@ -146,6 +146,28 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
       overlay.setMap(null);
     };
   }, [isLoaded, map]);
+
+  /**
+   * Handle clicks on 3D models.
+   * @param {String} identifier - Identifier of the clicked model
+   */
+  const handleModelClick = useCallback(
+    (identifier) => {
+      // Determine if the clicked model is a station or other entity
+      if (identifier.startsWith("station-")) {
+        const stationId = identifier.replace("station-", "");
+        const station = stations.find((s) => s.id === stationId);
+        if (station) {
+          handleStationSelection(station);
+        }
+      } else if (identifier === "user") {
+        // Handle user model click if needed
+        console.log("User model clicked.");
+      }
+      // Add more conditions as needed for different models
+    },
+    [stations, handleStationSelection]
+  );
 
   // **Navigate to a given view**
   const navigateToView = useCallback(
@@ -271,7 +293,7 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
           districtName: station.district, // Pass district name for ViewBar
         };
         navigateToView(stationView);
-        setUserState(USER_STATES.SELECTING_ARRIVAL); // **Corrected state transition**
+        setUserState(USER_STATES.SELECTING_ARRIVAL); // Corrected state transition
 
         if (onStationSelect) {
           onStationSelect(station);
@@ -321,8 +343,7 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
         navigateToDriveView();
       }
 
-      // Hide traditional markers when overlays are active
-      setShowMarkers(false);
+      // No longer need to manage showMarkers since traditional markers are removed
     },
     [
       userState,
@@ -379,9 +400,6 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
       threeOverlayRef.current.clearLabels();
       threeOverlayRef.current.clearModels();
     }
-
-    // Show traditional markers again
-    setShowMarkers(true);
   };
 
   // **Check if current time is peak hour**
@@ -531,9 +549,6 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
       threeOverlayRef.current.clearLabels();
       threeOverlayRef.current.clearModels();
     }
-
-    // Show traditional markers again
-    setShowMarkers(true);
   }, [map, onStationDeselect]);
 
   // **Handle Clear Departure Selection**
@@ -550,13 +565,10 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
     }
 
     // Remove departure label and model
-    if (threeOverlayRef.current) {
-      threeOverlayRef.current.removeLabel(`label-${departureStation?.id}`);
-      threeOverlayRef.current.removeModel(`station-${departureStation?.id}`);
+    if (threeOverlayRef.current && departureStation) {
+      threeOverlayRef.current.removeLabel(`label-${departureStation.id}`);
+      threeOverlayRef.current.removeModel(`station-${departureStation.id}`);
     }
-
-    // Show traditional markers again
-    setShowMarkers(true);
   };
 
   // **Handle Clear Arrival Selection**
@@ -571,33 +583,6 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
     );
     setUserState(USER_STATES.SELECTING_ARRIVAL);
   };
-
-  // **Handle district click**
-  const handleDistrictClick = useCallback(
-    (district) => {
-      const districtView = {
-        name: "DistrictView",
-        center: district.position,
-        zoom: 14, // Adjusted zoom level for district view
-        districtName: district.name,
-      };
-      navigateToView(districtView);
-      setViewBarText("Select your arrival station");
-
-      // **Add label to district**
-      if (threeOverlayRef.current) {
-        threeOverlayRef.current.addLabel(
-          district.position,
-          district.name,
-          `label-${district.id}`
-        );
-      }
-
-      // Hide traditional markers when overlays are active
-      setShowMarkers(false);
-    },
-    [navigateToView, threeOverlayRef]
-  );
 
   // **Handle map load**
   const onLoadMap = useCallback(
@@ -786,28 +771,6 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
             getLabelPosition={getCircleLabelPosition}
           />
         )}
-
-        {/* **Removed DistrictMarkers and StationMarkers to prevent conflicts**
-            {currentView.name === "CityView" && showMarkers && (
-              <DistrictMarkers
-                districts={districts}
-                onDistrictClick={handleDistrictClick}
-              />
-            )}
-
-            {(currentView.name === "MeView" ||
-              currentView.name === "DistrictView") &&
-              showMarkers && (
-                <StationMarkers
-                  stations={filteredStations}
-                  onStationClick={handleStationSelection}
-                  selectedStations={{
-                    departure: departureStation,
-                    destination: destinationStation,
-                  }}
-                />
-              )}
-        */}
 
         {/* Directions Renderer */}
         {directions && (
