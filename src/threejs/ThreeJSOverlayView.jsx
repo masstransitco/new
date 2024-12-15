@@ -10,22 +10,18 @@ import {
   MeshBasicMaterial,
   Mesh,
   Vector3,
-  CatmullRomCurve3,
-  Quaternion,
 } from "three";
 
 import { FontLoader } from "three/examples/jsm/loaders/FontLoader.js";
 import { TextGeometry } from "three/examples/jsm/geometries/TextGeometry.js";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { Line2 } from "three/examples/jsm/lines/Line2.js";
 import { LineMaterial } from "three/examples/jsm/lines/LineMaterial.js";
 import { LineGeometry } from "three/examples/jsm/lines/LineGeometry.js";
 
 // Constants for model URLs
-const CAR_MODEL_URL = "/models/car.glb";
-const ME_MODEL_URL = "/models/ME.glb";
+// Removed CAR_MODEL_URL and ME_MODEL_URL as they are unused
 
-const CAR_FRONT = new Vector3(0, 1, 0); // Direction the car model is facing
+// Removed CAR_FRONT as it is unused
 
 export default class ThreeJSOverlayView {
   constructor(map, THREE) {
