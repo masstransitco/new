@@ -1,5 +1,12 @@
 // src/components/Map/MapContainer.jsx
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+} from "react";
 import {
   GoogleMap,
   useJsApiLoader,
@@ -20,6 +27,11 @@ import useFetchGeoJSON from "../../hooks/useFetchGeoJSON";
 import useMapGestures from "../../hooks/useMapGestures";
 
 import "./MapContainer.css";
+
+// Import Three.js and related modules
+import * as THREE from "three";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
+import ThreeJSOverlayView from "../../threejs/ThreeJSOverlayView"; // Adjust the path as necessary
 
 // **Note:** Use environment variables for API keys in production.
 // Keeping the API key hardcoded as per your request.
@@ -120,6 +132,9 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
 
   const currentView = viewHistory[viewHistory.length - 1];
 
+  // Ref for ThreeJSOverlayView
+  const threeOverlayRef = useRef(null);
+
   // Load Google Maps API
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: GOOGLE_MAPS_API_KEY,
@@ -169,6 +184,28 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
   // **Apply Gesture Handling Hook**
   useMapGestures(map);
 
+  // **Initialize ThreeJSOverlayView**
+  useEffect(() => {
+    if (!isLoaded || !map) return;
+
+    // Initialize ThreeJSOverlayView with the map and scene
+    const overlay = new ThreeJSOverlayView(map, THREE);
+    threeOverlayRef.current = overlay;
+
+    // Add the overlay to the map
+    overlay.setMap(map);
+
+    // Initialize the scene within the overlay
+    overlay.onAdd = () => {
+      // This is where you can add initial objects to the scene if needed
+    };
+
+    // Cleanup on unmount
+    return () => {
+      overlay.setMap(null);
+    };
+  }, [isLoaded, map]);
+
   // **Navigate to a given view**
   const navigateToView = useCallback(
     (view) => {
@@ -200,7 +237,7 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
       } else if (view.name === "MeView") {
         setViewBarText("Stations near me"); // Updated to "Stations near me"
       } else if (view.name === "DriveView") {
-        // This will be updated later with distance and estimated time
+        // Update with distance and estimated time if needed
       }
     },
     [map]
@@ -244,7 +281,7 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
         const stationView = {
           name: "StationView",
           center: station.position,
-          zoom: STATION_VIEW_ZOOM, // Zoom level 12
+          zoom: STATION_VIEW_ZOOM, // Zoom level 18
           tilt: 67.5,
           heading: 0,
           districtName: station.district, // Pass district name for ViewBar
@@ -256,6 +293,26 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
         if (onStationSelect) {
           onStationSelect(station);
         }
+
+        // **Enhancement 1: Add label and start animation**
+        if (threeOverlayRef.current) {
+          // Add label above the selected station
+          const labelText = station.place;
+          threeOverlayRef.current.addLabel(station.position, labelText);
+
+          // Start animation (e.g., camera fly to the station)
+          disableUserNavigation();
+          threeOverlayRef.current.animateCameraTo(
+            station.position,
+            20, // Zoom level after animation
+            60, // Tilt after animation
+            0, // Heading after animation
+            () => {
+              // Animation complete callback
+              enableUserNavigation();
+            }
+          );
+        }
       } else if (userState === USER_STATES.SELECTING_ARRIVAL) {
         setDestinationStation(station);
         setUserState(USER_STATES.DISPLAY_FARE);
@@ -263,8 +320,98 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
         navigateToDriveView();
       }
     },
-    [userState, navigateToView, navigateToDriveView, onStationSelect]
+    [
+      userState,
+      navigateToView,
+      navigateToDriveView,
+      onStationSelect,
+      threeOverlayRef,
+    ]
   );
+
+  // **Enhancement 2: Replace marker with 3D model on MeView**
+  const replaceMarkerWith3DModel = useCallback(() => {
+    if (!threeOverlayRef.current || !userLocation) return;
+
+    // Load the ME.glb model
+    const loader = new GLTFLoader();
+    loader.load(
+      "/models/ME.glb", // Adjust the path to your ME.glb file
+      (gltf) => {
+        const model = gltf.scene;
+        model.scale.set(2, 2, 2); // Adjust scale as needed
+        model.position.set(0, 0, 0); // Center the model
+
+        // Add the model to the overlay at the user's location
+        threeOverlayRef.current.addModel(userLocation, model);
+      },
+      undefined,
+      (error) => {
+        console.error("Error loading ME.glb model:", error);
+      }
+    );
+  }, [threeOverlayRef, userLocation]);
+
+  // **Enhancement 3: Animate car on DriveView**
+  const animateCarOnDriveView = useCallback(() => {
+    if (
+      !threeOverlayRef.current ||
+      !departureStation ||
+      !destinationStation ||
+      !directions
+    )
+      return;
+
+    // Load the car.glb model
+    const loader = new GLTFLoader();
+    loader.load(
+      "/models/car.glb", // Adjust the path to your car.glb file
+      (gltf) => {
+        const carModel = gltf.scene;
+        carModel.scale.set(1, 1, 1); // Adjust scale as needed
+        carModel.rotation.set(0, Math.PI / 2, 0); // Adjust rotation as needed
+
+        // Add the car model to the overlay
+        threeOverlayRef.current.addModel(
+          departureStation.position,
+          carModel,
+          "car" // Identifier for the car model
+        );
+
+        // Create the path from directions
+        const route = directions.routes[0];
+        const path = route.overview_path.map((latLng) => ({
+          lat: latLng.lat(),
+          lng: latLng.lng(),
+        }));
+
+        // Animate the car along the path
+        threeOverlayRef.current.animateModelAlongPath(
+          "car",
+          path,
+          12000, // Animation duration in milliseconds
+          () => {
+            // Animation complete callback
+            console.log("Car animation completed");
+          }
+        );
+      },
+      undefined,
+      (error) => {
+        console.error("Error loading car.glb model:", error);
+      }
+    );
+  }, [threeOverlayRef, departureStation, destinationStation, directions]);
+
+  // **Enhancement 4: Add labels to district markers**
+  const addDistrictLabels = useCallback(() => {
+    if (!threeOverlayRef.current) return;
+
+    districts.forEach((district) => {
+      const labelText = district.name;
+      threeOverlayRef.current.addLabel(district.position, labelText);
+    });
+  }, [threeOverlayRef, districts]);
 
   // **Handle "Choose Destination" button click**
   const handleChooseDestination = () => {
@@ -317,13 +464,21 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
               durationHours > 0 ? `${durationHours} hr ` : ""
             }${remainingMinutes} mins`;
             setViewBarText(`Distance: ${distanceKm} km, Est Time: ${estTime}`);
+
+            // **Enhancement 3: Animate car on DriveView**
+            animateCarOnDriveView();
           } else {
             console.error(`Error fetching directions: ${result}`);
           }
         }
       );
     }
-  }, [departureStation, destinationStation]);
+  }, [
+    departureStation,
+    destinationStation,
+    calculateFare,
+    animateCarOnDriveView,
+  ]);
 
   // **Fare Calculation Function**
   const calculateFare = (distance, durationInSeconds) => {
@@ -378,6 +533,9 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
           navigateToView(meView);
           setShowCircles(true);
           setViewBarText("Stations near me"); // Updated title
+
+          // **Enhancement 2: Replace marker with 3D model on MeView**
+          replaceMarkerWith3DModel();
         },
         (error) => {
           console.error(
@@ -389,7 +547,7 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
     } else {
       console.error("Geolocation not supported by your browser.");
     }
-  }, [map, navigateToView]);
+  }, [map, navigateToView, replaceMarkerWith3DModel]);
 
   // **Handle Home button click**
   const handleHomeClick = useCallback(() => {
@@ -418,6 +576,12 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
     if (onStationDeselect) {
       onStationDeselect();
     }
+
+    // Remove all 3D overlays
+    if (threeOverlayRef.current) {
+      threeOverlayRef.current.clearLabels();
+      threeOverlayRef.current.clearModels();
+    }
   }, [map, onStationDeselect]);
 
   // **Handle Clear Departure Selection**
@@ -431,6 +595,11 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
     // Inform App.jsx to hide SceneContainer
     if (onStationDeselect) {
       onStationDeselect();
+    }
+
+    // Remove departure label
+    if (threeOverlayRef.current) {
+      threeOverlayRef.current.removeLabel("departure");
     }
   };
 
@@ -459,15 +628,26 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
       navigateToView(districtView);
       setViewBarText("Select your arrival station"); // Updated title
       // Do not change userState here to prevent reverting from SELECTING_ARRIVAL
+
+      // **Enhancement 4: Add label to district**
+      if (threeOverlayRef.current) {
+        threeOverlayRef.current.addLabel(district.position, district.name);
+      }
     },
-    [navigateToView]
+    [navigateToView, threeOverlayRef]
   );
 
   // **Handle map load**
-  const onLoadMap = useCallback((mapInstance) => {
-    console.log("Map loaded");
-    setMap(mapInstance);
-  }, []);
+  const onLoadMap = useCallback(
+    (mapInstance) => {
+      console.log("Map loaded");
+      setMap(mapInstance);
+
+      // **Enhancement 4: Add labels to all districts once map is loaded**
+      addDistrictLabels();
+    },
+    [addDistrictLabels]
+  );
 
   // **Invoke locateMe when map is set**
   useEffect(() => {
@@ -574,6 +754,19 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
       </div>
     );
   }
+
+  // **Utility Functions to Disable and Enable User Navigation**
+  const disableUserNavigation = () => {
+    if (map) {
+      map.setOptions({ gestureHandling: "none" });
+    }
+  };
+
+  const enableUserNavigation = () => {
+    if (map) {
+      map.setOptions({ gestureHandling: "auto" });
+    }
+  };
 
   return (
     <div
