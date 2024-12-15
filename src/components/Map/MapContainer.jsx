@@ -130,22 +130,41 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
   useEffect(() => {
     if (!isLoaded || !map) return;
 
-    const overlay = new ThreeJSOverlayView(map, THREE);
+    const overlay = new ThreeJSOverlayView(THREE);
     threeOverlayRef.current = overlay;
 
     // Define a callback to handle model clicks
-    overlay.onModelClick = handleModelClick;
+    overlay.setOnModelClick(handleModelClick);
 
     overlay.setMap(map);
-
-    // **Do not override lifecycle methods here.**
-    // Removed any overriding of onAdd or other methods to prevent conflicts
 
     // Cleanup on unmount
     return () => {
       overlay.setMap(null);
     };
   }, [isLoaded, map]);
+
+  /**
+   * Handle clicks on 3D models.
+   * @param {String} identifier - Identifier of the clicked model
+   */
+  const handleModelClick = useCallback(
+    (identifier) => {
+      // Determine if the clicked model is a station or other entity
+      if (identifier.startsWith("station-")) {
+        const stationId = identifier.replace("station-", "");
+        const station = stations.find((s) => s.id === stationId);
+        if (station) {
+          handleStationSelection(station);
+        }
+      } else if (identifier === "user") {
+        // Handle user model click if needed
+        console.log("User model clicked.");
+      }
+      // Add more conditions as needed for different models
+    },
+    [stations, handleStationSelection]
+  );
 
   // **Navigate to a given view**
   const navigateToView = useCallback(
@@ -330,28 +349,6 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
       onStationSelect,
       threeOverlayRef,
     ]
-  );
-
-  /**
-   * Handle clicks on 3D models.
-   * @param {String} identifier - Identifier of the clicked model
-   */
-  const handleModelClick = useCallback(
-    (identifier) => {
-      // Determine if the clicked model is a station or other entity
-      if (identifier.startsWith("station-")) {
-        const stationId = identifier.replace("station-", "");
-        const station = stations.find((s) => s.id === stationId);
-        if (station) {
-          handleStationSelection(station);
-        }
-      } else if (identifier === "user") {
-        // Handle user model click if needed
-        console.log("User model clicked.");
-      }
-      // Add more conditions as needed for different models
-    },
-    [stations, handleStationSelection]
   );
 
   // **Enhancement 4: Replace marker with 3D model on MeView**
