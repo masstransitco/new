@@ -67,14 +67,24 @@ export default class ThreeJSOverlayView {
     // Store the transformer for use in other methods
     this.transformer = transformer;
 
-    // Update camera projection matrix
-    const projectionMatrix = new Float32Array(
-      transformer.getProjectionMatrix()
-    );
-    this.camera.projectionMatrix.fromArray(projectionMatrix);
-    this.camera.matrixWorldInverse.fromArray(transformer.getViewMatrix());
+    // Debug: Log the transformer object
+    console.log("Transformer Object:", transformer);
+
+    // **Do not call getProjectionMatrix as it doesn't exist**
+    // Instead, use the available transformer methods to align the camera
+
+    // Update camera position and orientation based on the transformer's view matrix
+    const viewMatrix = new Float32Array(transformer.getViewMatrix());
+    this.camera.matrixWorldInverse.fromArray(viewMatrix);
     this.camera.matrixWorld.getInverse(this.camera.matrixWorldInverse);
     this.camera.updateMatrixWorld();
+
+    // Set camera projection matrix from transformer's projection matrix
+    // Assuming the transformer provides projection parameters
+    const projectionMatrix = new Float32Array(
+      transformer.getProjectionMatrixArray()
+    );
+    this.camera.projectionMatrix.fromArray(projectionMatrix);
 
     const { width, height } = gl.canvas;
     this.renderer.setSize(width, height);
