@@ -21,9 +21,8 @@ import { LineMaterial } from "three/examples/jsm/lines/LineMaterial.js";
 import { LineGeometry } from "three/examples/jsm/lines/LineGeometry.js";
 
 export default class ThreeJSOverlayView extends google.maps.WebGLOverlayView {
-  constructor(THREE) {
+  constructor() {
     super();
-    this.THREE = THREE;
     this.scene = new Scene();
     this.camera = new PerspectiveCamera();
     this.renderer = null;
@@ -31,14 +30,14 @@ export default class ThreeJSOverlayView extends google.maps.WebGLOverlayView {
     this.labels = {};
     this.animationRequest = null;
     this.carAnimationActive = false; // Flag to ensure animation runs only once
-    this.transformer = null; // Store transformer
 
     this.raycaster = new Raycaster();
     this.mouse = new Vector2();
     this.INTERSECTED = null; // Currently hovered object
 
-    // Flag to prevent multiple redraw requests
-    this.isRedrawRequested = false;
+    // Bind methods to ensure correct 'this' context
+    this.onMouseMove = this.onMouseMove.bind(this);
+    this.onClick = this.onClick.bind(this);
   }
 
   /**
@@ -48,8 +47,8 @@ export default class ThreeJSOverlayView extends google.maps.WebGLOverlayView {
     // Add event listeners
     const canvas = this.getCanvas();
     if (canvas) {
-      canvas.addEventListener("mousemove", this.onMouseMove.bind(this), false);
-      canvas.addEventListener("click", this.onClick.bind(this), false);
+      canvas.addEventListener("mousemove", this.onMouseMove, false);
+      canvas.addEventListener("click", this.onClick, false);
     }
 
     // Initialize any additional resources here if necessary
@@ -82,18 +81,16 @@ export default class ThreeJSOverlayView extends google.maps.WebGLOverlayView {
    * Called on each frame to render the overlay.
    */
   onDraw({ gl, transformer }) {
-    this.transformer = transformer;
-
-    // Set Three.js camera's projection matrix using transformer's projection matrix
-    if (typeof transformer.getProjectionMatrix !== "function") {
-      console.error("transformer.getProjectionMatrix is not a function.");
+    // Set Three.js camera's projection matrix using transformer's WorldToViewport matrix
+    if (typeof transformer.getWorldToViewportMatrix !== "function") {
+      console.error("transformer.getWorldToViewportMatrix is not a function.");
       return;
     }
 
-    const projectionMatrix = new Float32Array(
-      transformer.getProjectionMatrix()
+    const worldToViewportMatrix = new Float32Array(
+      transformer.getWorldToViewportMatrix()
     );
-    this.camera.projectionMatrix.fromArray(projectionMatrix);
+    this.camera.projectionMatrix.fromArray(worldToViewportMatrix);
     this.camera.projectionMatrixInverse
       .copy(this.camera.projectionMatrix)
       .invert();
@@ -120,7 +117,7 @@ export default class ThreeJSOverlayView extends google.maps.WebGLOverlayView {
     this.handleInteractivity();
 
     // Reset the redraw request flag
-    this.isRedrawRequested = false;
+    // Note: WebGLOverlayView handles the redraw cycles
   }
 
   /**
@@ -371,19 +368,6 @@ export default class ThreeJSOverlayView extends google.maps.WebGLOverlayView {
     trackLine.computeLineDistances();
 
     return trackLine;
-  }
-
-  /**
-   * Request a redraw of the overlay.
-   * Prevents multiple redraw requests from being queued.
-   */
-  requestRedraw() {
-    if (this.isRedrawRequested) return; // Prevent multiple requests
-    this.isRedrawRequested = true;
-    window.requestAnimationFrame(() => {
-      this.draw();
-      this.isRedrawRequested = false;
-    });
   }
 
   /**
