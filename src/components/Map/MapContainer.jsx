@@ -18,7 +18,7 @@ import ViewBar from "./ViewBar";
 import MotionMenu from "../Menu/MotionMenu";
 import FareInfoWindow from "./FareInfoWindow";
 import RouteInfoWindow from "./RouteInfoWindow";
-import UserOverlay from "./UserOverlay";
+// import UserOverlay from "./UserOverlay"; // Removed as it's redundant
 import UserCircles from "./UserCircles";
 import DistrictMarkers from "./DistrictMarkers";
 import StationMarkers from "./StationMarkers";
@@ -271,19 +271,6 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
     navigateToView(driveView);
   }, [map, navigateToView, departureStation, destinationStation]);
 
-  // **Utility Functions to Disable and Enable User Navigation**
-  const disableUserNavigation = () => {
-    if (map) {
-      map.setOptions({ gestureHandling: "none" });
-    }
-  };
-
-  const enableUserNavigation = () => {
-    if (map) {
-      map.setOptions({ gestureHandling: "auto" });
-    }
-  };
-
   // **Handle station selection based on user state**
   const handleStationSelection = useCallback(
     (station) => {
@@ -314,7 +301,7 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
           threeOverlayRef.current.addLabel(station.position, labelText);
 
           // Start animation (e.g., camera fly to the station)
-          disableUserNavigation();
+          // Removed disableUserNavigation and enableUserNavigation calls
           threeOverlayRef.current.animateCameraTo(
             station.position,
             20, // Zoom level after animation
@@ -322,7 +309,7 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
             0, // Heading after animation
             () => {
               // Animation complete callback
-              enableUserNavigation();
+              // No need to re-enable user navigation
             }
           );
         }
@@ -807,12 +794,12 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
           mapTypeControl: false,
           fullscreenControl: false,
           zoomControl: true,
-          gestureHandling: "none", // **Disabled all default gesture handling**
+          gestureHandling: "auto", // **Set gestureHandling to "auto" to retain custom gestures**
           rotateControl: false, // Optionally disable rotate control if not needed
           minZoom: 10,
-          draggable: false, // **Disabled dragging to rely on custom gestures**
-          scrollwheel: false, // **Disabled scrollwheel zooming**
-          disableDoubleClickZoom: true, // **Disabled double-click zooming**
+          draggable: true, // **Enable dragging to allow user gestures**
+          scrollwheel: true, // **Enable scrollwheel zooming**
+          disableDoubleClickZoom: false, // **Enable double-click zooming**
           styles:
             currentView.name === "RouteView"
               ? ROUTE_VIEW_STYLES
@@ -857,13 +844,13 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
           />
         )}
 
-        {/* User Arrow Overlay */}
-        {userLocation && (
+        {/* Removed UserOverlay component to eliminate redundancy */}
+        {/* {userLocation && (
           <UserOverlay
             userLocation={userLocation}
             mapHeading={map?.getHeading() || 0}
           />
-        )}
+        )} */}
 
         {/* Directions Renderer */}
         {directions && (
