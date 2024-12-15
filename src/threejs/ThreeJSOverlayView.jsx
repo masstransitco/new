@@ -18,11 +18,6 @@ import { Line2 } from "three/examples/jsm/lines/Line2.js";
 import { LineMaterial } from "three/examples/jsm/lines/LineMaterial.js";
 import { LineGeometry } from "three/examples/jsm/lines/LineGeometry.js";
 
-// Constants for model URLs
-// Removed CAR_MODEL_URL and ME_MODEL_URL as they are unused
-
-// Removed CAR_FRONT as it is unused
-
 export default class ThreeJSOverlayView {
   constructor(map, THREE) {
     this.map = map;
@@ -35,6 +30,7 @@ export default class ThreeJSOverlayView {
     this.labels = {};
     this.animationRequest = null;
     this.carAnimationActive = false; // Flag to ensure animation runs only once
+    this.transformer = null; // Store transformer
 
     this.overlay.onAdd = this.onAdd.bind(this);
     this.overlay.onContextRestored = this.onContextRestored.bind(this);
@@ -68,7 +64,8 @@ export default class ThreeJSOverlayView {
   onDraw(drawOptions) {
     const { gl, transformer } = drawOptions;
 
-    if (!this.scene || !this.renderer) return;
+    // Store the transformer for use in other methods
+    this.transformer = transformer;
 
     // Update camera projection matrix
     const projectionMatrix = new Float32Array(
@@ -96,13 +93,16 @@ export default class ThreeJSOverlayView {
   }
 
   /**
-   * Convert LatLng to Vector3 using transformer for accurate positioning.
+   * Convert LatLng to Vector3 using the stored transformer for accurate positioning.
    * @param {Object} latLng - { lat, lng }
    * @returns {THREE.Vector3}
    */
   latLngToVector3(latLng) {
-    const transformer = this.overlay.getTransformer();
-    const worldPosition = transformer.fromLatLngAltitude({
+    if (!this.transformer) {
+      console.error("Transformer is not available yet.");
+      return new Vector3(0, 0, 0); // Return a default vector or handle as needed
+    }
+    const worldPosition = this.transformer.fromLatLngAltitude({
       lat: latLng.lat,
       lng: latLng.lng,
       altitude: 0, // Adjust altitude if necessary
