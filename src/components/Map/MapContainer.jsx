@@ -19,7 +19,6 @@ import MotionMenu from "../Menu/MotionMenu";
 import FareInfoWindow from "./FareInfoWindow";
 import RouteInfoWindow from "./RouteInfoWindow";
 import UserCircles from "./UserCircles";
-// Removed imports for DistrictMarkers and StationMarkers
 
 import useFetchGeoJSON from "../../hooks/useFetchGeoJSON";
 import useMapGestures from "../../hooks/useMapGestures";
@@ -28,7 +27,7 @@ import "./MapContainer.css";
 
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
-import ThreeJSOverlayView from "../../threejs/ThreeJSOverlayView"; // Ensure this is your corrected class
+import ThreeJSOverlayView from "../../threejs/ThreeJSOverlayView";
 
 // **Note:** Use environment variables for API keys in production.
 const GOOGLE_MAPS_API_KEY = "AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours"; // Replace "YOUR_API_KEY" with your actual API key or set it in .env
@@ -451,7 +450,7 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
             setDirections(result);
             // Compute fare based on distance and duration
             const route = result.routes[0].legs[0];
-            const distance = route.distance.value; // in meters
+            // const distance = route.distance.value; // Removed or commented out
             const fare = calculateFare(
               route.distance.value,
               route.duration.value
