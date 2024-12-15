@@ -31,7 +31,7 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import ThreeJSOverlayView from "../../threejs/ThreeJSOverlayView"; // Ensure this is your corrected class
 
 // **Note:** Use environment variables for API keys in production.
-const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_GOOGLE_MAPS_API_KEY; // Ensure you have this set in your environment variables
+const GOOGLE_MAPS_API_KEY = "AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours"; // Ensure you have this set in your environment variables
 
 const mapId = "15431d2b469f209e"; // Your predefined mapId with styles from Google Console
 const libraries = ["geometry", "places"];
