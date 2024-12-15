@@ -80,37 +80,35 @@ export default class ThreeJSOverlayView extends google.maps.WebGLOverlayView {
    * Called on each frame to render the overlay.
    */
   onDraw({ gl, transformer }) {
-    // **Debugging: Inspect transformer methods**
+    // Assign transformer to the instance
+    this.transformer = transformer;
+
     console.log(
       "Available transformer methods:",
       Object.getOwnPropertyNames(transformer)
     );
 
-    if (typeof transformer.getProjectionMatrix !== "function") {
-      console.error("transformer.getProjectionMatrix is not a function.");
+    // Check for necessary transformer methods
+    if (typeof transformer.fromLatLngToPoint !== "function") {
+      console.error("transformer.fromLatLngToPoint is not a function.");
       return;
     }
 
-    const projectionMatrixArray = transformer.getProjectionMatrix();
-    const projectionMatrix = new Float32Array(projectionMatrixArray);
-    this.camera.projectionMatrix.fromArray(projectionMatrix);
-    this.camera.projectionMatrixInverse
-      .copy(this.camera.projectionMatrix)
-      .invert();
-
-    // Update camera's world matrix based on transformer
-    if (typeof transformer.getCameraWorldMatrix !== "function") {
-      console.error("transformer.getCameraWorldMatrix is not a function.");
+    if (typeof transformer.fromLatLngAltitude !== "function") {
+      console.error("transformer.fromLatLngAltitude is not a function.");
       return;
     }
 
-    const cameraWorldMatrixArray = transformer.getCameraWorldMatrix();
-    this.camera.matrix.fromArray(cameraWorldMatrixArray);
-    this.camera.matrixWorld.copy(this.camera.matrix);
-    this.camera.matrixWorldInverse.copy(this.camera.matrixWorld).invert();
-    this.camera.updateMatrixWorld();
+    // Example: Position the camera based on the map center
+    const mapCenter = this.getMap().getCenter();
+    const centerLatLng = { lat: mapCenter.lat(), lng: mapCenter.lng() };
+    const centerPoint = transformer.fromLatLngToPoint(centerLatLng);
 
-    // Adjust renderer size if necessary
+    // Set camera position (adjust Z as needed)
+    this.camera.position.set(centerPoint.x, centerPoint.y, 1000);
+    this.camera.lookAt(new Vector3(centerPoint.x, centerPoint.y, 0));
+
+    // Update renderer size
     const { width, height } = gl.canvas;
     this.renderer.setSize(width, height);
 
