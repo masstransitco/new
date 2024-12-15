@@ -31,7 +31,7 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import ThreeJSOverlayView from "../../threejs/ThreeJSOverlayView"; // Ensure this is your corrected class
 
 // **Note:** Use environment variables for API keys in production.
-const GOOGLE_MAPS_API_KEY = "AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours"; // Ensure you have this set in your environment variables
+const GOOGLE_MAPS_API_KEY = "AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours"; // Replace "YOUR_API_KEY" with your actual API key or set it in .env
 
 const mapId = "15431d2b469f209e"; // Your predefined mapId with styles from Google Console
 const libraries = ["geometry", "places"];
@@ -126,23 +126,83 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
   // **Apply Gesture Handling Hook**
   useMapGestures(map);
 
-  // **Initialize ThreeJSOverlayView**
-  useEffect(() => {
-    if (!isLoaded || !map) return;
+  /**
+   * Handle station selection based on user state
+   */
+  const handleStationSelection = useCallback(
+    (station) => {
+      if (userState === USER_STATES.SELECTING_DEPARTURE) {
+        setDepartureStation(station);
+        setViewBarText(`Stations near me`);
+        const stationView = {
+          name: "StationView",
+          center: station.position,
+          zoom: STATION_VIEW_ZOOM, // Zoom level 18
+          tilt: 67.5,
+          heading: 0,
+          districtName: station.district, // Pass district name for ViewBar
+        };
+        navigateToView(stationView);
+        setUserState(USER_STATES.SELECTING_ARRIVAL); // Corrected state transition
 
-    const overlay = new ThreeJSOverlayView(THREE);
-    threeOverlayRef.current = overlay;
+        if (onStationSelect) {
+          onStationSelect(station);
+        }
 
-    // Define a callback to handle model clicks
-    overlay.setOnModelClick(handleModelClick);
+        // **Add 3D Label and Animate Camera**
+        if (threeOverlayRef.current) {
+          threeOverlayRef.current.addLabel(
+            station.position,
+            station.place,
+            `label-${station.id}`
+          );
+          threeOverlayRef.current.animateCameraTo(
+            station.position,
+            20, // Zoom level after animation
+            60, // Tilt after animation
+            0, // Heading after animation
+            () => {
+              // Animation complete callback
+            }
+          );
+        }
 
-    overlay.setMap(map);
+        // **Add 3D Model for Selected Station**
+        if (threeOverlayRef.current) {
+          const loader = new GLTFLoader();
+          loader.load(
+            "/models/station.glb", // Ensure you have a station model
+            (gltf) => {
+              const stationModel = gltf.scene;
+              stationModel.scale.set(5, 5, 5); // Adjust scale as needed
+              threeOverlayRef.current.addModel(
+                station.position,
+                stationModel,
+                `station-${station.id}`
+              );
+            },
+            undefined,
+            (error) => {
+              console.error("Error loading station model:", error);
+            }
+          );
+        }
+      } else if (userState === USER_STATES.SELECTING_ARRIVAL) {
+        setDestinationStation(station);
+        setUserState(USER_STATES.DISPLAY_FARE);
+        navigateToDriveView();
+      }
 
-    // Cleanup on unmount
-    return () => {
-      overlay.setMap(null);
-    };
-  }, [isLoaded, map]);
+      // No longer need to manage showMarkers since traditional markers are removed
+    },
+    [
+      userState,
+      navigateToView,
+      navigateToDriveView,
+      onStationSelect,
+      threeOverlayRef,
+    ]
+  );
 
   /**
    * Handle clicks on 3D models.
@@ -165,6 +225,24 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
     },
     [stations, handleStationSelection]
   );
+
+  // **Initialize ThreeJSOverlayView**
+  useEffect(() => {
+    if (!isLoaded || !map) return;
+
+    const overlay = new ThreeJSOverlayView(THREE);
+    threeOverlayRef.current = overlay;
+
+    // Define a callback to handle model clicks
+    overlay.setOnModelClick(handleModelClick);
+
+    overlay.setMap(map);
+
+    // Cleanup on unmount
+    return () => {
+      overlay.setMap(null);
+    };
+  }, [isLoaded, map, handleModelClick]);
 
   // **Navigate to a given view**
   const navigateToView = useCallback(
@@ -275,82 +353,6 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
     threeOverlayRef,
   ]);
 
-  // **Handle station selection based on user state**
-  const handleStationSelection = useCallback(
-    (station) => {
-      if (userState === USER_STATES.SELECTING_DEPARTURE) {
-        setDepartureStation(station);
-        setViewBarText(`Stations near me`);
-        const stationView = {
-          name: "StationView",
-          center: station.position,
-          zoom: STATION_VIEW_ZOOM, // Zoom level 18
-          tilt: 67.5,
-          heading: 0,
-          districtName: station.district, // Pass district name for ViewBar
-        };
-        navigateToView(stationView);
-        setUserState(USER_STATES.SELECTING_ARRIVAL); // Corrected state transition
-
-        if (onStationSelect) {
-          onStationSelect(station);
-        }
-
-        // **Add 3D Label and Animate Camera**
-        if (threeOverlayRef.current) {
-          threeOverlayRef.current.addLabel(
-            station.position,
-            station.place,
-            `label-${station.id}`
-          );
-          threeOverlayRef.current.animateCameraTo(
-            station.position,
-            20, // Zoom level after animation
-            60, // Tilt after animation
-            0, // Heading after animation
-            () => {
-              // Animation complete callback
-            }
-          );
-        }
-
-        // **Add 3D Model for Selected Station**
-        if (threeOverlayRef.current) {
-          const loader = new GLTFLoader();
-          loader.load(
-            "/models/station.glb", // Ensure you have a station model
-            (gltf) => {
-              const stationModel = gltf.scene;
-              stationModel.scale.set(5, 5, 5); // Adjust scale as needed
-              threeOverlayRef.current.addModel(
-                station.position,
-                stationModel,
-                `station-${station.id}`
-              );
-            },
-            undefined,
-            (error) => {
-              console.error("Error loading station model:", error);
-            }
-          );
-        }
-      } else if (userState === USER_STATES.SELECTING_ARRIVAL) {
-        setDestinationStation(station);
-        setUserState(USER_STATES.DISPLAY_FARE);
-        navigateToDriveView();
-      }
-
-      // No longer need to manage showMarkers since traditional markers are removed
-    },
-    [
-      userState,
-      navigateToView,
-      navigateToDriveView,
-      onStationSelect,
-      threeOverlayRef,
-    ]
-  );
-
   // **Enhancement 4: Replace marker with 3D model on MeView**
   const replaceMarkerWith3DModel = useCallback(() => {
     if (!threeOverlayRef.current || !userLocation) return;
@@ -406,7 +408,7 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
   };
 
   // **Fare Calculation Function**
-  const calculateFare = (distance, durationInSeconds) => {
+  const calculateFare = useCallback((distance, durationInSeconds) => {
     // distance in meters, duration in seconds
     // Base fare: HK$24 for first 2km + HK$1 for each 200m beyond 2km
     const baseTaxi = 24;
@@ -421,8 +423,14 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
     // Aim for ~50% of taxi fare
     const ourFare = Math.max(taxiFareEstimate * 0.5, startingFare);
 
-    return { ourFare, taxiFareEstimate };
-  };
+    // Calculate distanceKm and estTime for ViewBar
+    const distanceKm = (distance / 1000).toFixed(2);
+    const estTime = `${Math.floor(durationInSeconds / 3600)} hr ${
+      Math.floor((durationInSeconds % 3600) / 60)
+    } mins`;
+
+    return { ourFare, taxiFareEstimate, distanceKm, estTime };
+  }, [isPeakHour]);
 
   // **Compute fare once both departure and arrival are selected**
   useEffect(() => {
@@ -441,18 +449,11 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
             // Compute fare based on distance and duration
             const route = result.routes[0].legs[0];
             const distance = route.distance.value; // in meters
-            const fare = calculateFare(distance, route.duration.value); // Pass duration in seconds
+            const fare = calculateFare(route.distance.value, route.duration.value); // Pass duration in seconds
             setFareInfo(fare);
 
             // Update ViewBar title with distance and estimated time
-            const distanceKm = (distance / 1000).toFixed(2);
-            const durationMinutes = Math.floor(route.duration.value / 60);
-            const durationHours = Math.floor(durationMinutes / 60);
-            const remainingMinutes = durationMinutes % 60;
-            const estTime = `${
-              durationHours > 0 ? `${durationHours} hr ` : ""
-            }${remainingMinutes} mins`;
-            setViewBarText(`Distance: ${distanceKm} km, Est Time: ${estTime}`);
+            setViewBarText(`Distance: ${fare.distanceKm} km, Est Time: ${fare.estTime}`);
 
             // **Enhancement 3: Animate car on DriveView**
             navigateToDriveView();
@@ -705,7 +706,7 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
         isCityView={currentView.name === "CityView"}
         userState={userState}
         isMeView={currentView.name === "MeView"}
-        distanceKm={fareInfo ? (fareInfo.distanceKm || 0).toFixed(2) : null}
+        distanceKm={fareInfo ? fareInfo.distanceKm : null}
         estTime={fareInfo ? fareInfo.estTime : null}
       />
 
