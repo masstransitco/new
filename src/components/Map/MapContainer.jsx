@@ -448,6 +448,31 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
     }
   };
 
+  // **Check if current time is peak hour**
+  const isPeakHour = (date) => {
+    const hour = date.getHours();
+    return PEAK_HOURS.some((p) => hour >= p.start && hour < p.end);
+  };
+
+  // **Fare Calculation Function**
+  const calculateFare = (distance, durationInSeconds) => {
+    // distance in meters, duration in seconds
+    // Base fare: HK$24 for first 2km + HK$1 for each 200m beyond 2km
+    const baseTaxi = 24;
+    const extraMeters = Math.max(0, distance - 2000);
+    const increments = Math.floor(extraMeters / 200) * 1;
+    const taxiFareEstimate = baseTaxi + increments;
+
+    // Our pricing:
+    // Peak hours: starting fare = $65, off-peak = $35
+    const isPeak = isPeakHour(new Date());
+    const startingFare = isPeak ? 65 : 35;
+    // Aim for ~50% of taxi fare
+    const ourFare = Math.max(taxiFareEstimate * 0.5, startingFare);
+
+    return { ourFare, taxiFareEstimate };
+  };
+
   // **Compute fare once both departure and arrival are selected**
   useEffect(() => {
     if (departureStation && destinationStation) {
@@ -492,31 +517,6 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
     calculateFare,
     animateCarOnDriveView,
   ]);
-
-  // **Fare Calculation Function**
-  const calculateFare = (distance, durationInSeconds) => {
-    // distance in meters, duration in seconds
-    // Base fare: HK$24 for first 2km + HK$1 for each 200m beyond 2km
-    const baseTaxi = 24;
-    const extraMeters = Math.max(0, distance - 2000);
-    const increments = Math.floor(extraMeters / 200) * 1;
-    const taxiFareEstimate = baseTaxi + increments;
-
-    // Our pricing:
-    // Peak hours: starting fare = $65, off-peak = $35
-    const isPeak = isPeakHour(new Date());
-    const startingFare = isPeak ? 65 : 35;
-    // Aim for ~50% of taxi fare
-    const ourFare = Math.max(taxiFareEstimate * 0.5, startingFare);
-
-    return { ourFare, taxiFareEstimate };
-  };
-
-  // **Check if current time is peak hour**
-  const isPeakHour = (date) => {
-    const hour = date.getHours();
-    return PEAK_HOURS.some((p) => hour >= p.start && hour < p.end);
-  };
 
   // **Locate the user**
   const locateMe = useCallback(() => {
