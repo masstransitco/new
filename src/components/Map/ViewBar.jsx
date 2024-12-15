@@ -1,16 +1,8 @@
 // src/components/Map/ViewBar.jsx
 
 import React from "react";
-import "./ViewBar.css"; // Ensure styles are correctly applied
-import LocateMe from "./LocateMe"; // Import the LocateMe component
-import HomeButton from "./HomeButton"; // Import HomeButton component
-import ChooseDestinationButton from "./ChooseDestinationButton"; // Import the new component
-
-const USER_STATES = {
-  SELECTING_DEPARTURE: "SelectingDeparture",
-  SELECTING_ARRIVAL: "SelectingArrival",
-  DISPLAY_FARE: "DisplayFare",
-};
+import PropTypes from "prop-types";
+import "./ViewBar.css"; // Ensure you have appropriate styles
 
 const ViewBar = ({
   departure,
@@ -21,81 +13,91 @@ const ViewBar = ({
   onClearArrival,
   showChooseDestination,
   onChooseDestination,
-  onHome, // Handler for HomeButton
-  isCityView, // Determines if HomeButton should be displayed
-  userState, // Current user state
-  isMeView, // Determines if LocateMe should be displayed
-  distanceKm, // Distance in km
-  estTime, // Estimated time
+  onHome,
+  isCityView,
+  userState,
+  isMeView,
+  distanceKm,
+  estTime,
 }) => {
-  // Determine visibility of buttons based on userState and view
-  const showLocateMe =
-    !isMeView && userState === USER_STATES.SELECTING_DEPARTURE;
-
-  const showHomeButton =
-    !isCityView && userState === USER_STATES.SELECTING_DEPARTURE;
-
-  // Determine if dynamic title should be shown
-  const dynamicTitle =
-    userState === USER_STATES.DISPLAY_FARE && distanceKm && estTime;
-
   return (
     <div className="view-bar">
-      {/* Top Buttons Group: LocateMe and Home Buttons */}
-      <div className="top-buttons-group">
-        {showLocateMe && <LocateMe onLocateMe={onLocateMe} />}
-        {showHomeButton && <HomeButton onClick={onHome} />}
+      {/* Left Section: View Bar Text */}
+      <div className="view-bar-text">
+        <h2>{viewBarText}</h2>
+        {distanceKm && estTime && (
+          <p>
+            Distance: {distanceKm} km | Estimated Time: {estTime}
+          </p>
+        )}
       </div>
 
-      {/* View Title */}
-      <div className="view-title">
-        {dynamicTitle
-          ? `Distance: ${distanceKm} km, Est Time: ${estTime}`
-          : viewBarText}
+      {/* Center Section: Departure and Arrival Info */}
+      <div className="view-bar-info">
+        {departure && (
+          <div className="departure-info">
+            <span>Departure: {departure}</span>
+            <button onClick={onClearDeparture} className="clear-button" aria-label="Clear Departure">
+              Clear
+            </button>
+          </div>
+        )}
+        {arrival && (
+          <div className="arrival-info">
+            <span>Arrival: {arrival}</span>
+            <button onClick={onClearArrival} className="clear-button" aria-label="Clear Arrival">
+              Clear
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Buttons Group: Clear Buttons and Choose Destination */}
-      <div className="buttons-group">
-        {/* Selection Buttons Container */}
-        <div className="selection-buttons-container">
-          {/* Clear Departure Button */}
-          {departure && (
-            <div className="selection-bar">
-              <button
-                className="clear-button"
-                onClick={onClearDeparture}
-                title="Clear Departure"
-                aria-label="Clear Departure"
-              >
-                ✕
-              </button>
-              <span className="selection-text">Departure: {departure}</span>
-            </div>
-          )}
+      {/* Right Section: Action Buttons */}
+      <div className="view-bar-actions">
+        {/* Locate Me Button - Visible when not in MeView */}
+        {!isMeView && (
+          <button onClick={onLocateMe} className="action-button" aria-label="Locate Me">
+            Locate Me
+          </button>
+        )}
 
-          {/* Clear Arrival Button */}
-          {arrival && (
-            <div className="selection-bar">
-              <button
-                className="clear-button"
-                onClick={onClearArrival}
-                title="Clear Arrival"
-                aria-label="Clear Arrival"
-              >
-                ✕
-              </button>
-              <span className="selection-text">Arrival: {arrival}</span>
-            </div>
-          )}
-        </div>
-
-        {/* Choose Destination Button */}
+        {/* Choose Destination Button - Visible based on showChooseDestination */}
         {showChooseDestination && (
-          <ChooseDestinationButton onChooseDestination={onChooseDestination} />
+          <button
+            onClick={onChooseDestination}
+            className="choose-destination-button"
+            aria-label="Choose Destination"
+          >
+            Choose Destination
+          </button>
+        )}
+
+        {/* Home Button - Visible when not in CityView */}
+        {!isCityView && (
+          <button onClick={onHome} className="action-button" aria-label="Go Home">
+            Home
+          </button>
         )}
       </div>
     </div>
   );
 };
 
-export default React.memo(ViewBar);
+ViewBar.propTypes = {
+  departure: PropTypes.string,
+  arrival: PropTypes.string,
+  onLocateMe: PropTypes.func.isRequired,
+  viewBarText: PropTypes.string.isRequired,
+  onClearDeparture: PropTypes.func.isRequired,
+  onClearArrival: PropTypes.func.isRequired,
+  showChooseDestination: PropTypes.bool.isRequired,
+  onChooseDestination: PropTypes.func.isRequired,
+  onHome: PropTypes.func.isRequired,
+  isCityView: PropTypes.bool.isRequired,
+  userState: PropTypes.string.isRequired,
+  isMeView: PropTypes.bool.isRequired,
+  distanceKm: PropTypes.string,
+  estTime: PropTypes.string,
+};
+
+export default ViewBar;
