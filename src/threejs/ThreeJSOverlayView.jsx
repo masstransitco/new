@@ -1,4 +1,5 @@
 // src/threejs/ThreeJSOverlayView.jsx
+/* global google */
 
 import {
   Vector2,
