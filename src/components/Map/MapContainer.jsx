@@ -147,104 +147,6 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
     };
   }, [isLoaded, map]);
 
-  // **Handle station selection based on user state**
-  const handleStationSelection = useCallback(
-    (station) => {
-      if (userState === USER_STATES.SELECTING_DEPARTURE) {
-        setDepartureStation(station);
-        setViewBarText(`Stations near me`);
-        const stationView = {
-          name: "StationView",
-          center: station.position,
-          zoom: STATION_VIEW_ZOOM, // Zoom level 18
-          tilt: 67.5,
-          heading: 0,
-          districtName: station.district, // Pass district name for ViewBar
-        };
-        navigateToView(stationView);
-        setUserState(USER_STATES.SELECTING_ARRIVAL); // Corrected state transition
-
-        if (onStationSelect) {
-          onStationSelect(station);
-        }
-
-        // **Add 3D Label and Animate Camera**
-        if (threeOverlayRef.current) {
-          threeOverlayRef.current.addLabel(
-            station.position,
-            station.place,
-            `label-${station.id}`
-          );
-          threeOverlayRef.current.animateCameraTo(
-            station.position,
-            20, // Zoom level after animation
-            60, // Tilt after animation
-            0, // Heading after animation
-            () => {
-              // Animation complete callback
-            }
-          );
-        }
-
-        // **Add 3D Model for Selected Station**
-        if (threeOverlayRef.current) {
-          const loader = new GLTFLoader();
-          loader.load(
-            "/models/station.glb", // Ensure you have a station model
-            (gltf) => {
-              const stationModel = gltf.scene;
-              stationModel.scale.set(5, 5, 5); // Adjust scale as needed
-              threeOverlayRef.current.addModel(
-                station.position,
-                stationModel,
-                `station-${station.id}`
-              );
-            },
-            undefined,
-            (error) => {
-              console.error("Error loading station model:", error);
-            }
-          );
-        }
-      } else if (userState === USER_STATES.SELECTING_ARRIVAL) {
-        setDestinationStation(station);
-        setUserState(USER_STATES.DISPLAY_FARE);
-        navigateToDriveView();
-      }
-
-      // No longer need to manage showMarkers since traditional markers are removed
-    },
-    [
-      userState,
-      navigateToView,
-      navigateToDriveView,
-      onStationSelect,
-      threeOverlayRef,
-    ]
-  );
-
-  /**
-   * Handle clicks on 3D models.
-   * @param {String} identifier - Identifier of the clicked model
-   */
-  const handleModelClick = useCallback(
-    (identifier) => {
-      // Determine if the clicked model is a station or other entity
-      if (identifier.startsWith("station-")) {
-        const stationId = identifier.replace("station-", "");
-        const station = stations.find((s) => s.id === stationId);
-        if (station) {
-          handleStationSelection(station);
-        }
-      } else if (identifier === "user") {
-        // Handle user model click if needed
-        console.log("User model clicked.");
-      }
-      // Add more conditions as needed for different models
-    },
-    [stations, handleStationSelection]
-  );
-
   // **Navigate to a given view**
   const navigateToView = useCallback(
     (view) => {
@@ -353,6 +255,104 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
     directions,
     threeOverlayRef,
   ]);
+
+  // **Handle station selection based on user state**
+  const handleStationSelection = useCallback(
+    (station) => {
+      if (userState === USER_STATES.SELECTING_DEPARTURE) {
+        setDepartureStation(station);
+        setViewBarText(`Stations near me`);
+        const stationView = {
+          name: "StationView",
+          center: station.position,
+          zoom: STATION_VIEW_ZOOM, // Zoom level 18
+          tilt: 67.5,
+          heading: 0,
+          districtName: station.district, // Pass district name for ViewBar
+        };
+        navigateToView(stationView);
+        setUserState(USER_STATES.SELECTING_ARRIVAL); // Corrected state transition
+
+        if (onStationSelect) {
+          onStationSelect(station);
+        }
+
+        // **Add 3D Label and Animate Camera**
+        if (threeOverlayRef.current) {
+          threeOverlayRef.current.addLabel(
+            station.position,
+            station.place,
+            `label-${station.id}`
+          );
+          threeOverlayRef.current.animateCameraTo(
+            station.position,
+            20, // Zoom level after animation
+            60, // Tilt after animation
+            0, // Heading after animation
+            () => {
+              // Animation complete callback
+            }
+          );
+        }
+
+        // **Add 3D Model for Selected Station**
+        if (threeOverlayRef.current) {
+          const loader = new GLTFLoader();
+          loader.load(
+            "/models/station.glb", // Ensure you have a station model
+            (gltf) => {
+              const stationModel = gltf.scene;
+              stationModel.scale.set(5, 5, 5); // Adjust scale as needed
+              threeOverlayRef.current.addModel(
+                station.position,
+                stationModel,
+                `station-${station.id}`
+              );
+            },
+            undefined,
+            (error) => {
+              console.error("Error loading station model:", error);
+            }
+          );
+        }
+      } else if (userState === USER_STATES.SELECTING_ARRIVAL) {
+        setDestinationStation(station);
+        setUserState(USER_STATES.DISPLAY_FARE);
+        navigateToDriveView();
+      }
+
+      // No longer need to manage showMarkers since traditional markers are removed
+    },
+    [
+      userState,
+      navigateToView,
+      navigateToDriveView,
+      onStationSelect,
+      threeOverlayRef,
+    ]
+  );
+
+  /**
+   * Handle clicks on 3D models.
+   * @param {String} identifier - Identifier of the clicked model
+   */
+  const handleModelClick = useCallback(
+    (identifier) => {
+      // Determine if the clicked model is a station or other entity
+      if (identifier.startsWith("station-")) {
+        const stationId = identifier.replace("station-", "");
+        const station = stations.find((s) => s.id === stationId);
+        if (station) {
+          handleStationSelection(station);
+        }
+      } else if (identifier === "user") {
+        // Handle user model click if needed
+        console.log("User model clicked.");
+      }
+      // Add more conditions as needed for different models
+    },
+    [stations, handleStationSelection]
+  );
 
   // **Enhancement 4: Replace marker with 3D model on MeView**
   const replaceMarkerWith3DModel = useCallback(() => {
