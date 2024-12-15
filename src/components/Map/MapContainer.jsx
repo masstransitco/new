@@ -245,7 +245,7 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
           name: "StationView",
           center: station.position,
           zoom: STATION_VIEW_ZOOM, // Zoom level 12
-          tilt: 0,
+          tilt: 67.5,
           heading: 0,
           districtName: station.district, // Pass district name for ViewBar
         };
