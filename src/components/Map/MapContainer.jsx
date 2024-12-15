@@ -30,11 +30,11 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import ThreeJSOverlayView from "../../threejs/ThreeJSOverlayView";
 
 // **Note:** Use environment variables for API keys in production.
-const GOOGLE_MAPS_API_KEY = "AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours"; // Replace with your actual API key or set it in .env
+const GOOGLE_MAPS_API_KEY = "AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours"; // Ensure this is set in your .env file
 
-const mapId = "15431d2b469f209e"; // Your predefined mapId with styles from Google Console
-const libraries = ["geometry", "places"];
-const containerStyle = { width: "100%", height: "100vh" };
+const MAP_ID = "15431d2b469f209e"; // Your predefined mapId with styles from Google Console
+const LIBRARIES = ["geometry", "places"];
+const CONTAINER_STYLE = { width: "100%", height: "100vh" };
 const BASE_CITY_CENTER = { lat: 22.236, lng: 114.191 };
 const CITY_VIEW = {
   name: "CityView",
@@ -84,7 +84,7 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
   // -------------------
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: GOOGLE_MAPS_API_KEY,
-    libraries,
+    libraries: LIBRARIES,
     version: "weekly", // Use a stable version
   });
 
@@ -107,7 +107,8 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
   // **Parse and Transform Data**
   // -------------------
   const stations = useMemo(() => {
-    return stationsData.map((feature) => ({
+    if (!stationsData) return [];
+    return stationsData.features.map((feature) => ({
       id: feature.id,
       place: feature.properties.Place,
       address: feature.properties.Address,
@@ -120,7 +121,8 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
   }, [stationsData]);
 
   const districts = useMemo(() => {
-    return districtsData.map((feature) => ({
+    if (!districtsData) return [];
+    return districtsData.features.map((feature) => ({
       id: feature.id,
       name: feature.properties.District,
       position: {
@@ -180,6 +182,44 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
       return { ourFare, taxiFareEstimate, distanceKm, estTime };
     },
     [isPeakHour]
+  );
+
+  // -------------------
+  // **Navigate to a Given View**
+  // -------------------
+  const navigateToView = useCallback(
+    (view) => {
+      if (!map) return;
+
+      setViewHistory((prevHistory) => [...prevHistory, view]);
+
+      map.panTo(view.center);
+      map.setZoom(view.zoom);
+      if (view.tilt !== undefined) map.setTilt(view.tilt);
+      if (view.heading !== undefined) map.setHeading(view.heading);
+
+      // Update ViewBar text based on view
+      switch (view.name) {
+        case "CityView":
+          setViewBarText("Hong Kong");
+          break;
+        case "DistrictView":
+          setViewBarText(view.districtName || "District");
+          break;
+        case "StationView":
+          setViewBarText(view.districtName || "Station");
+          break;
+        case "MeView":
+          setViewBarText("Stations near me");
+          break;
+        case "DriveView":
+          // Already set above in navigateToDriveView
+          break;
+        default:
+          setViewBarText("");
+      }
+    },
+    [map]
   );
 
   // -------------------
@@ -276,40 +316,9 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
     map,
     departureStation,
     destinationStation,
-    threeOverlayRef,
     calculateFare,
     navigateToView,
   ]);
-
-  // -------------------
-  // **Navigate to a Given View**
-  // -------------------
-  const navigateToView = useCallback(
-    (view) => {
-      if (!map) return;
-
-      setViewHistory((prevHistory) => [...prevHistory, view]);
-
-      map.panTo(view.center);
-      map.setZoom(view.zoom);
-      if (view.tilt !== undefined) map.setTilt(view.tilt);
-      if (view.heading !== undefined) map.setHeading(view.heading);
-
-      // Update ViewBar text based on view
-      if (view.name === "CityView") {
-        setViewBarText("Hong Kong");
-      } else if (view.name === "DistrictView") {
-        setViewBarText(view.districtName || "District");
-      } else if (view.name === "StationView") {
-        setViewBarText(view.districtName || "Station");
-      } else if (view.name === "MeView") {
-        setViewBarText("Stations near me");
-      } else if (view.name === "DriveView") {
-        // Already set above
-      }
-    },
-    [map]
-  );
 
   // -------------------
   // **Handle Home Button Click**
@@ -341,18 +350,7 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
       threeOverlayRef.current.clearLabels();
       threeOverlayRef.current.clearModels();
     }
-  }, [
-    navigateToView,
-    onStationDeselect,
-    threeOverlayRef,
-    setDepartureStation,
-    setDestinationStation,
-    setDirections,
-    setFareInfo,
-    setShowCircles,
-    setViewBarText,
-    setUserState,
-  ]);
+  }, [navigateToView, onStationDeselect, threeOverlayRef]);
 
   // -------------------
   // **Handle Station Selection**
@@ -371,7 +369,7 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
           districtName: station.district, // Pass district name for ViewBar
         };
         navigateToView(stationView);
-        setUserState(USER_STATES.SELECTING_ARRIVAL); // Corrected state transition
+        setUserState(USER_STATES.SELECTING_ARRIVAL);
 
         if (onStationSelect) {
           onStationSelect(station);
@@ -421,13 +419,7 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
         navigateToDriveView();
       }
     },
-    [
-      userState,
-      navigateToView,
-      navigateToDriveView,
-      onStationSelect,
-      threeOverlayRef,
-    ]
+    [userState, navigateToView, navigateToDriveView, onStationSelect]
   );
 
   // -------------------
@@ -467,7 +459,10 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
 
     // Cleanup on unmount
     return () => {
-      overlay.setMap(null);
+      if (overlay) {
+        overlay.setOnModelClick(null);
+        overlay.setMap(null);
+      }
     };
   }, [isLoaded, map, handleModelClick]);
 
@@ -496,7 +491,7 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
   // -------------------
   // **Handle "Choose Destination" Button Click**
   // -------------------
-  const handleChooseDestination = () => {
+  const handleChooseDestination = useCallback(() => {
     const chooseDestinationView = {
       name: "CityView",
       center: BASE_CITY_CENTER,
@@ -521,12 +516,12 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
       threeOverlayRef.current.clearLabels();
       threeOverlayRef.current.clearModels();
     }
-  };
+  }, [navigateToView, onStationDeselect]);
 
   // -------------------
   // **Handle Clear Departure Selection**
   // -------------------
-  const handleClearDeparture = () => {
+  const handleClearDeparture = useCallback(() => {
     setDepartureStation(null);
     setDirections(null);
     setFareInfo(null);
@@ -543,12 +538,12 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
       threeOverlayRef.current.removeLabel(`label-${departureStation.id}`);
       threeOverlayRef.current.removeModel(`station-${departureStation.id}`);
     }
-  };
+  }, [departureStation, onStationDeselect]);
 
   // -------------------
   // **Handle Clear Arrival Selection**
   // -------------------
-  const handleClearArrival = () => {
+  const handleClearArrival = useCallback(() => {
     setDestinationStation(null);
     setDirections(null);
     setFareInfo(null);
@@ -558,7 +553,7 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
         : "Stations near me"
     );
     setUserState(USER_STATES.SELECTING_ARRIVAL);
-  };
+  }, [departureStation]);
 
   // -------------------
   // **Handle Map Load**
@@ -663,35 +658,6 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
   }, []);
 
   // -------------------
-  // **Handle Route Click (to Show Info Windows)**
-  // -------------------
-  const handleRouteClick = useCallback(() => {
-    if (currentView.name === "RouteView") {
-      setRouteInfo({
-        title: "Walking Route Info",
-        description: `Estimated walking time: ${directions?.routes[0]?.legs[0]?.duration.text}`,
-        position: departureStation.position,
-      });
-    } else if (currentView.name === "DriveView") {
-      setRouteInfo({
-        title: "Driving Route Info",
-        description: `Estimated driving time: ${
-          directions?.routes[0]?.legs[0]?.duration.text
-        }. Fare: HK$${fareInfo?.ourFare.toFixed(
-          2
-        )} (Taxi Estimate: HK$${fareInfo?.taxiFareEstimate.toFixed(2)})`,
-        position: destinationStation.position,
-      });
-    }
-  }, [
-    currentView.name,
-    directions,
-    fareInfo,
-    departureStation,
-    destinationStation,
-  ]);
-
-  // -------------------
   // **Loading and Error States for Data Fetching**
   // -------------------
   if (loadError) {
@@ -749,11 +715,11 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
       />
 
       <GoogleMap
-        mapContainerStyle={containerStyle}
+        mapContainerStyle={CONTAINER_STYLE}
         center={currentView.center}
         zoom={currentView.zoom}
         options={{
-          mapId: mapId, // Utilize the predefined mapId for styles
+          mapId: MAP_ID, // Utilize the predefined mapId for styles
           tilt: currentView.tilt || 0,
           heading: currentView.heading || 0,
           streetViewControl: false,
@@ -788,25 +754,6 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
             options={directionsOptions}
           />
         )}
-
-        {/* Polyline for Clickable Route */}
-        {directions &&
-          directions.routes.map((route, routeIndex) =>
-            route.legs.map((leg, legIndex) =>
-              leg.steps.map((step, stepIndex) => (
-                <Polyline
-                  key={`${routeIndex}-${legIndex}-${stepIndex}`}
-                  path={step.path}
-                  options={{
-                    strokeColor: "#276ef1",
-                    strokeOpacity: 0.8,
-                    strokeWeight: 4,
-                  }}
-                  onClick={handleRouteClick}
-                />
-              ))
-            )
-          )}
 
         {/* Fare Info Window */}
         {fareInfo &&
