@@ -1,0 +1,26 @@
+/* src/components/Menu/MotionMenu.css */
+
+.motion-menu {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(52, 152, 219, 0.95);
+  color: white;
+  padding: 15px 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  z-index: 10;
+  width: 300px;
+  text-align: center;
+}
+
+.motion-menu h3 {
+  margin-top: 0;
+  margin-bottom: 10px;
+}
+
+.motion-menu p {
+  margin: 5px 0;
+  font-size: 1em;
+}
