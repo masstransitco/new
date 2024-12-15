@@ -1,8 +1,10 @@
+// src/components/Menu/MotionMenu.jsx
+
 import React from "react";
 import PropTypes from "prop-types";
 
 const MotionMenu = ({ fareInfo }) => {
-  if (!fareInfo) return null;
+  if (!fareInfo || fareInfo.ourFare === undefined) return null;
 
   return (
     <div className="motion-menu">
