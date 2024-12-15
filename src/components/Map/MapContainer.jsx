@@ -26,7 +26,7 @@ import "./MapContainer.css";
 const GOOGLE_MAPS_API_KEY = "AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours"; // Replace with your actual API key
 
 // MapId for custom styling
-const mapId = "94527c02bbb6243";
+const mapId = "15431d2b469f209e";
 
 // Libraries needed by the Google Maps instance
 const libraries = ["geometry", "places"];
