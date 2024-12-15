@@ -2,7 +2,7 @@
 /* global google */
 
 import {
-  Vector2,
+  Vector3,
   PerspectiveCamera,
   WebGLRenderer,
   Scene,
@@ -10,7 +10,6 @@ import {
   DirectionalLight,
   MeshBasicMaterial,
   Mesh,
-  Vector3,
   Raycaster,
 } from "three";
 
@@ -32,7 +31,7 @@ export default class ThreeJSOverlayView extends google.maps.WebGLOverlayView {
     this.carAnimationActive = false; // Flag to ensure animation runs only once
 
     this.raycaster = new Raycaster();
-    this.mouse = new Vector2();
+    this.mouse = new Vector3();
     this.INTERSECTED = null; // Currently hovered object
 
     // Bind methods to ensure correct 'this' context
@@ -81,16 +80,15 @@ export default class ThreeJSOverlayView extends google.maps.WebGLOverlayView {
    * Called on each frame to render the overlay.
    */
   onDraw({ gl, transformer }) {
-    // **Key Correction: Use getPixelProjectionMatrix instead of getWorldToViewportMatrix**
-    if (typeof transformer.getPixelProjectionMatrix !== "function") {
-      console.error("transformer.getPixelProjectionMatrix is not a function.");
+    // **Key Correction: Use getProjectionMatrix instead of getPixelProjectionMatrix**
+    if (typeof transformer.getProjectionMatrix !== "function") {
+      console.error("transformer.getProjectionMatrix is not a function.");
       return;
     }
 
-    const pixelProjectionMatrix = new Float32Array(
-      transformer.getPixelProjectionMatrix()
-    );
-    this.camera.projectionMatrix.fromArray(pixelProjectionMatrix);
+    const projectionMatrixArray = transformer.getProjectionMatrix();
+    const projectionMatrix = new Float32Array(projectionMatrixArray);
+    this.camera.projectionMatrix.fromArray(projectionMatrix);
     this.camera.projectionMatrixInverse
       .copy(this.camera.projectionMatrix)
       .invert();
@@ -101,10 +99,8 @@ export default class ThreeJSOverlayView extends google.maps.WebGLOverlayView {
       return;
     }
 
-    const cameraWorldMatrix = new Float32Array(
-      transformer.getCameraWorldMatrix()
-    );
-    this.camera.matrix.fromArray(cameraWorldMatrix);
+    const cameraWorldMatrixArray = transformer.getCameraWorldMatrix();
+    this.camera.matrix.fromArray(cameraWorldMatrixArray);
     this.camera.matrixWorld.copy(this.camera.matrix);
     this.camera.matrixWorldInverse.copy(this.camera.matrixWorld).invert();
     this.camera.updateMatrixWorld();
@@ -152,11 +148,7 @@ export default class ThreeJSOverlayView extends google.maps.WebGLOverlayView {
    * @returns {THREE.Vector3}
    */
   latLngToVector3(latLng) {
-    if (!this.transformer) {
-      console.error("Transformer is not available yet.");
-      return new Vector3(0, 0, 0); // Return a default vector or handle as needed
-    }
-    const worldPosition = this.transformer.fromLatLngAltitude({
+    const worldPosition = this.fromLatLngAltitude({
       lat: latLng.lat,
       lng: latLng.lng,
       altitude: 0, // Adjust altitude if necessary
@@ -350,7 +342,7 @@ export default class ThreeJSOverlayView extends google.maps.WebGLOverlayView {
         this.animationRequest = null;
       }
 
-      // **Note:** Do not manually call this.draw(); let WebGLOverlayView handle redraw cycles
+      this.requestRedraw();
     };
 
     this.animationRequest = requestAnimationFrame(animate);
