@@ -227,7 +227,7 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
     const driveView = {
       name: "DriveView",
       center: departureStation.position,
-      zoom: 14,
+      zoom: 16,
       tilt: 35,
       heading: heading,
     };
