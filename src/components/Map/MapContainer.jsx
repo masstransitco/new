@@ -32,7 +32,7 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import ThreeJSOverlayView from "../../threejs/ThreeJSOverlayView";
 
 // **Note:** Use environment variables for API keys in production.
-const GOOGLE_MAPS_API_KEY = "AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours"; // Replace with your actual API key
+const GOOGLE_MAPS_API_KEY = "YOUR_GOOGLE_MAPS_API_KEY"; // **Replace with your actual API key securely**
 
 const mapId = "15431d2b469f209e"; // Your predefined mapId with styles from Google Console
 const libraries = ["geometry", "places"];
@@ -136,10 +136,13 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
 
     overlay.setMap(map);
 
-    // Initialize the scene within the overlay
+    // **Do not override lifecycle methods here.**
+    // Remove the following lines to prevent disrupting ThreeJSOverlayView's internal bindings:
+    /*
     overlay.onAdd = () => {
       // Add initial objects or configurations if needed
     };
+    */
 
     // Cleanup on unmount
     return () => {
@@ -271,7 +274,7 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
           districtName: station.district, // Pass district name for ViewBar
         };
         navigateToView(stationView);
-        setUserState(USER_STATES.SELECTING_DEPARTURE);
+        setUserState(USER_STATES.SELECTING_ARRIVAL); // **Corrected state transition**
 
         if (onStationSelect) {
           onStationSelect(station);
