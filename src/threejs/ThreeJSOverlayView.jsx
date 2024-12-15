@@ -121,8 +121,6 @@ export default class ThreeJSOverlayView extends google.maps.WebGLOverlayView {
 
     // Handle interactivity
     this.handleInteractivity();
-
-    // **Note:** Do not manually call this.draw(); let WebGLOverlayView handle redraw cycles
   }
 
   /**
