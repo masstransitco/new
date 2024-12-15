@@ -106,7 +106,7 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
   // **Parse and Transform Data**
   // -------------------
   const stations = useMemo(() => {
-    if (!stationsData) return [];
+    if (!stationsData || !Array.isArray(stationsData.features)) return [];
     return stationsData.features.map((feature) => ({
       id: feature.id,
       place: feature.properties.Place,
@@ -120,7 +120,7 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
   }, [stationsData]);
 
   const districts = useMemo(() => {
-    if (!districtsData) return [];
+    if (!districtsData || !Array.isArray(districtsData.features)) return [];
     return districtsData.features.map((feature) => ({
       id: feature.id,
       name: feature.properties.District,
@@ -244,10 +244,15 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
       (result, status) => {
         if (status === window.google.maps.DirectionsStatus.OK) {
           setDirections(result);
-          const route = result.routes[0].legs[0];
+          const route = result.routes[0]?.legs[0];
+          if (!route) {
+            console.error("No route found in directions result.");
+            return;
+          }
+
           const fare = calculateFare(
-            route.distance.value,
-            route.duration.value
+            route.distance?.value || 0,
+            route.duration?.value || 0
           );
           setFareInfo(fare);
 
@@ -349,7 +354,7 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
       threeOverlayRef.current.clearLabels();
       threeOverlayRef.current.clearModels();
     }
-  }, [navigateToView, onStationDeselect, threeOverlayRef]);
+  }, [navigateToView, onStationDeselect]);
 
   // -------------------
   // **Handle Station Selection**
@@ -756,12 +761,14 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
 
         {/* Fare Info Window */}
         {fareInfo &&
+          fareInfo.ourFare !== undefined &&
           userState === USER_STATES.DISPLAY_FARE &&
           destinationStation && (
             <FareInfoWindow
               position={destinationStation.position}
               fareInfo={{
-                duration: directions.routes[0].legs[0].duration.text,
+                duration:
+                  directions?.routes?.[0]?.legs?.[0]?.duration?.text || "N/A",
                 ourFare: fareInfo.ourFare,
                 taxiFareEstimate: fareInfo.taxiFareEstimate,
               }}
@@ -780,7 +787,7 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
       </GoogleMap>
 
       {/* MotionMenu for displaying fare information */}
-      {userState === USER_STATES.DISPLAY_FARE && (
+      {userState === USER_STATES.DISPLAY_FARE && fareInfo && (
         <MotionMenu fareInfo={fareInfo} />
       )}
     </div>
