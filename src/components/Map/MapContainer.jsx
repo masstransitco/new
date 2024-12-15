@@ -11,7 +11,6 @@ import {
   GoogleMap,
   useJsApiLoader,
   DirectionsRenderer,
-  Polyline,
 } from "@react-google-maps/api";
 
 import ViewBar from "./ViewBar";
