@@ -408,29 +408,32 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
   };
 
   // **Fare Calculation Function**
-  const calculateFare = useCallback((distance, durationInSeconds) => {
-    // distance in meters, duration in seconds
-    // Base fare: HK$24 for first 2km + HK$1 for each 200m beyond 2km
-    const baseTaxi = 24;
-    const extraMeters = Math.max(0, distance - 2000);
-    const increments = Math.floor(extraMeters / 200) * 1;
-    const taxiFareEstimate = baseTaxi + increments;
+  const calculateFare = useCallback(
+    (distance, durationInSeconds) => {
+      // distance in meters, duration in seconds
+      // Base fare: HK$24 for first 2km + HK$1 for each 200m beyond 2km
+      const baseTaxi = 24;
+      const extraMeters = Math.max(0, distance - 2000);
+      const increments = Math.floor(extraMeters / 200) * 1;
+      const taxiFareEstimate = baseTaxi + increments;
 
-    // Our pricing:
-    // Peak hours: starting fare = $65, off-peak = $35
-    const isPeak = isPeakHour(new Date());
-    const startingFare = isPeak ? 65 : 35;
-    // Aim for ~50% of taxi fare
-    const ourFare = Math.max(taxiFareEstimate * 0.5, startingFare);
+      // Our pricing:
+      // Peak hours: starting fare = $65, off-peak = $35
+      const isPeak = isPeakHour(new Date());
+      const startingFare = isPeak ? 65 : 35;
+      // Aim for ~50% of taxi fare
+      const ourFare = Math.max(taxiFareEstimate * 0.5, startingFare);
 
-    // Calculate distanceKm and estTime for ViewBar
-    const distanceKm = (distance / 1000).toFixed(2);
-    const estTime = `${Math.floor(durationInSeconds / 3600)} hr ${
-      Math.floor((durationInSeconds % 3600) / 60)
-    } mins`;
+      // Calculate distanceKm and estTime for ViewBar
+      const distanceKm = (distance / 1000).toFixed(2);
+      const estTime = `${Math.floor(durationInSeconds / 3600)} hr ${Math.floor(
+        (durationInSeconds % 3600) / 60
+      )} mins`;
 
-    return { ourFare, taxiFareEstimate, distanceKm, estTime };
-  }, [isPeakHour]);
+      return { ourFare, taxiFareEstimate, distanceKm, estTime };
+    },
+    [isPeakHour]
+  );
 
   // **Compute fare once both departure and arrival are selected**
   useEffect(() => {
@@ -449,11 +452,16 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
             // Compute fare based on distance and duration
             const route = result.routes[0].legs[0];
             const distance = route.distance.value; // in meters
-            const fare = calculateFare(route.distance.value, route.duration.value); // Pass duration in seconds
+            const fare = calculateFare(
+              route.distance.value,
+              route.duration.value
+            ); // Pass duration in seconds
             setFareInfo(fare);
 
             // Update ViewBar title with distance and estimated time
-            setViewBarText(`Distance: ${fare.distanceKm} km, Est Time: ${fare.estTime}`);
+            setViewBarText(
+              `Distance: ${fare.distanceKm} km, Est Time: ${fare.estTime}`
+            );
 
             // **Enhancement 3: Animate car on DriveView**
             navigateToDriveView();

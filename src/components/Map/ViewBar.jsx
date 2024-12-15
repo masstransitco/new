@@ -37,7 +37,11 @@ const ViewBar = ({
         {departure && (
           <div className="departure-info">
             <span>Departure: {departure}</span>
-            <button onClick={onClearDeparture} className="clear-button" aria-label="Clear Departure">
+            <button
+              onClick={onClearDeparture}
+              className="clear-button"
+              aria-label="Clear Departure"
+            >
               Clear
             </button>
           </div>
@@ -45,7 +49,11 @@ const ViewBar = ({
         {arrival && (
           <div className="arrival-info">
             <span>Arrival: {arrival}</span>
-            <button onClick={onClearArrival} className="clear-button" aria-label="Clear Arrival">
+            <button
+              onClick={onClearArrival}
+              className="clear-button"
+              aria-label="Clear Arrival"
+            >
               Clear
             </button>
           </div>
@@ -56,7 +64,11 @@ const ViewBar = ({
       <div className="view-bar-actions">
         {/* Locate Me Button - Visible when not in MeView */}
         {!isMeView && (
-          <button onClick={onLocateMe} className="action-button" aria-label="Locate Me">
+          <button
+            onClick={onLocateMe}
+            className="action-button"
+            aria-label="Locate Me"
+          >
             Locate Me
           </button>
         )}
@@ -74,7 +86,11 @@ const ViewBar = ({
 
         {/* Home Button - Visible when not in CityView */}
         {!isCityView && (
-          <button onClick={onHome} className="action-button" aria-label="Go Home">
+          <button
+            onClick={onHome}
+            className="action-button"
+            aria-label="Go Home"
+          >
             Home
           </button>
         )}
