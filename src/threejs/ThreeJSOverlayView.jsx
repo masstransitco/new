@@ -6,6 +6,8 @@ import {
   PerspectiveCamera,
   WebGLRenderer,
   Scene,
+  AmbientLight,
+  DirectionalLight,
   MeshBasicMaterial,
   Mesh,
   Vector3,
@@ -34,6 +36,9 @@ export default class ThreeJSOverlayView extends google.maps.WebGLOverlayView {
     this.raycaster = new Raycaster();
     this.mouse = new Vector2();
     this.INTERSECTED = null; // Currently hovered object
+
+    // Flag to prevent recursive redraws
+    this.isRedrawRequested = false;
   }
 
   /**
@@ -46,6 +51,11 @@ export default class ThreeJSOverlayView extends google.maps.WebGLOverlayView {
       canvas.addEventListener("mousemove", this.onMouseMove.bind(this), false);
       canvas.addEventListener("click", this.onClick.bind(this), false);
     }
+
+    // Initialize transformer here if applicable
+    // Example:
+    // this.transformer = new Transformer(); // Replace with actual transformer initialization
+    // Ensure transformer is ready
   }
 
   /**
@@ -65,8 +75,8 @@ export default class ThreeJSOverlayView extends google.maps.WebGLOverlayView {
     this.renderer.setSize(width, height);
 
     // Add lights to the scene
-    this.scene.add(new this.THREE.AmbientLight(0xffffff, 0.5));
-    const directionalLight = new this.THREE.DirectionalLight(0xffffff, 0.5);
+    this.scene.add(new AmbientLight(0xffffff, 0.5));
+    const directionalLight = new DirectionalLight(0xffffff, 0.5);
     directionalLight.position.set(0, 10, 0);
     this.scene.add(directionalLight);
   }
@@ -78,12 +88,18 @@ export default class ThreeJSOverlayView extends google.maps.WebGLOverlayView {
     this.transformer = transformer;
 
     // Update camera position based on transformer
-    this.camera.matrixWorldInverse.fromArray(transformer.getViewMatrix());
+    const viewMatrixArray = transformer.getViewMatrix();
+    if (typeof transformer.getViewMatrix !== "function") {
+      console.error("transformer.getViewMatrix is not a function.");
+      return;
+    }
+
+    this.camera.matrixWorldInverse.fromArray(viewMatrixArray);
     this.camera.matrixWorld.getInverse(this.camera.matrixWorldInverse);
     this.camera.updateMatrixWorld();
 
     // Update projection matrix if available
-    if (transformer.getProjectionMatrix) {
+    if (typeof transformer.getProjectionMatrix === "function") {
       const projectionMatrix = new Float32Array(
         transformer.getProjectionMatrix()
       );
@@ -103,9 +119,10 @@ export default class ThreeJSOverlayView extends google.maps.WebGLOverlayView {
 
     // Update raycaster for interactivity
     this.raycaster.setFromCamera(this.mouse, this.camera);
-    const intersects = this.raycaster.intersectObjects(
-      Object.values(this.models)
-    );
+    const intersectObjects = Object.values(this.models).concat(
+      Object.values(this.labels)
+    ); // Include labels for interaction
+    const intersects = this.raycaster.intersectObjects(intersectObjects, true);
 
     if (intersects.length > 0) {
       const firstIntersect = intersects[0].object;
@@ -128,6 +145,9 @@ export default class ThreeJSOverlayView extends google.maps.WebGLOverlayView {
       }
       this.INTERSECTED = null;
     }
+
+    // Reset the redraw request flag
+    this.isRedrawRequested = false;
   }
 
   /**
@@ -384,8 +404,21 @@ export default class ThreeJSOverlayView extends google.maps.WebGLOverlayView {
    * Request a redraw of the overlay.
    */
   requestRedraw() {
-    if (this.requestRedraw) {
-      this.requestRedraw();
+    if (this.isRedrawRequested) return; // Prevent multiple requests
+    this.isRedrawRequested = true;
+    this.requestRedraw();
+  }
+
+  /**
+   * Override the base class's requestRedraw to prevent infinite recursion.
+   */
+  requestRedraw() {
+    if (!this.isRedrawRequested) {
+      this.isRedrawRequested = true;
+      window.requestAnimationFrame(() => {
+        this.draw();
+        this.isRedrawRequested = false;
+      });
     }
   }
 
@@ -429,5 +462,20 @@ export default class ThreeJSOverlayView extends google.maps.WebGLOverlayView {
    */
   setOnModelClick(callback) {
     this.onModelClick = callback;
+  }
+
+  /**
+   * Define the getViewMatrix method to calculate and return the view matrix.
+   * @returns {Array} - The view matrix as an array.
+   */
+  getViewMatrix() {
+    // Calculate and return the view matrix based on the camera and map's orientation
+    // This is a placeholder implementation and should be adjusted based on actual requirements
+    // You might need to use the transformer's capabilities to get the accurate view matrix
+    const viewMatrix = new Float32Array(16);
+    this.camera.updateMatrixWorld();
+    this.camera.matrixWorldInverse.copy(this.camera.matrixWorld).invert();
+    this.camera.matrixWorldInverse.toArray(viewMatrix);
+    return viewMatrix;
   }
 }
