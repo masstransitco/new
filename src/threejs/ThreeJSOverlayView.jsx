@@ -148,11 +148,16 @@ export default class ThreeJSOverlayView extends google.maps.WebGLOverlayView {
   }
 
   /**
-   * Convert LatLng to Vector3 using the stored transformer for accurate positioning.
-   * @param {Object} latLng - { lat, lng }
+   * Convert LatLng to Vector3 using the transformer for accurate positioning.
+   * @param {google.maps.LatLngLiteral} latLng - { lat, lng }
    * @returns {THREE.Vector3}
    */
   latLngToVector3(latLng) {
+    if (typeof this.fromLatLngAltitude !== "function") {
+      console.error("fromLatLngAltitude is not a function.");
+      return new Vector3(0, 0, 0); // Default position to prevent crashes
+    }
+
     const worldPosition = this.fromLatLngAltitude({
       lat: latLng.lat,
       lng: latLng.lng,
@@ -163,7 +168,7 @@ export default class ThreeJSOverlayView extends google.maps.WebGLOverlayView {
 
   /**
    * Add a 3D model with a unique identifier.
-   * @param {Object} position - { lat, lng }
+   * @param {google.maps.LatLngLiteral} position - { lat, lng }
    * @param {THREE.Object3D} model - The 3D model to add
    * @param {String} identifier - Unique identifier for the model
    */
@@ -211,7 +216,7 @@ export default class ThreeJSOverlayView extends google.maps.WebGLOverlayView {
 
   /**
    * Add a label with a unique identifier.
-   * @param {Object} position - { lat, lng }
+   * @param {google.maps.LatLngLiteral} position - { lat, lng }
    * @param {String} text - Label text
    * @param {String} identifier - Unique identifier for the label
    */
@@ -276,15 +281,22 @@ export default class ThreeJSOverlayView extends google.maps.WebGLOverlayView {
 
   /**
    * Animate the camera to a specific position.
-   * @param {Object} position - { lat, lng }
+   * @param {google.maps.LatLngLiteral} position - { lat, lng }
    * @param {Number} zoom - Zoom level
    * @param {Number} tilt - Tilt angle
    * @param {Number} heading - Heading angle
    * @param {Function} callback - Callback after animation completes
    */
   animateCameraTo(position, zoom, tilt, heading, callback) {
-    // Implement camera animation logic here
-    // For simplicity, we'll set the view directly and call the callback
+    if (!this.getMap()) {
+      console.error("Map instance is not available.");
+      return;
+    }
+
+    // Implement smooth camera animation using Google Maps methods
+    // Note: Google Maps JavaScript API does not provide direct smooth animations for these properties
+    // You might need to implement custom interpolation for smooth transitions
+
     this.getMap().panTo(position);
     this.getMap().setZoom(zoom);
     this.getMap().setTilt(tilt);
