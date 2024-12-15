@@ -632,10 +632,6 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
 
   // **Check if we are in MeView to filter stations**
   const inMeView = currentView.name === "MeView";
-  const filteredStations = useMemo(() => {
-    if (!inMeView || !userLocation) return stations;
-    return stations.filter((st) => computeDistance(st.position) <= 1000);
-  }, [inMeView, userLocation, stations, computeDistance]);
 
   // **Get label position for radius circles**
   const getCircleLabelPosition = useCallback((center, radius) => {
