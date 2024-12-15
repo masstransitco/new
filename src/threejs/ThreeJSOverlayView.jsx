@@ -93,7 +93,7 @@ export default class ThreeJSOverlayView {
     // Since getProjectionMatrix is not available, use alternative methods
 
     // Update camera position based on transformer
-    this.camera.matrixWorldInverse.fromArray(transformer.getViewMatrix());
+    this.camera.matrixWorldInverse.fromArray(transformer.getViewMatrixArray());
     this.camera.matrixWorld.getInverse(this.camera.matrixWorldInverse);
     this.camera.updateMatrixWorld();
 
