@@ -24,12 +24,11 @@ import useMapGestures from "../../hooks/useMapGestures";
 
 import "./MapContainer.css";
 
-import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import ThreeJSOverlayView from "../../threejs/ThreeJSOverlayView";
 
 // **Note:** Use environment variables for API keys in production.
-const GOOGLE_MAPS_API_KEY = "AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours"; // Ensure this is set in your .env file
+const GOOGLE_MAPS_API_KEY = "AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours"; // Secure API key
 
 const MAP_ID = "94527c02bbb6243"; // Updated vector mapId
 const LIBRARIES = ["geometry", "places"];
@@ -84,7 +83,7 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: GOOGLE_MAPS_API_KEY,
     libraries: LIBRARIES,
-    version: "weekly", // Use a stable version
+    version: "beta", // Changed to beta for WebGLOverlayView support
   });
 
   // -------------------
@@ -453,7 +452,7 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
   useEffect(() => {
     if (!isLoaded || !map) return;
 
-    const overlay = new ThreeJSOverlayView(THREE);
+    const overlay = new ThreeJSOverlayView();
     threeOverlayRef.current = overlay;
 
     // Define a callback to handle model clicks
