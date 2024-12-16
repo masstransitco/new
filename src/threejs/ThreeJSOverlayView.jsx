@@ -1,4 +1,3 @@
-// src/threejs/ThreeJSOverlayView.jsx
 /* global google */
 
 import {
@@ -89,24 +88,26 @@ export default class ThreeJSOverlayView extends google.maps.WebGLOverlayView {
     );
 
     // Check for necessary transformer methods
-    if (typeof transformer.fromLatLngToPoint !== "function") {
-      console.error("transformer.fromLatLngToPoint is not a function.");
+    if (typeof transformer.fromLatLngAltitude !== "function") {
+      console.error("transformer.fromLatLngAltitude is not a function.");
       return;
     }
 
-    if (typeof transformer.fromLatLngAltitude !== "function") {
-      console.error("transformer.fromLatLngAltitude is not a function.");
+    if (typeof transformer.fromLatLngAltitudeToVector3 !== "function") {
+      console.error(
+        "transformer.fromLatLngAltitudeToVector3 is not a function."
+      );
       return;
     }
 
     // Example: Position the camera based on the map center
     const mapCenter = this.getMap().getCenter();
     const centerLatLng = { lat: mapCenter.lat(), lng: mapCenter.lng() };
-    const centerPoint = transformer.fromLatLngToPoint(centerLatLng);
+    const centerVector = transformer.fromLatLngAltitude(centerLatLng, 0);
 
     // Set camera position (adjust Z as needed)
-    this.camera.position.set(centerPoint.x, centerPoint.y, 1000);
-    this.camera.lookAt(new Vector3(centerPoint.x, centerPoint.y, 0));
+    this.camera.position.set(centerVector.x, centerVector.y, 1000);
+    this.camera.lookAt(new Vector3(centerVector.x, centerVector.y, 0));
 
     // Update renderer size
     const { width, height } = gl.canvas;
@@ -150,14 +151,13 @@ export default class ThreeJSOverlayView extends google.maps.WebGLOverlayView {
    * @returns {THREE.Vector3}
    */
   latLngToVector3(latLng, altitude = 0) {
-    if (typeof this.transformer.fromLatLngToPoint !== "function") {
-      console.error("transformer.fromLatLngToPoint is not a function.");
+    if (typeof this.transformer.fromLatLngAltitude !== "function") {
+      console.error("transformer.fromLatLngAltitude is not a function.");
       return new Vector3(0, 0, 0); // Default position to prevent crashes
     }
 
-    const point = this.transformer.fromLatLngToPoint(latLng);
-    // Convert the 2D point to 3D Vector3. Adjust scaling as needed.
-    return new Vector3(point.x, point.y, altitude);
+    const vector = this.transformer.fromLatLngAltitude(latLng, altitude);
+    return new Vector3(vector.x, vector.y, vector.z);
   }
 
   /**
