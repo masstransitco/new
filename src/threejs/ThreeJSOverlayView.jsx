@@ -1,3 +1,5 @@
+// src/threejs/ThreeJSOverlayView.jsx
+
 /* global google */
 
 import {
@@ -93,17 +95,10 @@ export default class ThreeJSOverlayView extends google.maps.WebGLOverlayView {
       return;
     }
 
-    if (typeof transformer.fromLatLngAltitudeToVector3 !== "function") {
-      console.error(
-        "transformer.fromLatLngAltitudeToVector3 is not a function."
-      );
-      return;
-    }
-
     // Example: Position the camera based on the map center
     const mapCenter = this.getMap().getCenter();
     const centerLatLng = { lat: mapCenter.lat(), lng: mapCenter.lng() };
-    const centerVector = transformer.fromLatLngAltitude(centerLatLng, 0);
+    const centerVector = this.latLngToVector3(centerLatLng, 0);
 
     // Set camera position (adjust Z as needed)
     this.camera.position.set(centerVector.x, centerVector.y, 1000);
@@ -445,10 +440,7 @@ export default class ThreeJSOverlayView extends google.maps.WebGLOverlayView {
       );
       if (identifier) {
         // Emit a custom event or call a callback to notify about the selection
-        // For example:
-        // this.onModelClick(identifier);
         console.log(`Model with identifier ${identifier} was clicked.`);
-        // You can extend this method to interface with your React components
         if (this.onModelClick) {
           this.onModelClick(identifier);
         }
