@@ -83,7 +83,7 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: GOOGLE_MAPS_API_KEY,
     libraries: LIBRARIES,
-    version: "3.47", // Ensure this version supports WebGLOverlayView
+    version: "weekly", // Ensure this version supports WebGLOverlayView
   });
 
   // -------------------
@@ -563,7 +563,7 @@ const MapContainer = ({ onStationSelect, onStationDeselect }) => {
   // -------------------
   const onLoadMap = useCallback(
     (mapInstance) => {
-      console.log("Map loaded");
+      console.log("Map loaded successfully");
       setMap(mapInstance);
 
       // **Add labels to all districts once map is loaded**
