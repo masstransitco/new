@@ -1,40 +1,42 @@
 // src/components/Scene/SceneContainer.jsx
 import React, { useEffect, useState } from "react";
 
-const SceneContainer = ({ selectedStation }) => {
+const SceneContainer = ({ selectedStation, selectedDistrict }) => {
   const [geojson, setGeojson] = useState(null);
-  const [currentStation, setCurrentStation] = useState(null);
+  const [currentPlace, setCurrentPlace] = useState(null);
 
   useEffect(() => {
     if (selectedStation) {
-      setCurrentStation(selectedStation);
+      setCurrentPlace({
+        coordinates: [
+          selectedStation.position.lng,
+          selectedStation.position.lat,
+        ],
+        name: selectedStation.place,
+      });
+    } else if (selectedDistrict) {
+      setCurrentPlace({
+        coordinates: [
+          selectedDistrict.position.lng,
+          selectedDistrict.position.lat,
+        ],
+        name: selectedDistrict.name,
+      });
     }
-  }, [selectedStation]);
+  }, [selectedStation, selectedDistrict]);
 
   useEffect(() => {
-    if (!selectedStation) return;
-
-    // Fetch the GeoJSON file dynamically
     const fetchGeojson = async () => {
       try {
         const response = await fetch("/stations.geojson");
         const data = await response.json();
         setGeojson(data);
-
-        // Set the selected station as currentStation if not already set
-        if (data.features && data.features.length > 0 && !currentStation) {
-          const station = data.features.find(
-            (feature) => feature.properties.Place === selectedStation.place
-          );
-          setCurrentStation(station);
-        }
       } catch (error) {
         console.error("Error fetching GeoJSON file:", error);
       }
     };
-
     fetchGeojson();
-  }, [selectedStation, currentStation]);
+  }, []);
 
   useEffect(() => {
     const loadGoogleMaps = () => {
@@ -58,74 +60,43 @@ const SceneContainer = ({ selectedStation }) => {
     };
 
     const initializeMap = async () => {
-      if (!currentStation) {
-        console.warn("No station data available to initialize the map.");
+      if (!currentPlace) {
+        console.warn("No place data available to initialize the 3D map.");
         return;
       }
 
       try {
         await loadGoogleMaps();
 
-        // Get the 3D map element
         const mapElement = document.querySelector("gmp-map-3d");
-
         if (mapElement) {
-          const { coordinates } = currentStation.geometry;
-          const [lng, lat] = coordinates; // GeoJSON format uses [longitude, latitude]
-
-          // Set initial map properties
+          const [lng, lat] = currentPlace.coordinates;
           mapElement.setAttribute("center", `${lat},${lng}`);
           mapElement.setAttribute("tilt", "67.5");
           mapElement.setAttribute("heading", "0");
           mapElement.setAttribute("altitude", "1000");
           mapElement.setAttribute("range", "1500");
-
-          console.log(`Map initialized at: ${currentStation.properties.Place}`);
         } else {
           console.error("gmp-map-3d element not found.");
         }
       } catch (error) {
-        console.error("Error initializing the map:", error);
+        console.error("Error initializing the 3D map:", error);
       }
     };
 
     initializeMap();
-  }, [currentStation]);
-
-  const handleStationChange = (station) => {
-    setCurrentStation(station);
-  };
+  }, [currentPlace]);
 
   return (
     <div style={{ height: "30vh", width: "100%" }}>
       {geojson ? (
-        geojson.features.length > 0 ? (
-          <>
-            {/* Dropdown to select a station */}
-            <select
-              onChange={(e) =>
-                handleStationChange(
-                  geojson.features.find(
-                    (feature) => feature.properties.Place === e.target.value
-                  )
-                )
-              }
-            >
-              {geojson.features.map((feature) => (
-                <option key={feature.id} value={feature.properties.Place}>
-                  {feature.properties.Place}
-                </option>
-              ))}
-            </select>
-
-            {/* Render the 3D map */}
-            <gmp-map-3d
-              style={{ height: "100%", width: "100%" }}
-              default-labels-disabled
-            ></gmp-map-3d>
-          </>
+        geojson.features && geojson.features.length > 0 ? (
+          <gmp-map-3d
+            style={{ height: "100%", width: "100%" }}
+            default-labels-disabled
+          ></gmp-map-3d>
         ) : (
-          <p>No station data available.</p>
+          <p>No data available.</p>
         )
       ) : (
         <p>Loading station data...</p>
