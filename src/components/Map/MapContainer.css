@@ -40,7 +40,6 @@
   text-align: center;
 }
 
-
 /* InfoBox Container */
 .info-box-container {
   position: absolute;
@@ -50,7 +49,9 @@
   flex-direction: column;
   gap: 8px; /* Space between InfoBoxes */
   z-index: 100; /* Ensure it sits above the map */
+} /* Added missing closing brace */
 
+/* Keyframes for the pulse animation */
 @keyframes pulse {
   0% {
     transform: translateX(-50%) scale(1);
