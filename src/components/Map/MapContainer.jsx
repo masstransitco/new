@@ -21,7 +21,7 @@ import useMapGestures from "../../hooks/useMapGestures";
 
 import "./MapContainer.css";
 
-const GOOGLE_MAPS_API_KEY = "YOUR_API_KEY_HERE"; // **Ensure to replace with a secure method to handle API keys**
+const GOOGLE_MAPS_API_KEY = "AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours"; // **Ensure to replace with a secure method to handle API keys**
 const mapId = "94527c02bbb6243";
 const libraries = ["geometry", "places"];
 const containerStyle = { width: "100%", height: "100vh" };
