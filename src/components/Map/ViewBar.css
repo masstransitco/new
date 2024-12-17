@@ -1,109 +1,121 @@
 /* src/components/Map/ViewBar.css */
 
+/* ViewBar Container */
 .view-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background-color: rgba(255, 255, 255, 0.9);
-  padding: 10px 20px;
   position: absolute;
   top: 10px;
   left: 50%;
   transform: translateX(-50%);
-  border-radius: 8px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: row; /* Changed to row for better alignment */
+  align-items: center;
+  background-color: rgba(255, 255, 255, 0.95);
+  padding: 8px 16px;
+  border-radius: 9999px; /* Fully rounded corners */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   z-index: 10;
-  width: 90%;
-  max-width: 1200px;
+  max-width: 90%;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 0.9em; /* Slightly smaller font */
+  font-weight: 400; /* Regular weight */
 }
 
-.view-bar-text {
-  flex: 1;
+/* Pill-Shaped Title Container */
+.view-bar-title-pill {
+  background-color: #f0f0f0;
+  border-radius: 9999px;
+  padding: 4px 12px;
+  margin: 0 16px; /* Adjusted margin for spacing */
+  color: #333;
 }
 
-.view-bar-text h2 {
+.view-bar-title-pill h2 {
   margin: 0;
-  font-size: 1.5em;
-}
-
-.view-bar-text p {
-  margin: 5px 0 0 0;
   font-size: 1em;
-  color: #555;
+  font-weight: 400;
 }
 
+/* Departure and Arrival Information */
 .view-bar-info {
-  flex: 2;
   display: flex;
   flex-direction: column;
+  gap: 4px;
 }
 
 .departure-info,
 .arrival-info {
   display: flex;
   align-items: center;
-  margin-bottom: 5px;
-}
-
-.departure-info span,
-.arrival-info span {
-  margin-right: 10px;
-  font-weight: bold;
+  gap: 6px;
 }
 
 .clear-button {
-  background-color: #e74c3c;
-  color: white;
+  background: none;
   border: none;
-  padding: 5px 10px;
-  border-radius: 4px;
+  color: #d9534f; /* Red color for clear buttons */
   cursor: pointer;
+  font-size: 0.8em;
+  text-decoration: underline;
 }
 
 .clear-button:hover {
-  background-color: #c0392b;
+  color: #c9302c;
 }
 
+/* Actions Container */
 .view-bar-actions {
-  flex: 1;
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
   gap: 10px;
+  margin-left: auto; /* Push actions to the right */
 }
 
-.action-button,
+/* Choose Destination Button */
 .choose-destination-button {
-  background-color: #3498db;
-  color: white;
+  background-color: #2171ec;
   border: none;
-  padding: 8px 15px;
-  border-radius: 4px;
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 20px;
   cursor: pointer;
-  font-size: 1em;
-}
-
-.action-button:hover,
-.choose-destination-button:hover {
-  background-color: #2980b9;
-}
-
-.choose-destination-button {
-  background-color: #2ecc71;
+  font-size: 0.9em;
+  transition: background-color 0.3s ease;
 }
 
 .choose-destination-button:hover {
-  background-color: #27ae60;
+  background-color: #195db7;
 }
 
-/* Responsive Design */
-@media (max-width: 768px) {
+/* View All Stations Button */
+.view-all-stations-button {
+  background: none;
+  border: 2px solid #2171ec;
+  color: #2171ec;
+  padding: 6px 12px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 0.9em;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.view-all-stations-button:hover {
+  background-color: #2171ec;
+  color: #fff;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 767px) {
   .view-bar {
-    flex-direction: column;
-    align-items: flex-start;
+    flex-direction: column; /* Stack vertically on small screens */
+    align-items: center;
+  }
+
+  .view-bar-title-pill {
+    margin: 8px 0;
   }
 
   .view-bar-actions {
-    justify-content: flex-start;
-    margin-top: 10px;
+    margin-left: 0;
+    margin-top: 8px;
   }
 }
