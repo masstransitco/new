@@ -28,7 +28,6 @@
     "@react-three/fiber": "^8.17.10",
     "@turf/bbox": "^7.1.0",
     "@vercel/analytics": "^1.4.1",
-    "@vis.gl/react-google-maps": "^1.4.2",
     "axios": "^1.0.0",
     "bootstrap": "^5.3.3",
     "brew": "^0.0.8",

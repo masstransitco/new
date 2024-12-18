@@ -12,7 +12,7 @@ const StationMarkers = ({ stations, onStationClick }) => {
           key={station.id}
           position={station.position}
           title={station.place}
-          onClick={() => onStationClick(station)}
+          onClick={() => onStationClick && onStationClick(station)}
         />
       ))}
     </>
@@ -22,17 +22,15 @@ const StationMarkers = ({ stations, onStationClick }) => {
 StationMarkers.propTypes = {
   stations: PropTypes.arrayOf(
     PropTypes.shape({
-      id: PropTypes.string.isRequired,
+      id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
       place: PropTypes.string.isRequired,
-      address: PropTypes.string.isRequired,
       position: PropTypes.shape({
         lat: PropTypes.number.isRequired,
         lng: PropTypes.number.isRequired,
       }).isRequired,
-      district: PropTypes.string.isRequired,
     })
   ).isRequired,
   onStationClick: PropTypes.func.isRequired,
 };
 
-export default StationMarkers;
+export default React.memo(StationMarkers);

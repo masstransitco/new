@@ -12,7 +12,7 @@ const DistrictMarkers = ({ districts, onDistrictClick }) => {
           key={district.id}
           position={district.position}
           title={district.name}
-          onClick={() => onDistrictClick(district)}
+          onClick={() => onDistrictClick && onDistrictClick(district)}
         />
       ))}
     </>
@@ -22,16 +22,15 @@ const DistrictMarkers = ({ districts, onDistrictClick }) => {
 DistrictMarkers.propTypes = {
   districts: PropTypes.arrayOf(
     PropTypes.shape({
-      id: PropTypes.string.isRequired,
+      id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
       name: PropTypes.string.isRequired,
       position: PropTypes.shape({
         lat: PropTypes.number.isRequired,
         lng: PropTypes.number.isRequired,
       }).isRequired,
-      description: PropTypes.string,
     })
   ).isRequired,
   onDistrictClick: PropTypes.func.isRequired,
 };
 
-export default DistrictMarkers;
+export default React.memo(DistrictMarkers);

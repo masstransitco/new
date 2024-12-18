@@ -1,40 +1,19 @@
 // src/components/Map/RouteInfoWindow.jsx
 
 import React from "react";
-import PropTypes from "prop-types";
-import "./RouteInfoWindow.css";
+import { InfoWindow } from "@react-google-maps/api";
 
 const RouteInfoWindow = ({ position, info, onClose }) => {
+  if (!info) return null;
+
   return (
-    <div
-      className="route-info-window"
-      style={{ top: position.lat, left: position.lng }}
-    >
-      <div className="route-info-content">
+    <InfoWindow position={position} onCloseClick={onClose}>
+      <div className="info-window">
         <h3>{info.title}</h3>
         <p>{info.description}</p>
-        <button
-          onClick={onClose}
-          className="close-button"
-          aria-label="Close Route Info"
-        >
-          Close
-        </button>
       </div>
-    </div>
+    </InfoWindow>
   );
 };
 
-RouteInfoWindow.propTypes = {
-  position: PropTypes.shape({
-    lat: PropTypes.number.isRequired,
-    lng: PropTypes.number.isRequired,
-  }).isRequired,
-  info: PropTypes.shape({
-    title: PropTypes.string.isRequired,
-    description: PropTypes.string.isRequired,
-  }).isRequired,
-  onClose: PropTypes.func.isRequired,
-};
-
-export default RouteInfoWindow;
+export default React.memo(RouteInfoWindow);

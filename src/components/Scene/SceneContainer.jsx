@@ -1,108 +1,83 @@
 // src/components/Scene/SceneContainer.jsx
-import React, { useEffect, useState } from "react";
 
-const SceneContainer = ({ selectedStation, selectedDistrict }) => {
-  const [geojson, setGeojson] = useState(null);
-  const [currentPlace, setCurrentPlace] = useState(null);
+import React, { useEffect, useState, useRef } from "react";
+import PropTypes from "prop-types";
+import "./SceneContainer.css";
+
+const SceneContainer = ({ center }) => {
+  const [isMapsLoaded, setIsMapsLoaded] = useState(false);
+  const [loadError, setLoadError] = useState(null);
+  const mapRef = useRef(null);
 
   useEffect(() => {
-    if (selectedStation) {
-      setCurrentPlace({
-        coordinates: [
-          selectedStation.position.lng,
-          selectedStation.position.lat,
-        ],
-        name: selectedStation.place,
-      });
-    } else if (selectedDistrict) {
-      setCurrentPlace({
-        coordinates: [
-          selectedDistrict.position.lng,
-          selectedDistrict.position.lat,
-        ],
-        name: selectedDistrict.name,
-      });
+    if (window.google && window.google.maps) {
+      setIsMapsLoaded(true);
+    } else {
+      const interval = setInterval(() => {
+        if (window.google && window.google.maps) {
+          setIsMapsLoaded(true);
+          clearInterval(interval);
+        }
+      }, 1000);
+
+      const timeout = setTimeout(() => {
+        if (!isMapsLoaded) {
+          setLoadError("Google Maps API failed to load.");
+          clearInterval(interval);
+        }
+      }, 10000);
+
+      return () => {
+        clearInterval(interval);
+        clearTimeout(timeout);
+      };
     }
-  }, [selectedStation, selectedDistrict]);
+  }, [isMapsLoaded]);
 
   useEffect(() => {
-    const fetchGeojson = async () => {
-      try {
-        const response = await fetch("/stations.geojson");
-        const data = await response.json();
-        setGeojson(data);
-      } catch (error) {
-        console.error("Error fetching GeoJSON file:", error);
-      }
-    };
-    fetchGeojson();
-  }, []);
-
-  useEffect(() => {
-    const loadGoogleMaps = () => {
-      return new Promise((resolve, reject) => {
-        if (typeof google !== "undefined") {
-          resolve();
-        } else {
-          const interval = setInterval(() => {
-            if (typeof google !== "undefined") {
-              clearInterval(interval);
-              resolve();
-            }
-          }, 100);
-
-          setTimeout(() => {
-            clearInterval(interval);
-            reject(new Error("Google Maps API failed to load."));
-          }, 5000);
-        }
-      });
+    if (!isMapsLoaded || loadError || !center || !mapRef.current) return;
+    // Set center with altitude 150 and HK bounds
+    const hkBounds = {
+      north: 22.58,
+      south: 22.15,
+      west: 113.8,
+      east: 114.5,
     };
 
-    const initializeMap = async () => {
-      if (!currentPlace) {
-        console.warn("No place data available to initialize the 3D map.");
-        return;
-      }
-
-      try {
-        await loadGoogleMaps();
-
-        const mapElement = document.querySelector("gmp-map-3d");
-        if (mapElement) {
-          const [lng, lat] = currentPlace.coordinates;
-          mapElement.setAttribute("center", `${lat},${lng}`);
-          mapElement.setAttribute("tilt", "67.5");
-          mapElement.setAttribute("heading", "0");
-          mapElement.setAttribute("altitude", "1000");
-          mapElement.setAttribute("range", "1500");
-        } else {
-          console.error("gmp-map-3d element not found.");
-        }
-      } catch (error) {
-        console.error("Error initializing the 3D map:", error);
-      }
+    mapRef.current.bounds = hkBounds;
+    mapRef.current.center = {
+      lat: center.lat,
+      lng: center.lng,
+      altitude: 150,
     };
+  }, [isMapsLoaded, loadError, center]);
 
-    initializeMap();
-  }, [currentPlace]);
+  if (loadError) {
+    return <p>Error loading Google Maps API.</p>;
+  }
+
+  if (!isMapsLoaded) {
+    return <p>Loading Google Maps...</p>;
+  }
 
   return (
-    <div style={{ height: "30vh", width: "100%" }}>
-      {geojson ? (
-        geojson.features && geojson.features.length > 0 ? (
-          <gmp-map-3d
-            style={{ height: "100%", width: "100%" }}
-            default-labels-disabled
-          ></gmp-map-3d>
-        ) : (
-          <p>No data available.</p>
-        )
-      ) : (
-        <p>Loading station data...</p>
-      )}
+    <div className="scene-container">
+      <gmp-map-3d
+        id="three-d-map"
+        ref={mapRef}
+        className="scene-map"
+        default-labels-disabled
+        default-ui-disabled
+      ></gmp-map-3d>
     </div>
   );
 };
 
-export default SceneContainer;
+SceneContainer.propTypes = {
+  center: PropTypes.shape({
+    lat: PropTypes.number.isRequired,
+    lng: PropTypes.number.isRequired,
+  }).isRequired,
+};
+
+export default React.memo(SceneContainer);

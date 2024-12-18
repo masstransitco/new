@@ -1,35 +1,21 @@
 // src/components/Map/FareInfoWindow.jsx
 
 import React from "react";
-import PropTypes from "prop-types";
-import { InfoWindow } from "@react-google-maps/api"; // Ensure InfoWindow is imported
+import { InfoWindow } from "@react-google-maps/api";
 
 const FareInfoWindow = ({ position, fareInfo, onClose }) => {
-  if (!fareInfo || fareInfo.ourFare === undefined) return null;
+  if (!fareInfo) return null;
 
   return (
     <InfoWindow position={position} onCloseClick={onClose}>
-      <div>
+      <div className="info-window">
         <h3>Fare Information</h3>
-        <p>Duration: {fareInfo.duration || "N/A"}</p>
-        <p>Your Fare: HK${fareInfo.ourFare}</p>
-        <p>Estimated Taxi Fare: HK${fareInfo.taxiFareEstimate}</p>
+        <p>Estimated driving time: {fareInfo.duration}</p>
+        <p>Fare: HK${fareInfo.ourFare.toFixed(2)}</p>
+        <p>(Taxi Estimate: HK${fareInfo.taxiFareEstimate.toFixed(2)})</p>
       </div>
     </InfoWindow>
   );
 };
 
-FareInfoWindow.propTypes = {
-  position: PropTypes.shape({
-    lat: PropTypes.number.isRequired,
-    lng: PropTypes.number.isRequired,
-  }).isRequired,
-  fareInfo: PropTypes.shape({
-    duration: PropTypes.string,
-    ourFare: PropTypes.number,
-    taxiFareEstimate: PropTypes.number,
-  }),
-  onClose: PropTypes.func.isRequired,
-};
-
-export default FareInfoWindow;
+export default React.memo(FareInfoWindow);

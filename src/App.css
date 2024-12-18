@@ -1,4 +1,9 @@
-/* App.css */
+/* src/App.css */
+
+/* Hide the Google Maps alpha banner */
+div[role="region"][aria-label*="alpha channel"] {
+  display: none !important;
+}
 
 /* Prevent scrolling on the entire application */
 html,
@@ -31,12 +36,10 @@ body,
 /* Header and Footer */
 header,
 footer {
-  background-color: var(
-    --primary-black
-  ); /* Ensure this color is fully opaque */
+  background-color: #000000; /* Solid black background */
   padding: 1rem;
   text-align: center;
-  box-shadow: 0 2px 4px 1rgba (0, 0, 0, 0.1);
+  box-shadow: 0 2px 4px 1 rgba(0, 0, 0, 0.1); /* **Fixed:** Added space before rgba */
   z-index: 1000; /* Increased z-index for fixed positioning */
   width: 100%;
   height: 60px; /* Fixed height */
@@ -45,7 +48,6 @@ footer {
   justify-content: center;
   color: #ffffff; /* White text for visibility */
   box-sizing: border-box; /* Ensure padding doesn't affect total height */
-  background-color: #000000; /* **Added:** Solid black background */
 }
 
 /* Make Header Fixed */
@@ -53,7 +55,7 @@ header {
   position: fixed;
   top: 0;
   left: 0;
-  background-color: #000000; /* **Ensured:** Solid background without transparency */
+  background-color: #000000; /* Solid background without transparency */
 }
 
 /* Footer should match Header and be fixed */
@@ -61,7 +63,7 @@ footer {
   position: fixed;
   bottom: 0;
   left: 0;
-  background-color: #000000; /* **Ensured:** Solid background without transparency */
+  background-color: #000000; /* Solid background without transparency */
 }
 
 /* Adjust Main Content to account for fixed Header and Footer */
@@ -135,27 +137,6 @@ footer {
   font-size: 1.5rem;
 }
 
-/* Locate Me Button */
-.locate-me-button {
-  position: absolute;
-  top: 10px; /* Initial top position */
-  right: 10px; /* Initial right position */
-  transform: translateY(
-    -300%
-  ); /* Moves the button upwards by 3 times its height */
-  background-color: #ffffff; /* Example background color */
-  border: none;
-  border-radius: 50%;
-  width: 40px; /* Example width */
-  height: 40px; /* Example height */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-  z-index: 1001; /* Ensure it sits above other elements */
-}
-
 /* Disable Right-Click Context Menu */
 .App {
   -webkit-touch-callout: none; /* Disable callout on iOS */
@@ -164,4 +145,18 @@ footer {
   -moz-user-select: none; /* Disable text selection on Firefox */
   -ms-user-select: none; /* Disable text selection on IE/Edge */
   user-select: none; /* Disable text selection */
+}
+
+.motion-menu-wrapper {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  transform: translateY(100%);
+  transition: transform 0.5s ease-in-out;
+  z-index: 1000; /* Ensure it appears above other elements */
+}
+
+.motion-menu-wrapper.visible {
+  transform: translateY(0);
 }

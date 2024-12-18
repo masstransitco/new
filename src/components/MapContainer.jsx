@@ -10,15 +10,15 @@ import {
 
 import ViewBar from "./ViewBar";
 import InfoBox from "./InfoBox";
+import MotionMenu from "../Menu/MotionMenu";
 import UserOverlay from "./UserOverlay";
 import UserCircles from "./UserCircles";
+
 import DistrictMarkers from "./DistrictMarkers";
 import StationMarkers from "./StationMarkers";
-import SceneContainer from "../Scene/SceneContainer";
 
 import useFetchGeoJSON from "../../hooks/useFetchGeoJSON";
 import useMapGestures from "../../hooks/useMapGestures";
-import PropTypes from "prop-types";
 
 import "./MapContainer.css";
 
@@ -27,7 +27,6 @@ const mapId = "94527c02bbb6243";
 const libraries = ["geometry", "places"];
 const containerStyle = { width: "100%", height: "100vh" };
 const BASE_CITY_CENTER = { lat: 22.236, lng: 114.191 };
-
 const CITY_VIEW = {
   name: "CityView",
   center: BASE_CITY_CENTER,
@@ -35,15 +34,12 @@ const CITY_VIEW = {
   tilt: 0,
   heading: 0,
 };
-
 const STATION_VIEW_ZOOM = 18;
 const CIRCLE_DISTANCES = [500, 1000];
 
 const USER_STATES = {
   SELECTING_DEPARTURE: "SelectingDeparture",
-  SELECTED_DEPARTURE: "SelectedDeparture",
   SELECTING_ARRIVAL: "SelectingArrival",
-  SELECTED_ARRIVAL: "SelectedArrival",
   DISPLAY_FARE: "DisplayFare",
 };
 
@@ -56,9 +52,6 @@ const MapContainer = ({
   onStationSelect,
   onStationDeselect,
   onDistrictSelect,
-  onFareInfo,
-  userState,
-  setUserState,
 }) => {
   const [map, setMap] = useState(null);
   const [userLocation, setUserLocation] = useState(null);
@@ -67,15 +60,11 @@ const MapContainer = ({
   const [showCircles, setShowCircles] = useState(false);
   const [departureStation, setDepartureStation] = useState(null);
   const [destinationStation, setDestinationStation] = useState(null);
+  const [fareInfo, setFareInfo] = useState(null);
+  const [userState, setUserState] = useState(USER_STATES.SELECTING_DEPARTURE);
   const [viewBarText, setViewBarText] = useState("Stations near me");
 
-  // Scene container bottom sheet minimized or expanded
-  const [sceneMinimized, setSceneMinimized] = useState(false);
-
   const currentView = viewHistory[viewHistory.length - 1];
-
-  // Show scene only on SELECTED_DEPARTURE
-  const showSceneContainer = userState === USER_STATES.SELECTED_DEPARTURE;
 
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: GOOGLE_MAPS_API_KEY,
@@ -83,13 +72,13 @@ const MapContainer = ({
   });
 
   const {
-    data: stationsData = [],
+    data: stationsData,
     loading: stationsLoading,
     error: stationsError,
   } = useFetchGeoJSON("/stations.geojson");
 
   const {
-    data: districtsData = [],
+    data: districtsData,
     loading: districtsLoading,
     error: districtsError,
   } = useFetchGeoJSON("/districts.geojson");
@@ -135,7 +124,7 @@ const MapContainer = ({
 
       const peak = isPeakHour(new Date());
       const startingFare = peak ? 65 : 35;
-      const ourFare = Math.max(taxiFareEstimate * 0.7, startingFare);
+      const ourFare = Math.max(taxiFareEstimate * 0.5, startingFare);
       const distanceKm = (distance / 1000).toFixed(2);
       const hrs = Math.floor(durationInSeconds / 3600);
       const mins = Math.floor((durationInSeconds % 3600) / 60);
@@ -148,7 +137,7 @@ const MapContainer = ({
   const navigateToView = useCallback(
     (view) => {
       if (!map) {
-        console.warn("Map not ready.");
+        console.warn("Map not ready, cannot navigate to view yet.");
         return;
       }
       setViewHistory((prev) => [...prev, view]);
@@ -159,33 +148,32 @@ const MapContainer = ({
 
       switch (view.name) {
         case "CityView":
-          setViewBarText("All Districts");
+          setViewBarText("Hong Kong");
           break;
         case "DistrictView":
-          setViewBarText(view.districtName || "District");
+          if (userState === USER_STATES.SELECTING_DEPARTURE) {
+            setViewBarText("Select departure station");
+          } else if (userState === USER_STATES.SELECTING_ARRIVAL) {
+            setViewBarText("Select your arrival station");
+          } else {
+            setViewBarText(view.districtName || "District");
+          }
           break;
         case "StationView":
-          setViewBarText(view.stationName || "Station");
+          setViewBarText(view.districtName || "Station");
           break;
         case "MeView":
           setViewBarText("Stations near me");
           break;
         case "DriveView":
+          // In drive view, we set text after directions are fetched
           break;
         default:
           setViewBarText("");
       }
     },
-    [map]
+    [map, userState]
   );
-
-  const minimizeScene = useCallback(() => {
-    setSceneMinimized(true);
-  }, []);
-
-  const expandScene = useCallback(() => {
-    setSceneMinimized(false);
-  }, []);
 
   const navigateToDriveView = useCallback(() => {
     if (!map || !departureStation || !destinationStation) return;
@@ -205,25 +193,15 @@ const MapContainer = ({
             route.distance.value,
             route.duration.value
           );
+          setFareInfo(fare);
           setViewBarText(
             `Distance: ${fare.distanceKm} km | Est Time: ${fare.estTime}`
           );
 
-          if (onFareInfo) onFareInfo(fare);
-
           navigateToView({
             name: "DriveView",
-            center: {
-              lat:
-                (departureStation.position.lat +
-                  destinationStation.position.lat) /
-                2,
-              lng:
-                (departureStation.position.lng +
-                  destinationStation.position.lng) /
-                2,
-            },
-            zoom: 13,
+            center: departureStation.position,
+            zoom: 16,
           });
         } else {
           console.error(`Error fetching directions: ${status}`);
@@ -236,73 +214,72 @@ const MapContainer = ({
     destinationStation,
     calculateFare,
     navigateToView,
-    onFareInfo,
   ]);
 
   const handleHomeClick = useCallback(() => {
     navigateToView(CITY_VIEW);
-    minimizeScene();
-  }, [navigateToView, minimizeScene]);
+    setDepartureStation(null);
+    setDestinationStation(null);
+    setDirections(null);
+    setFareInfo(null);
+    setShowCircles(false);
+    setUserState(USER_STATES.SELECTING_DEPARTURE);
+    if (onStationDeselect) onStationDeselect();
+  }, [navigateToView, onStationDeselect]);
 
   const handleStationSelection = useCallback(
     (station) => {
       if (userState === USER_STATES.SELECTING_DEPARTURE) {
         setDepartureStation(station);
         if (onStationSelect) onStationSelect(station);
-        navigateToView({
+        const stationView = {
           name: "StationView",
           center: station.position,
           zoom: STATION_VIEW_ZOOM,
-          stationName: station.place,
-        });
-        setUserState(USER_STATES.SELECTED_DEPARTURE);
-        expandScene();
+          tilt: 60,
+          heading: 0,
+          districtName: station.district,
+        };
+        navigateToView(stationView);
+        setUserState(USER_STATES.SELECTING_ARRIVAL);
       } else if (userState === USER_STATES.SELECTING_ARRIVAL) {
         setDestinationStation(station);
-        setUserState(USER_STATES.SELECTED_ARRIVAL);
-        expandScene();
+        setUserState(USER_STATES.DISPLAY_FARE);
         navigateToDriveView();
       }
     },
-    [
-      userState,
-      navigateToView,
-      navigateToDriveView,
-      onStationSelect,
-      setUserState,
-      expandScene,
-    ]
+    [userState, navigateToView, navigateToDriveView, onStationSelect]
   );
 
   const handleClearDeparture = useCallback(() => {
     setDepartureStation(null);
     setDirections(null);
+    setFareInfo(null);
     setUserState(USER_STATES.SELECTING_DEPARTURE);
     if (onStationDeselect) onStationDeselect();
     navigateToView(CITY_VIEW);
-    minimizeScene();
-  }, [navigateToView, onStationDeselect, setUserState, minimizeScene]);
+  }, [navigateToView, onStationDeselect]);
 
   const handleClearArrival = useCallback(() => {
     setDestinationStation(null);
     setDirections(null);
-    setUserState(USER_STATES.SELECTING_DEPARTURE);
+    setFareInfo(null);
+    setUserState(USER_STATES.SELECTING_ARRIVAL);
     navigateToView(CITY_VIEW);
-    minimizeScene();
-  }, [navigateToView, setUserState, minimizeScene]);
+  }, [navigateToView]);
 
   const handleChooseDestination = useCallback(() => {
-    // From SELECTED_DEPARTURE to SELECTING_ARRIVAL
     navigateToView(CITY_VIEW);
     setUserState(USER_STATES.SELECTING_ARRIVAL);
     setDestinationStation(null);
     setDirections(null);
-    minimizeScene();
+    setFareInfo(null);
     if (onStationDeselect) onStationDeselect();
-  }, [navigateToView, onStationDeselect, setUserState, minimizeScene]);
+  }, [navigateToView, onStationDeselect]);
 
   const locateMe = useCallback(() => {
     setDirections(null);
+    setFareInfo(null);
     if (!map) return;
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -312,24 +289,22 @@ const MapContainer = ({
             lng: pos.coords.longitude,
           };
           setUserLocation(userPos);
-          navigateToView({
+          const meView = {
             name: "MeView",
             center: userPos,
             zoom: 15,
-          });
+          };
+          navigateToView(meView);
           setShowCircles(true);
-          minimizeScene();
         },
         (error) => console.error("Location error:", error)
       );
     }
-  }, [map, navigateToView, minimizeScene]);
+  }, [map, navigateToView]);
 
   useEffect(() => {
-    if (map && userState === USER_STATES.SELECTING_DEPARTURE && !userLocation) {
-      locateMe();
-    }
-  }, [map, locateMe, userState, userLocation]);
+    if (map) locateMe();
+  }, [map, locateMe]);
 
   const computeDistance = useCallback(
     (pos) => {
@@ -349,7 +324,6 @@ const MapContainer = ({
   );
 
   const inMeView = currentView.name === "MeView";
-
   const baseFilteredStations = useMemo(() => {
     if (!inMeView || !userLocation) return stations;
     return stations.filter((st) => computeDistance(st.position) <= 1000);
@@ -358,9 +332,11 @@ const MapContainer = ({
   const handleDistrictClick = useCallback(
     (district) => {
       if (!map) {
-        console.warn("Map not ready.");
+        console.warn("Map not ready, cannot handle district click.");
         return;
       }
+
+      console.log("District clicked:", district);
 
       const stationsInDistrict = stations.filter(
         (st) =>
@@ -371,6 +347,7 @@ const MapContainer = ({
 
       const bounds = new window.google.maps.LatLngBounds();
       stationsInDistrict.forEach((st) => bounds.extend(st.position));
+
       if (stationsInDistrict.length === 0) {
         bounds.extend(district.position);
       }
@@ -378,19 +355,25 @@ const MapContainer = ({
       map.fitBounds(bounds);
       map.setTilt(45);
 
-      navigateToView({
+      const districtView = {
         name: "DistrictView",
         center: map.getCenter().toJSON(),
         zoom: map.getZoom(),
         tilt: 45,
         heading: map.getHeading() || 0,
         districtName: district.name,
-      });
+      };
+      navigateToView(districtView);
 
       if (onDistrictSelect) onDistrictSelect(district);
-      setViewBarText(district.name);
+
+      if (userState === USER_STATES.SELECTING_ARRIVAL) {
+        setViewBarText("Select your arrival station");
+      } else if (userState === USER_STATES.SELECTING_DEPARTURE) {
+        setViewBarText("Select departure station");
+      }
     },
-    [map, navigateToView, stations, onDistrictSelect]
+    [map, navigateToView, stations, userState, onDistrictSelect]
   );
 
   const onLoadMap = useCallback((mapInstance) => {
@@ -398,36 +381,45 @@ const MapContainer = ({
   }, []);
 
   const displayedStations = useMemo(() => {
+    console.log("Current View:", currentView);
+    console.log("Stations:", stations);
+    console.log("Districts:", districts);
+
     if (currentView.name === "CityView") {
-      return districts;
+      // In CityView, we show districts, not stations
+      return [];
     }
 
     let filtered = baseFilteredStations;
 
     if (currentView.name === "DistrictView" && currentView.districtName) {
-      const normalizedName = currentView.districtName.trim().toLowerCase();
+      const normalizedDistrictName = currentView.districtName
+        .trim()
+        .toLowerCase();
       filtered = filtered.filter(
         (st) =>
-          st.district && st.district.trim().toLowerCase() === normalizedName
+          st.district &&
+          st.district.trim().toLowerCase() === normalizedDistrictName
       );
     }
 
-    switch (userState) {
-      case USER_STATES.SELECTING_DEPARTURE:
-        if (currentView.name === "CityView") {
-          return districts;
-        }
-        return filtered;
-      case USER_STATES.SELECTED_DEPARTURE:
+    if (userState === USER_STATES.SELECTING_DEPARTURE) {
+      if (departureStation) {
         return [departureStation];
-      case USER_STATES.SELECTING_ARRIVAL:
-        return [departureStation, destinationStation].filter(Boolean);
-      case USER_STATES.SELECTED_ARRIVAL:
-      case USER_STATES.DISPLAY_FARE:
-        return [departureStation, destinationStation].filter(Boolean);
-      default:
+      } else {
         return filtered;
+      }
+    } else if (userState === USER_STATES.SELECTING_ARRIVAL) {
+      if (destinationStation) {
+        return [departureStation, destinationStation].filter(Boolean);
+      } else {
+        return [departureStation].filter(Boolean);
+      }
+    } else if (userState === USER_STATES.DISPLAY_FARE) {
+      return [departureStation, destinationStation].filter(Boolean);
     }
+
+    return filtered;
   }, [
     currentView,
     userState,
@@ -478,23 +470,27 @@ const MapContainer = ({
     );
   }
 
-  const sceneVisibleClass =
-    showSceneContainer && !sceneMinimized ? "visible" : "minimized";
-
   return (
-    <div className="map-container">
+    <div
+      className="map-container"
+      style={{ position: "relative", width: "100%", height: "100vh" }}
+    >
       <ViewBar
-        departure={null}
-        arrival={null}
         viewBarText={viewBarText}
         onHome={handleHomeClick}
         onLocateMe={locateMe}
         isMeView={currentView.name === "MeView"}
         isDistrictView={currentView.name === "DistrictView"}
-        isStationView={userState === USER_STATES.SELECTED_DEPARTURE}
+        isStationView={currentView.name === "StationView"}
+        showChooseDestination={
+          departureStation &&
+          !destinationStation &&
+          userState === USER_STATES.SELECTING_DEPARTURE
+        }
+        onChooseDestination={handleChooseDestination}
       />
 
-      <div className="lower-panel">
+      <div className="info-box-container">
         {departureStation && (
           <InfoBox
             type="Departure"
@@ -509,32 +505,6 @@ const MapContainer = ({
             location={destinationStation.place}
             onClear={handleClearArrival}
           />
-        )}
-
-        {userState === USER_STATES.SELECTED_DEPARTURE && (
-          <button
-            className="choose-destination-button-lower"
-            onClick={handleChooseDestination}
-            aria-label="Choose Destination"
-          >
-            Choose Destination
-          </button>
-        )}
-
-        {showSceneContainer && departureStation && (
-          <div className={`scene-wrapper ${sceneVisibleClass}`}>
-            <div className="scene-container-header">
-              <button
-                className="toggle-scene-button"
-                onClick={() =>
-                  sceneMinimized ? expandScene() : minimizeScene()
-                }
-              >
-                {sceneMinimized ? "Expand 3D Map" : "Minimize 3D Map"}
-              </button>
-            </div>
-            <SceneContainer center={departureStation.position} />
-          </div>
         )}
       </div>
 
@@ -611,17 +581,12 @@ const MapContainer = ({
           />
         )}
       </GoogleMap>
+
+      {userState === USER_STATES.DISPLAY_FARE && fareInfo && (
+        <MotionMenu fareInfo={fareInfo} />
+      )}
     </div>
   );
-};
-
-MapContainer.propTypes = {
-  onStationSelect: PropTypes.func.isRequired,
-  onStationDeselect: PropTypes.func.isRequired,
-  onDistrictSelect: PropTypes.func.isRequired,
-  onFareInfo: PropTypes.func.isRequired,
-  userState: PropTypes.oneOf(Object.values(USER_STATES)).isRequired,
-  setUserState: PropTypes.func.isRequired,
 };
 
 export default MapContainer;

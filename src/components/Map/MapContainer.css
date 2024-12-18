@@ -3,135 +3,104 @@
 .map-container {
   position: relative;
   width: 100%;
-  height: 100vh;
+  height: 100%;
+  overflow: hidden;
 }
 
-.top-bar {
-  display: flex;
-  align-items: center;
-  padding: 8px 12px;
-  background-color: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+.view-bar {
   position: absolute;
   top: 10px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 1000;
-  width: calc(100% - 40px); /* Adjust based on button sizes */
-  max-width: 800px; /* Optional: Limit max width */
-  border-radius: 8px;
+  z-index: 999;
 }
 
-.choose-destination-button {
+/* Lower panel to hold info boxes, choose destination button and scene container bottom sheet */
+.lower-panel {
   position: absolute;
-  top: 60px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: #e3e7e3;
-  color: #111111;
-  padding: 10px 20px;
-  border-radius: 8px;
-  cursor: pointer;
-  z-index: 1200;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-  transition: transform 0.3s, box-shadow 0.3s;
-  animation: pulse 2s infinite;
-  max-width: 80%;
-  text-align: center;
-}
-
-/* InfoBox Container */
-.info-box-container {
-  position: absolute;
-  top: 80px; /* Below the ViewBar which is 60px high, plus 20px spacing */
-  left: 20px; /* Align to the left with some margin */
+  left: 10px;
+  right: 10px;
+  bottom: 10px;
   display: flex;
   flex-direction: column;
-  gap: 8px; /* Space between InfoBoxes */
-  z-index: 100; /* Ensure it sits above the map */
-} /* Added missing closing brace */
-
-/* Keyframes for the pulse animation */
-@keyframes pulse {
-  0% {
-    transform: translateX(-50%) scale(1);
-    box-shadow: 0 0 5px rgba(0, 165, 0, 0.7);
-  }
-  50% {
-    transform: translateX(-50%) scale(1.05);
-    box-shadow: 0 0 15px rgb(160, 169, 160);
-  }
-  100% {
-    transform: translateX(-50%) scale(1);
-    box-shadow: 0 0 5px rgba(0, 165, 0, 0.7);
-  }
+  gap: 10px;
+  z-index: 998;
 }
 
-.circle-label {
-  color: #e7e8ec;
-  font-size: 14px;
-  font-weight: bold;
-  text-shadow: 0 0 5px rgba(33, 113, 236, 0.5);
-  transform: translate(-50%, -100%);
-  white-space: nowrap;
-}
-
-.info-window {
-  color: #181718;
-  font-size: 8px;
-  background: #adadad;
-  padding: 5px;
-  border-radius: 8px;
-}
-
-.locate-me-button {
-  position: absolute;
-  bottom: 20px;
-  left: 20px;
-  background-color: #fff;
-  border-radius: 4px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-  cursor: pointer;
+.info-box-container {
+  position: relative;
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* The choose destination button styling */
+.choose-destination-button-lower {
+  background-color: #2171ec;
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  padding: 8px 16px;
+  font-size: 0.9em;
+  cursor: pointer;
+  text-align: center;
+}
+
+.choose-destination-button-lower:hover {
+  background-color: #195db7;
+}
+
+/* Scene wrapper acts as bottom sheet, 40% of viewport height when visible */
+.scene-wrapper {
+  position: relative;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  transition: height 0.3s ease, transform 0.3s ease;
+  /* hidden by default unless visible */
+  height: 0;
+}
+
+.scene-wrapper.visible {
+  height: 40vh; /* 40% of viewport height */
+}
+
+.scene-wrapper.minimized {
+  height: 40px; /* minimized state - just a small bar */
+}
+
+.scene-container-header {
+  display: flex;
   justify-content: center;
-  padding: 8px;
-  z-index: 1000;
-  font-size: 20px;
+  align-items: center;
+  padding: 4px;
+  background: #f0f0f0;
 }
 
-.locate-me-button:hover {
-  background-color: #f0f0f0;
+.toggle-scene-button {
+  background: none;
+  border: none;
+  color: #2171ec;
+  font-size: 0.9em;
+  cursor: pointer;
+  text-decoration: underline;
 }
 
-.choose-destination-button:hover {
-  transform: translateX(-50%) scale(1.05);
-  box-shadow: 0 0 20px rgba(0, 165, 0, 1);
+/* Adjust scene-map height considering header space */
+.scene-container .scene-map {
+  width: 100%;
+  height: calc(100% - 40px);
 }
 
-.error-message {
-  color: red;
-  font-size: 1.2rem;
-  text-align: center;
-  margin-top: 20px;
+@media (max-width: 767px) {
+  /* Mobile-first: already optimized for small screens */
 }
 
-.loading-message {
-  color: #333;
-  font-size: 1.2rem;
-  text-align: center;
-  margin-top: 20px;
-}
-
-/* Responsive adjustments for InfoBox */
-@media (max-width: 768px) {
-  .info-box-container {
+@media (min-width: 768px) {
+  .lower-panel {
     left: 10px;
-    top: 70px;
-    width: 90%;
-  }
-
-  .info-box {
-    width: 100%;
+    right: auto;
+    width: 320px;
   }
 }

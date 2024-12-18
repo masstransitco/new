@@ -2,28 +2,36 @@
 
 import React from "react";
 import PropTypes from "prop-types";
+import { FaArrowRight } from "react-icons/fa";
+import "./MotionMenu.css";
 
-const MotionMenu = ({ fareInfo }) => {
-  if (!fareInfo || fareInfo.ourFare === undefined) return null;
+const MotionMenu = ({ fareInfo, onContinue }) => {
+  if (!fareInfo) return null;
 
   return (
-    <div className="motion-menu">
-      <h3>Fare Details</h3>
-      <p>Your Fare: HK${fareInfo.ourFare}</p>
-      <p>Estimated Taxi Fare: HK${fareInfo.taxiFareEstimate}</p>
-      <p>Distance: {fareInfo.distanceKm} km</p>
-      <p>Estimated Time: {fareInfo.estTime}</p>
+    <div className="motion-menu-container">
+      <div className="fare-info">
+        <h4>Route Information</h4>
+        <p>Distance: {fareInfo.distanceKm} km</p>
+        <p>Estimated Time: {fareInfo.estTime}</p>
+        <p>Your Fare: HK${fareInfo.ourFare.toFixed(2)}</p>
+        <p>Taxi Fare Estimate: HK${fareInfo.taxiFareEstimate.toFixed(2)}</p>
+      </div>
+      <button className="continue-button" onClick={onContinue}>
+        Continue <FaArrowRight style={{ marginLeft: "8px" }} />
+      </button>
     </div>
   );
 };
 
 MotionMenu.propTypes = {
   fareInfo: PropTypes.shape({
-    ourFare: PropTypes.number,
-    taxiFareEstimate: PropTypes.number,
-    distanceKm: PropTypes.string,
-    estTime: PropTypes.string,
-  }),
+    ourFare: PropTypes.number.isRequired,
+    taxiFareEstimate: PropTypes.number.isRequired,
+    distanceKm: PropTypes.string.isRequired,
+    estTime: PropTypes.string.isRequired,
+  }).isRequired,
+  onContinue: PropTypes.func.isRequired,
 };
 
 export default MotionMenu;

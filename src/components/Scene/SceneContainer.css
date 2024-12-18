@@ -1,38 +1,13 @@
-/* src/components/Map/SceneContainer.css */
-html,
-body {
-  height: 100%; /* Set body height to 100% for flexbox alignment */
-  margin: 0;
-  padding: 0;
+/* src/components/Scene/SceneContainer.css */
+
+.scene-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  background: #fff;
 }
 
-#scene-container {
-  display: flex; /* Enable flexbox */
-  flex-direction: column; /* Arrange children in a column */
-  min-height: 35vh; /* Set minimum height to 35vh */
-  max-height: 35vh; /* Set maximum height to 35vh */
-  overflow: auto; /* Enable scrolling if content exceeds max height */
-}
-
-.pac-card {
-  background-color: #fff;
-  border-radius: 4px;
-  box-shadow: 0 1px 4px -1px rgba(0, 0, 0, 0.3);
-  margin: 10px;
-  padding: 0.5em;
-}
-
-#pac-container {
-  padding-top: 12px;
-}
-
-#pac-input {
-  background-color: #fff;
-  font-family: Roboto, Arial, sans-serif;
-  font-size: 15px;
-}
-
-#title {
-  color: #fff;
-  background-color: #4d90fe;
+.scene-map {
+  width: 100%;
+  height: 100%;
 }
