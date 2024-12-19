@@ -18,7 +18,6 @@
 /* Lower panel to hold info boxes, choose destination button and scene container bottom sheet */
 .lower-panel {
   position: absolute;
-  left: 50%;
   bottom: 10px;
   display: flex;
   flex-direction: column;
