@@ -68,8 +68,8 @@ footer {
 
 /* Adjust Main Content to account for fixed Header and Footer */
 .main-content {
-  margin-top: 60px; /* Height of the header */
-  margin-bottom: 60px; /* Height of the footer */
+  margin-top: 50px; /* Height of the header */
+  margin-bottom: 80px; /* Height of the footer */
 }
 
 /* Map Container */
