@@ -89,17 +89,6 @@
 /* Adjust scene-map height considering header space */
 .scene-container .scene-map {
   width: 100%;
-  height: calc(100% - 40px);
+  height: calc(100% - 60px);
 }
 
-@media (max-width: 767px) {
-  /* Mobile-first: already optimized for small screens */
-}
-
-@media (min-width: 768px) {
-  .lower-panel {
-    left: 10px;
-    right: auto;
-    width: 320px;
-  }
-}
