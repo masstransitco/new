@@ -20,7 +20,7 @@
   position: absolute;
   bottom: 10px;
   left: 50%;
-  right: 50%
+  right: 50%;
   display: flex;
   flex-direction: column;
   gap: 10px;
