@@ -31,9 +31,9 @@ import PropTypes from "prop-types";
 import "./MapContainer.css";
 
 // Constants
-const GOOGLE_MAPS_API_KEY = "AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours"; // Ensure this is secured in production
+const GOOGLE_MAPS_API_KEY = "AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours"; // Replace with environment variable
 const mapId = "94527c02bbb6243"; // Ensure this is valid
-const libraries = ["geometry", "places"];
+const libraries = ["places"]; // Removed 'geometry' as it's no longer used
 const containerStyle = { width: "100%", height: "100vh" };
 const BASE_CITY_CENTER = { lat: 22.236, lng: 114.191 };
 
@@ -102,7 +102,6 @@ const reducer = (state, action) => {
         userState: USER_STATES.SELECTING_DEPARTURE,
         departureStation: null,
         destinationStation: null,
-        // directions: null, // Removed as directions are managed via useState
       };
     case "CLEAR_DESTINATION":
       console.log("Action: CLEAR_DESTINATION");
@@ -110,7 +109,6 @@ const reducer = (state, action) => {
         ...state,
         userState: USER_STATES.SELECTING_ARRIVAL,
         destinationStation: null,
-        // directions: null, // Removed as directions are managed via useState
       };
     default:
       console.warn(`Unhandled action type: ${action.type}`);
