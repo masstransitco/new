@@ -6,7 +6,6 @@ import React, {
   useCallback,
   useMemo,
   useReducer,
-  useRef,
 } from "react";
 import {
   GoogleMap,
@@ -467,25 +466,7 @@ const MapContainer = ({
     }
   }, [map, locateMe, userState, userLocation]);
 
-  // Compute distance from user location to a given position
-  const computeDistance = useCallback(
-    (pos) => {
-      if (!userLocation || !window.google?.maps?.geometry?.spherical)
-        return Infinity;
-      const userLatLng = new window.google.maps.LatLng(
-        userLocation.lat,
-        userLocation.lng
-      );
-      const stationLatLng = new window.google.maps.LatLng(pos.lat, pos.lng);
-      return window.google.maps.geometry.spherical.computeDistanceBetween(
-        userLatLng,
-        stationLatLng
-      );
-    },
-    [userLocation]
-  );
-
-  // Memoized filtered stations based on current view and user state
+  // Determine which stations to display based on current view and user state
   const displayedStations = useMemo(() => {
     // If CityView: only districts shown, no stations
     if (currentView.name === "CityView") {

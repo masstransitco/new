@@ -5,6 +5,7 @@ import styled from "@emotion/styled";
 import Modal from "@mui/material/Modal";
 import Select from "@mui/material/Select";
 import MenuItem from "@mui/material/MenuItem";
+import PropTypes from "prop-types"; // Ensure PropTypes is imported
 
 const ModalContainer = styled.div`
   position: absolute;
@@ -95,6 +96,10 @@ const DepartTime = ({ open, onClose, onConfirm }) => {
         now.getTime() + (150 + Math.random() * 15) * 60000
       );
 
+      // Removed unused 'options' variable
+      // return options.map(...);
+
+      // Directly return the mapped options
       return [option1, option2, option3].map((time) => ({
         value: time.getTime(),
         label: time.toLocaleTimeString([], {
