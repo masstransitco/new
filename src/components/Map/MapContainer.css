@@ -17,7 +17,7 @@
 /* Lower panel to match view-bar width */
 .lower-panel {
    position: absolute; 
-   bottom: 10px; 
+   bottom: 50px; 
    left: 50%; 
    transform: translateX(-50%); 
    display: flex; 
