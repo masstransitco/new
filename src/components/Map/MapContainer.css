@@ -1,104 +1,117 @@
 /* src/components/Map/MapContainer.css */
+
 .map-container {
-   position: relative; 
-   width: 100%; 
-   height: 100%;
-   overflow: hidden; 
+  position: relative;
+  width: 100%;
+  height: 90%;
+  overflow: hidden;
 }
 
 .view-bar {
-   position: absolute; 
-   top: 10px; 
-   left: 50%; 
-   transform: translateX(-50%); 
-   z-index: 999; 
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 999;
 }
 
-/* Lower panel to match view-bar width */
+/* Lower panel to hold info boxes, choose destination button and scene container bottom sheet */
 .lower-panel {
-   position: absolute; 
-   bottom: 50px; 
-   left: 50%; 
-   transform: translateX(-50%); 
-   display: flex; 
-   flex-direction: column; 
-   gap: 10px; 
-   z-index: 998;
-   width: 90vw;
-   max-width: 600px;
+  position: absolute;
+  left: 50%;
+  bottom: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 998;
 }
 
-/* Info boxes container */
 .info-box-container {
-    display: flex; 
-    flex-direction: column; 
-    gap: 10px; 
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-/* Choose destination button */
+/* The choose destination button styling */
 .choose-destination-button-lower {
-    background-color: #1E3A8A;
-    color: #fff;
-    border: none; 
-    border-radius: 20px; 
-    padding: 10px; 
-    font-size: 1em; 
-    cursor: pointer; 
-    text-align: center;
-    width: 100%;
+  background-color: #2171ec;
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  padding: 8px 16px;
+  font-size: 0.9em;
+  cursor: pointer;
+  text-align: center;
 }
 
 .choose-destination-button-lower:hover {
-    background-color: #FFB74D;
+  background-color: #195db7;
 }
 
 /* Scene wrapper as bottom sheet */
 .scene-wrapper {
-    position: relative; 
-    background: #1F2937;
-    border-radius: 12px; 
-    box-shadow: 0 -2px 12px rgba(0,0,0,.15); 
-    overflow: hidden;
-    height: auto; 
-    max-height: calc(25vh + (10px * number_of_info_boxes));
-    transition: height 0.3s ease-in-out;
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1f2937;
+  border-radius: 12px;
+  box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  width: 90vw;
+  max-width: 600px;
+  transition: transform 0.3s ease-in-out;
 }
 
 .scene-wrapper.visible {
-    height: calc(25vh);
+  transform: translateX(-50%) translateY(0);
+  height: calc(25vh);
 }
 
 .scene-wrapper.minimized {
-    height: auto;
-    max-height: none;
+  transform: translateX(-50%) translateY(calc(25vh - 40px));
+  height: 40px; /* Height of the header */
 }
 
 .scene-container-header {
-    display: flex; 
-    justify-content: center;
-    align-items: center;
-    padding: 8px;
-    background-color: #1F2937;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 8px;
+  background-color: #1f2937;
+  height: 40px;
+  position: relative;
+  z-index: 2;
 }
 
 .toggle-scene-button {
-    background: none;
-    border: none;
-    color: #6EE7B7;
-    font-size: inherit;
-    cursor: pointer;
-    text-decoration: underline;
-    padding: 8px 16px;
-    transition: color 0.3s ease;
+  background: none;
+  border: none;
+  color: #6ee7b7;
+  font-size: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 8px 16px;
+  transition: color 0.3s ease;
+  width: 100%;
+  text-align: center;
 }
 
 .toggle-scene-button:hover {
-    color: #34D399;
+  color: #34d399;
 }
 
 /* Scene container */
 .scene-container {
-    width: 100%;
-    height: calc(25vh - 40px); /* Subtract header height */
-    background: #1F2937;
+  width: 100%;
+  height: calc(25vh - 40px);
+  background: #1f2937;
+  position: relative;
+  z-index: 1;
+}
+
+/* Adjust lower panel to account for scene wrapper */
+.lower-panel {
+  bottom: calc(25vh + 10px);
 }
