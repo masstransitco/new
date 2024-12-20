@@ -1,89 +1,104 @@
 /* src/components/Map/MapContainer.css */
-
 .map-container {
    position: relative; 
-   width:100%; 
-   height :90%; 
-   overflow:hidden; 
+   width: 100%; 
+   height: 100%;
+   overflow: hidden; 
 }
 
 .view-bar {
-   position:absolute; 
-   top :10px; 
-   left :50%; 
-   transform :translateX(-50%); 
-   z-index :999; 
+   position: absolute; 
+   top: 10px; 
+   left: 50%; 
+   transform: translateX(-50%); 
+   z-index: 999; 
 }
 
-/* Lower panel to hold info boxes, choose destination button and scene container bottom sheet */
+/* Lower panel to match view-bar width */
 .lower-panel {
-   position:absolute; 
-   bottom :10px; 
-   left :50%; 
-   transform :translateX(-50%); 
-   display:flex; 
-   flex-direction :column; 
-   gap :10px; 
-   z-index :998; 
+   position: absolute; 
+   bottom: 10px; 
+   left: 50%; 
+   transform: translateX(-50%); 
+   display: flex; 
+   flex-direction: column; 
+   gap: 10px; 
+   z-index: 998;
+   width: 90vw;
+   max-width: 600px;
 }
 
-/* Ensure info boxes are styled properly */
+/* Info boxes container */
 .info-box-container {
-    display:flex; 
-    flex-direction :column; 
-    gap :10px; 
+    display: flex; 
+    flex-direction: column; 
+    gap: 10px; 
 }
 
-/* The choose destination button styling */
+/* Choose destination button */
 .choose-destination-button-lower {
-    background-color:#1E3A8A; /* Deep blue */
-    color:#fff; /* White text */
-    border:none; 
-    border-radius :20px; 
-    padding :10px; 
-    font-size :1em; 
-    cursor:pointer; 
-    text-align:center; 
+    background-color: #1E3A8A;
+    color: #fff;
+    border: none; 
+    border-radius: 20px; 
+    padding: 10px; 
+    font-size: 1em; 
+    cursor: pointer; 
+    text-align: center;
+    width: 100%;
 }
 
 .choose-destination-button-lower:hover {
-    background-color:#FFB74D; /* Vibrant orange on hover */
+    background-color: #FFB74D;
 }
 
-/* Scene wrapper acts as bottom sheet, initially hidden */
+/* Scene wrapper as bottom sheet */
 .scene-wrapper {
-    position :relative; 
-    background:#1F2937; /* Surface color */
-    border-radius :12px; 
-    box-shadow :0 -2px12px rgba(0,0,0,.15); 
-    overflow:hidden;
-
-    height:auto; 
-    max-height :calc(50vh + (10px * number_of_info_boxes));  
+    position: relative; 
+    background: #1F2937;
+    border-radius: 12px; 
+    box-shadow: 0 -2px 12px rgba(0,0,0,.15); 
+    overflow: hidden;
+    height: auto; 
+    max-height: calc(25vh + (10px * number_of_info_boxes));
+    transition: height 0.3s ease-in-out;
 }
 
 .scene-wrapper.visible {
-    height :calc(50vh);  
+    height: calc(25vh);
 }
 
 .scene-wrapper.minimized {
-    height:auto;  
-    max-height:none;  
+    height: auto;
+    max-height: none;
 }
 
 .scene-container-header {
-    display:flex; 
-    justify-content:center ;  
-    align-items:center ;  
-    padding :8px ;  
-    background-color:#1F2937 ;  
+    display: flex; 
+    justify-content: center;
+    align-items: center;
+    padding: 8px;
+    background-color: #1F2937;
 }
 
 .toggle-scene-button {
-     background:none ;  
-     border:none ;  
-     color:#6EE7B7 ;  
-     font-size :inherit ;  
-     cursor:pointer ;  
-     text-decoration :underline ;  
+    background: none;
+    border: none;
+    color: #6EE7B7;
+    font-size: inherit;
+    cursor: pointer;
+    text-decoration: underline;
+    padding: 8px 16px;
+    transition: color 0.3s ease;
+}
+
+.toggle-scene-button:hover {
+    color: #34D399;
+}
+
+/* Scene container */
+.scene-container {
+    width: 100%;
+    height: calc(25vh - 40px); /* Subtract header height */
+    background: #1F2937;
 }
