@@ -225,6 +225,44 @@ const MapContainer = ({
     [isPeakHour]
   );
 
+  // Navigation to different views
+  const navigateToView = useCallback(
+    (view) => {
+      if (!map) {
+        console.warn("Map not ready.");
+        return;
+      }
+      setViewHistory((prev) => [...prev, view]);
+      map.panTo(view.center);
+      map.setZoom(view.zoom);
+      if (view.tilt !== undefined) map.setTilt(view.tilt);
+      if (view.heading !== undefined) map.setHeading(view.heading);
+
+      switch (view.name) {
+        case "CityView":
+          setViewBarText("All Districts");
+          break;
+        case "DistrictView":
+          setViewBarText(view.districtName || "District");
+          break;
+        case "StationView":
+          setViewBarText(view.stationName || "Station");
+          break;
+        case "MeView":
+          setViewBarText("Stations near me");
+          break;
+        case "DriveView":
+          // On DriveView, the viewBarText is set based on directions
+          break;
+        default:
+          setViewBarText("");
+      }
+
+      console.log(`Navigated to ${view.name}`);
+    },
+    [map]
+  );
+
   // Handle navigation to DriveView
   const navigateToDriveView = useCallback(() => {
     if (!map || !departureStation || !destinationStation) return;
