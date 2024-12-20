@@ -5,7 +5,7 @@ import styled from "@emotion/styled";
 import Modal from "@mui/material/Modal";
 import Select from "@mui/material/Select";
 import MenuItem from "@mui/material/MenuItem";
-import PropTypes from "prop-types"; // Ensure PropTypes is imported
+import PropTypes from "prop-types";
 
 // Dark-themed modal container
 const ModalContainer = styled.div`
@@ -19,72 +19,29 @@ const ModalContainer = styled.div`
   display: flex;
   flex-direction: column;
   gap: 24px;
-  max-width: 400px;
+  max-width: 500px;
   width: 90%;
   color: #f0f0f0; /* Light text */
 `;
 
-// Dark-themed price section
-const PriceSection = styled.div`
-  padding: 24px;
-  background-color: #3a3a3a; /* Slightly lighter dark background */
-  border-radius: 12px;
-  margin-bottom: 24px;
-`;
-
-// Dark-themed title
-const PriceTitle = styled.h2`
+// Title for the modal
+const ModalTitle = styled.h2`
   font-size: 24px;
-  margin-bottom: 16px;
-  color: #1b6cfb; /* Blue color for emphasis */
+  text-align: center;
+  color: #ffffff; /* White color for title */
 `;
 
-// Dark-themed price option
-const PriceOption = styled.div`
-  margin-bottom: 16px;
-
-  h3 {
-    margin-bottom: 8px;
-    color: #ffffff; /* White color for headers */
-  }
-
-  p {
-    margin: 4px 0;
-    color: #d0d0d0; /* Light gray for text */
-    font-size: 14px;
-  }
+// Container for the departure time selection
+const DepartureTimeContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 `;
 
-// Dark-themed button
-const StyledButton = styled.button`
-  width: 90%;
-  padding: 16px;
-  margin: 8px auto;
-  border-radius: 50px;
-  border: none;
-  background-color: #1b6cfb; /* Blue background */
-  color: white;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s, opacity 0.2s;
-
-  &:hover {
-    background-color: #155ab6; /* Darker blue on hover */
-    opacity: 0.95;
-  }
-
-  &:disabled {
-    background-color: #555555; /* Disabled state */
-    cursor: not-allowed;
-    opacity: 0.7;
-  }
-`;
-
-// Dark-themed select component
+// Styled select component
 const StyledSelect = styled(Select)`
   width: 90%;
-  margin: 16px auto;
+  margin-top: 16px;
   .MuiSelect-select {
     padding: 12px;
     background-color: #3a3a3a; /* Dark background for select */
@@ -109,6 +66,72 @@ const StyledMenuItem = styled(MenuItem)`
   &:hover {
     background-color: #1b6cfb !important; /* Blue on hover */
     color: white !important;
+  }
+`;
+
+// Container for the pricing options
+const PricingOptionsContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+`;
+
+// Individual pricing box
+const PricingBox = styled.div`
+  background-color: #3a3a3a; /* Slightly lighter dark background */
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+`;
+
+// Title for each pricing option
+const PricingTitle = styled.h3`
+  font-size: 20px;
+  color: #1b6cfb; /* Blue color for emphasis */
+  margin: 0;
+`;
+
+// Description text for each pricing option
+const PricingDescription = styled.p`
+  font-size: 14px;
+  color: #d0d0d0; /* Light gray for text */
+  margin: 0;
+`;
+
+// Styled button
+const StyledButton = styled.button`
+  width: 90%;
+  padding: 12px;
+  margin: 8px auto 0 auto;
+  border-radius: 50px;
+  border: none;
+  background-color: #1b6cfb; /* Blue background */
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s, opacity 0.2s;
+
+  &:hover {
+    background-color: #155ab6; /* Darker blue on hover */
+    opacity: 0.95;
+  }
+
+  &:disabled {
+    background-color: #555555; /* Disabled state */
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+`;
+
+// Styled button for "Choose Destination"
+const ChooseDestinationButton = styled(StyledButton)`
+  background-color: #ff5722; /* Orange background */
+
+  &:hover {
+    background-color: #e64a19; /* Darker orange on hover */
   }
 `;
 
@@ -137,7 +160,6 @@ const DepartTime = ({ open, onClose, onConfirm }) => {
         now.getTime() + (150 + Math.random() * 15) * 60000
       );
 
-      // Directly return the mapped options without using 'options' variable
       return [option1, option2, option3].map((time) => ({
         value: time.getTime(),
         label: time.toLocaleTimeString([], {
@@ -150,9 +172,9 @@ const DepartTime = ({ open, onClose, onConfirm }) => {
     setDepartureOptions(generateTimeOptions());
   }, [open]);
 
-  const handleConfirm = () => {
+  const handleConfirm = (bookingType) => {
     if (selectedTime) {
-      onConfirm(selectedTime); // Pass the selected time back to MapContainer
+      onConfirm({ selectedTime, bookingType }); // Pass selectedTime and bookingType
     }
   };
 
@@ -164,43 +186,61 @@ const DepartTime = ({ open, onClose, onConfirm }) => {
       aria-describedby="select-departure-time"
     >
       <ModalContainer>
-        <PriceSection>
-          <PriceTitle>Fare Options</PriceTitle>
-          <PriceOption>
-            <h3>Pay-as-You-Go</h3>
-            <p>HKD$1 per minute</p>
-            <p>HKD$600 max per day (24 hours from pick-up)</p>
-          </PriceOption>
-          <PriceOption>
-            <h3>Station-to-Station</h3>
-            <p>*Choose a destination to view fare</p>
-          </PriceOption>
-        </PriceSection>
+        <ModalTitle>Choose an Upcoming Departure</ModalTitle>
 
-        <StyledSelect
-          value={selectedTime}
-          onChange={(e) => setSelectedTime(e.target.value)}
-          displayEmpty
-          renderValue={
-            selectedTime
-              ? undefined
-              : () => (
-                  <span style={{ color: "#b0b0b0" }}>
-                    Select departure time
-                  </span>
-                )
-          }
-        >
-          {departureOptions.map((option) => (
-            <StyledMenuItem key={option.value} value={option.value}>
-              {option.label}
-            </StyledMenuItem>
-          ))}
-        </StyledSelect>
+        <DepartureTimeContainer>
+          <StyledSelect
+            value={selectedTime}
+            onChange={(e) => setSelectedTime(e.target.value)}
+            displayEmpty
+            renderValue={
+              selectedTime
+                ? undefined
+                : () => (
+                    <span style={{ color: "#b0b0b0" }}>
+                      Select departure time
+                    </span>
+                  )
+            }
+          >
+            {departureOptions.map((option) => (
+              <StyledMenuItem key={option.value} value={option.value}>
+                {option.label}
+              </StyledMenuItem>
+            ))}
+          </StyledSelect>
+        </DepartureTimeContainer>
 
-        <StyledButton onClick={handleConfirm} disabled={!selectedTime}>
-          Confirm your booking
-        </StyledButton>
+        <PricingOptionsContainer>
+          <PricingBox>
+            <PricingTitle>Pay-As-You-Go</PricingTitle>
+            <PricingDescription>HKD$1 per minute</PricingDescription>
+            <PricingDescription>
+              HKD$600 max per day (24 hours from pick-up)
+            </PricingDescription>
+            <StyledButton
+              onClick={() => handleConfirm("pay-as-you-go")}
+              disabled={!selectedTime}
+              aria-label="Confirm Pay-As-You-Go Booking"
+            >
+              Confirm your booking
+            </StyledButton>
+          </PricingBox>
+
+          <PricingBox>
+            <PricingTitle>Station-to-Station</PricingTitle>
+            <PricingDescription>
+              *Choose a destination to view fare
+            </PricingDescription>
+            <ChooseDestinationButton
+              onClick={() => handleConfirm("station-to-station")}
+              disabled={!selectedTime}
+              aria-label="Choose Destination"
+            >
+              Choose Destination
+            </ChooseDestinationButton>
+          </PricingBox>
+        </PricingOptionsContainer>
       </ModalContainer>
     </Modal>
   );
@@ -209,7 +249,7 @@ const DepartTime = ({ open, onClose, onConfirm }) => {
 DepartTime.propTypes = {
   open: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
-  onConfirm: PropTypes.func.isRequired, // New prop for handling confirmation
+  onConfirm: PropTypes.func.isRequired, // Handles confirmation with bookingType
 };
 
 export default DepartTime;
