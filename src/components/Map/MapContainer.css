@@ -37,8 +37,8 @@
 
 /* The choose destination button styling */
 .choose-destination-button-lower {
-  background-color: #2171ec;
-  color: #fff;
+  background-color: #1e90ff; /* Primary Accent: Electric Blue */
+  color: #ffffff; /* Primary Text */
   border: none;
   border-radius: 20px;
   padding: 12px 24px;
@@ -50,7 +50,7 @@
 }
 
 .choose-destination-button-lower:hover {
-  background-color: #195db7;
+  background-color: #1c86ee; /* Primary Accent Hover: Dodger Blue Darker */
 }
 
 /* Scene wrapper as bottom sheet */
@@ -59,7 +59,7 @@
   bottom: 0;
   left: 50%;
   transform: translateX(-50%);
-  background: #1f2937;
+  background: #1e1e1e; /* Surface Background */
   border-radius: 12px;
   box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.15);
   overflow: hidden;
@@ -69,7 +69,7 @@
 }
 
 .scene-wrapper.visible {
-  transform: translateX(-50%) translateY(0);
+  transform: translateX(-50%) translateY(calc(25vh - 40px)); /* Shift down by scene-container's height */
   height: calc(25vh);
 }
 
@@ -83,7 +83,7 @@
   justify-content: center;
   align-items: center;
   padding: 8px;
-  background-color: #1f2937;
+  background-color: #1e1e1e; /* Surface Background */
   height: 40px;
   position: relative;
   z-index: 2;
@@ -92,7 +92,7 @@
 .toggle-scene-button {
   background: none;
   border: none;
-  color: #6ee7b7;
+  color: #03dac6; /* Secondary Accent: Teal */
   font-size: 1em;
   cursor: pointer;
   text-decoration: underline;
@@ -103,14 +103,14 @@
 }
 
 .toggle-scene-button:hover {
-  color: #34d399;
+  color: #029a94; /* Secondary Accent Hover: Teal Darker */
 }
 
 /* Scene container */
 .scene-container {
   width: 100%;
   height: calc(25vh - 40px);
-  background: #1f2937;
+  background: #1e1e1e; /* Surface Background */
   position: relative;
   z-index: 1;
 }
@@ -127,7 +127,7 @@
   justify-content: center;
   align-items: center;
   height: 100vh;
-  color: #f0f0f0;
-  background-color: #1f2937;
+  color: #ffffff; /* Primary Text */
+  background-color: #1e1e1e; /* Surface Background */
   font-size: 1.2em;
 }

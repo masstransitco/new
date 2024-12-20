@@ -7,13 +7,27 @@ import Select from "@mui/material/Select";
 import MenuItem from "@mui/material/MenuItem";
 import PropTypes from "prop-types";
 
+// Define the optimized color palette
+const COLORS = {
+  primaryBackground: "#121212",
+  surfaceBackground: "#1E1E1E",
+  primaryText: "#FFFFFF",
+  secondaryText: "#B0B0B0",
+  primaryAccent: "#1E90FF", // Electric Blue
+  primaryAccentHover: "#1C86EE",
+  secondaryAccent: "#03DAC6", // Teal
+  secondaryAccentHover: "#029A94",
+  error: "#FF6F61", // Coral
+  border: "#333333",
+};
+
 // Dark-themed modal container
 const ModalContainer = styled.div`
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background-color: #2c2c2c; /* Dark background */
+  background-color: ${COLORS.surfaceBackground};
   border-radius: 16px;
   padding: 24px;
   display: flex;
@@ -21,14 +35,14 @@ const ModalContainer = styled.div`
   gap: 24px;
   max-width: 500px;
   width: 90%;
-  color: #f0f0f0; /* Light text */
+  color: ${COLORS.primaryText};
 `;
 
 // Title for the modal
 const ModalTitle = styled.h2`
   font-size: 24px;
   text-align: center;
-  color: #ffffff; /* White color for title */
+  color: ${COLORS.primaryText};
 `;
 
 // Container for the departure time selection
@@ -44,28 +58,28 @@ const StyledSelect = styled(Select)`
   margin-top: 16px;
   .MuiSelect-select {
     padding: 12px;
-    background-color: #3a3a3a; /* Dark background for select */
-    color: #f0f0f0; /* Light text */
+    background-color: ${COLORS.surfaceBackground};
+    color: ${COLORS.primaryText};
     border-radius: 8px;
   }
 
   .MuiOutlinedInput-notchedOutline {
-    border: none; /* Remove border */
+    border: 1px solid ${COLORS.border};
   }
 
   &:hover .MuiOutlinedInput-notchedOutline {
-    border: none; /* Remove border on hover */
+    border: 1px solid ${COLORS.primaryAccentHover};
   }
 `;
 
 // Override MenuItem styles for dark theme
 const StyledMenuItem = styled(MenuItem)`
-  background-color: #2c2c2c !important; /* Dark background */
-  color: #f0f0f0 !important; /* Light text */
+  background-color: ${COLORS.surfaceBackground} !important;
+  color: ${COLORS.primaryText} !important;
 
   &:hover {
-    background-color: #1b6cfb !important; /* Blue on hover */
-    color: white !important;
+    background-color: ${COLORS.primaryAccent} !important;
+    color: ${COLORS.primaryText} !important;
   }
 `;
 
@@ -78,60 +92,61 @@ const PricingOptionsContainer = styled.div`
 
 // Individual pricing box
 const PricingBox = styled.div`
-  background-color: #3a3a3a; /* Slightly lighter dark background */
+  background-color: ${COLORS.surfaceBackground};
   border-radius: 12px;
   padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 16px;
+  border: 1px solid ${COLORS.border};
 `;
 
 // Title for each pricing option
 const PricingTitle = styled.h3`
   font-size: 20px;
-  color: #1b6cfb; /* Blue color for emphasis */
+  color: ${COLORS.primaryAccent};
   margin: 0;
 `;
 
 // Description text for each pricing option
 const PricingDescription = styled.p`
   font-size: 14px;
-  color: #d0d0d0; /* Light gray for text */
+  color: ${COLORS.secondaryText};
   margin: 0;
 `;
 
-// Styled button
+// Styled primary button
 const StyledButton = styled.button`
   width: 90%;
   padding: 12px;
   margin: 8px auto 0 auto;
   border-radius: 50px;
   border: none;
-  background-color: #1b6cfb; /* Blue background */
-  color: white;
+  background-color: ${COLORS.primaryAccent};
+  color: ${COLORS.primaryText};
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s, opacity 0.2s;
+  transition: background-color 0.3s ease, opacity 0.3s ease;
 
   &:hover {
-    background-color: #155ab6; /* Darker blue on hover */
+    background-color: ${COLORS.primaryAccentHover};
     opacity: 0.95;
   }
 
   &:disabled {
-    background-color: #555555; /* Disabled state */
+    background-color: ${COLORS.border};
     cursor: not-allowed;
     opacity: 0.7;
   }
 `;
 
-// Styled button for "Choose Destination"
+// Styled secondary button for "Choose Destination"
 const ChooseDestinationButton = styled(StyledButton)`
-  background-color: #ff5722; /* Orange background */
+  background-color: ${COLORS.secondaryAccent};
 
   &:hover {
-    background-color: #e64a19; /* Darker orange on hover */
+    background-color: ${COLORS.secondaryAccentHover};
   }
 `;
 
@@ -197,7 +212,7 @@ const DepartTime = ({ open, onClose, onConfirm }) => {
               selectedTime
                 ? undefined
                 : () => (
-                    <span style={{ color: "#b0b0b0" }}>
+                    <span style={{ color: COLORS.secondaryText }}>
                       Select departure time
                     </span>
                   )
