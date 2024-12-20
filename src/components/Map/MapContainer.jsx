@@ -347,7 +347,8 @@ const MapContainer = ({
         travelMode: window.google.maps.TravelMode.DRIVING,
       },
       (result, status) => {
-        if (status === window.google.maps.DirectionsStatus.OK) {
+        if (status === "OK") {
+          // Changed from window.google.maps.DirectionsStatus.OK to "OK"
           setDirections(result);
           const route = result.routes[0]?.legs[0];
           if (!route) return;
