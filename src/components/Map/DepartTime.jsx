@@ -7,12 +7,13 @@ import Select from "@mui/material/Select";
 import MenuItem from "@mui/material/MenuItem";
 import PropTypes from "prop-types"; // Ensure PropTypes is imported
 
+// Dark-themed modal container
 const ModalContainer = styled.div`
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background-color: white;
+  background-color: #2c2c2c; /* Dark background */
   border-radius: 16px;
   padding: 24px;
   display: flex;
@@ -20,53 +21,94 @@ const ModalContainer = styled.div`
   gap: 24px;
   max-width: 400px;
   width: 90%;
+  color: #f0f0f0; /* Light text */
 `;
 
+// Dark-themed price section
 const PriceSection = styled.div`
   padding: 24px;
-  background-color: #f8f9fa;
+  background-color: #3a3a3a; /* Slightly lighter dark background */
   border-radius: 12px;
   margin-bottom: 24px;
 `;
 
+// Dark-themed title
 const PriceTitle = styled.h2`
   font-size: 24px;
   margin-bottom: 16px;
-  color: #1b6cfb;
+  color: #1b6cfb; /* Blue color for emphasis */
 `;
 
+// Dark-themed price option
 const PriceOption = styled.div`
   margin-bottom: 16px;
+
+  h3 {
+    margin-bottom: 8px;
+    color: #ffffff; /* White color for headers */
+  }
+
+  p {
+    margin: 4px 0;
+    color: #d0d0d0; /* Light gray for text */
+    font-size: 14px;
+  }
 `;
 
+// Dark-themed button
 const StyledButton = styled.button`
   width: 90%;
   padding: 16px;
   margin: 8px auto;
   border-radius: 50px;
   border: none;
-  background-color: #1b6cfb;
+  background-color: #1b6cfb; /* Blue background */
   color: white;
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
-  transition: opacity 0.2s;
+  transition: background-color 0.2s, opacity 0.2s;
 
   &:hover {
-    opacity: 0.9;
+    background-color: #155ab6; /* Darker blue on hover */
+    opacity: 0.95;
   }
 
   &:disabled {
-    background-color: #a0c4ff;
+    background-color: #555555; /* Disabled state */
     cursor: not-allowed;
+    opacity: 0.7;
   }
 `;
 
+// Dark-themed select component
 const StyledSelect = styled(Select)`
   width: 90%;
   margin: 16px auto;
   .MuiSelect-select {
     padding: 12px;
+    background-color: #3a3a3a; /* Dark background for select */
+    color: #f0f0f0; /* Light text */
+    border-radius: 8px;
+  }
+
+  .MuiOutlinedInput-notchedOutline {
+    border: none; /* Remove border */
+  }
+
+  &:hover .MuiOutlinedInput-notchedOutline {
+    border: none; /* Remove border on hover */
+  }
+`;
+
+// Override MenuItem styles for dark theme
+const StyledMenuItem = styled(MenuItem)`
+  background-color: #2c2c2c !important; /* Dark background */
+  color: #f0f0f0 !important; /* Light text */
+
+  &:hover {
+    background-color: #1b6cfb !important; /* Blue on hover */
+    color: white !important;
   }
 `;
 
@@ -79,7 +121,6 @@ const DepartTime = ({ open, onClose, onConfirm }) => {
 
     const generateTimeOptions = () => {
       const now = new Date();
-      const options = [];
 
       // Option 1: 45-60 mins
       const option1 = new Date(
@@ -96,10 +137,7 @@ const DepartTime = ({ open, onClose, onConfirm }) => {
         now.getTime() + (150 + Math.random() * 15) * 60000
       );
 
-      // Removed unused 'options' variable
-      // return options.map(...);
-
-      // Directly return the mapped options
+      // Directly return the mapped options without using 'options' variable
       return [option1, option2, option3].map((time) => ({
         value: time.getTime(),
         label: time.toLocaleTimeString([], {
@@ -143,12 +181,20 @@ const DepartTime = ({ open, onClose, onConfirm }) => {
           value={selectedTime}
           onChange={(e) => setSelectedTime(e.target.value)}
           displayEmpty
-          renderValue={selectedTime ? undefined : () => "Select departure time"}
+          renderValue={
+            selectedTime
+              ? undefined
+              : () => (
+                  <span style={{ color: "#b0b0b0" }}>
+                    Select departure time
+                  </span>
+                )
+          }
         >
           {departureOptions.map((option) => (
-            <MenuItem key={option.value} value={option.value}>
+            <StyledMenuItem key={option.value} value={option.value}>
               {option.label}
-            </MenuItem>
+            </StyledMenuItem>
           ))}
         </StyledSelect>
 
