@@ -31,7 +31,7 @@ import PropTypes from "prop-types";
 import "./MapContainer.css";
 
 // Securely access the API key from environment variables
-const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_GOOGLE_MAPS_API_KEY;
+const GOOGLE_MAPS_API_KEY = "AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours";
 
 // Validate that the API key is provided
 if (!GOOGLE_MAPS_API_KEY) {
