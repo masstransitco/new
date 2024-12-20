@@ -225,43 +225,60 @@ const MapContainer = ({
     [isPeakHour]
   );
 
-  // Navigation to different views
-  const navigateToView = useCallback(
-    (view) => {
-      if (!map) {
-        console.warn("Map not ready.");
-        return;
-      }
-      setViewHistory((prev) => [...prev, view]);
-      map.panTo(view.center);
-      map.setZoom(view.zoom);
-      if (view.tilt !== undefined) map.setTilt(view.tilt);
-      if (view.heading !== undefined) map.setHeading(view.heading);
+  // Handle navigation to DriveView
+  const navigateToDriveView = useCallback(() => {
+    if (!map || !departureStation || !destinationStation) return;
+    const directionsService = new window.google.maps.DirectionsService();
+    directionsService.route(
+      {
+        origin: departureStation.position,
+        destination: destinationStation.position,
+        travelMode: window.google.maps.TravelMode.DRIVING,
+      },
+      (result, status) => {
+        if (status === "OK") {
+          // Changed from window.google.maps.DirectionsStatus.OK to "OK"
+          setDirections(result);
+          const route = result.routes[0]?.legs[0];
+          if (!route) return;
+          const fare = calculateFare(
+            route.distance.value,
+            route.duration.value
+          );
+          setViewBarText(
+            `Distance: ${fare.distanceKm} km | Est Time: ${fare.estTime}`
+          );
 
-      switch (view.name) {
-        case "CityView":
-          setViewBarText("All Districts");
-          break;
-        case "DistrictView":
-          setViewBarText(view.districtName || "District");
-          break;
-        case "StationView":
-          setViewBarText(view.stationName || "Station");
-          break;
-        case "MeView":
-          setViewBarText("Stations near me");
-          break;
-        case "DriveView":
-          // On DriveView, the viewBarText is set based on directions
-          break;
-        default:
-          setViewBarText("");
-      }
+          if (onFareInfo) onFareInfo(fare);
 
-      console.log(`Navigated to ${view.name}`);
-    },
-    [map]
-  );
+          navigateToView({
+            name: "DriveView",
+            center: {
+              lat:
+                (departureStation.position.lat +
+                  destinationStation.position.lat) /
+                2,
+              lng:
+                (departureStation.position.lng +
+                  destinationStation.position.lng) /
+                2,
+            },
+            zoom: 13,
+          });
+          console.log("Navigated to DriveView with directions.");
+        } else {
+          console.error(`Error fetching directions: ${status}`);
+        }
+      }
+    );
+  }, [
+    map,
+    departureStation,
+    destinationStation,
+    calculateFare,
+    navigateToView,
+    onFareInfo,
+  ]);
 
   // Handle station selection
   const handleStationSelection = useCallback(
@@ -335,61 +352,6 @@ const MapContainer = ({
     setMap(mapInstance);
     console.log("Map loaded.");
   }, []);
-
-  // Handle navigation to DriveView
-  const navigateToDriveView = useCallback(() => {
-    if (!map || !departureStation || !destinationStation) return;
-    const directionsService = new window.google.maps.DirectionsService();
-    directionsService.route(
-      {
-        origin: departureStation.position,
-        destination: destinationStation.position,
-        travelMode: window.google.maps.TravelMode.DRIVING,
-      },
-      (result, status) => {
-        if (status === "OK") {
-          // Changed from window.google.maps.DirectionsStatus.OK to "OK"
-          setDirections(result);
-          const route = result.routes[0]?.legs[0];
-          if (!route) return;
-          const fare = calculateFare(
-            route.distance.value,
-            route.duration.value
-          );
-          setViewBarText(
-            `Distance: ${fare.distanceKm} km | Est Time: ${fare.estTime}`
-          );
-
-          if (onFareInfo) onFareInfo(fare);
-
-          navigateToView({
-            name: "DriveView",
-            center: {
-              lat:
-                (departureStation.position.lat +
-                  destinationStation.position.lat) /
-                2,
-              lng:
-                (departureStation.position.lng +
-                  destinationStation.position.lng) /
-                2,
-            },
-            zoom: 13,
-          });
-          console.log("Navigated to DriveView with directions.");
-        } else {
-          console.error(`Error fetching directions: ${status}`);
-        }
-      }
-    );
-  }, [
-    map,
-    departureStation,
-    destinationStation,
-    calculateFare,
-    navigateToView,
-    onFareInfo,
-  ]);
 
   // Handle Home button click
   const handleHomeClick = useCallback(() => {
