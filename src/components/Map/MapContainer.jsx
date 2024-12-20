@@ -12,7 +12,7 @@ import {
   useJsApiLoader,
   DirectionsRenderer,
   Polyline,
-} from "@react-google-maps/api"; // Removed 'Marker'
+} from "@react-google-maps/api";
 
 import ViewBar from "./ViewBar";
 import InfoBox from "./InfoBox";
@@ -21,8 +21,8 @@ import UserCircles from "./UserCircles";
 import DistrictMarkersRaw from "./DistrictMarkers";
 import StationMarkersRaw from "./StationMarkers";
 import SceneContainer from "../Scene/SceneContainer";
-import MotionMenu from "../Menu/MotionMenu"; // Import MotionMenu
-import DepartTime from "./DepartTime"; // Import DepartTime
+import MotionMenu from "../Menu/MotionMenu";
+import DepartTime from "./DepartTime";
 
 import useFetchGeoJSON from "../../hooks/useFetchGeoJSON";
 import useMapGestures from "../../hooks/useMapGestures";
@@ -30,8 +30,16 @@ import PropTypes from "prop-types";
 
 import "./MapContainer.css";
 
-// Constants
-const GOOGLE_MAPS_API_KEY = "AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours"; // Replace with environment variable
+// Securely access the API key from environment variables
+const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_GOOGLE_MAPS_API_KEY;
+
+// Validate that the API key is provided
+if (!GOOGLE_MAPS_API_KEY) {
+  throw new Error(
+    "Google Maps API key is missing. Please set REACT_APP_GOOGLE_MAPS_API_KEY in your environment variables."
+  );
+}
+
 const mapId = "94527c02bbb6243"; // Ensure this is valid
 const libraries = ["places"]; // Removed 'geometry' as it's no longer used
 const containerStyle = { width: "100%", height: "100vh" };
@@ -132,7 +140,7 @@ const MapContainer = ({
   // Scene container bottom sheet minimized or expanded
   const [sceneMinimized, setSceneMinimized] = useState(false);
 
-  // New states for managing DepartTime modal and selected departure time
+  // States for managing DepartTime modal and selected departure time
   const [isDepartTimeOpen, setIsDepartTimeOpen] = useState(false);
   const [departureTime, setDepartureTime] = useState(null);
 
@@ -189,7 +197,7 @@ const MapContainer = ({
     return viewHistory[viewHistory.length - 1];
   }, [viewHistory]);
 
-  // Callback functions
+  // Callback to check if current time is peak hour
   const isPeakHour = useCallback((date) => {
     const hour = date.getHours();
     return PEAK_HOURS.some((p) => hour >= p.start && hour < p.end);
@@ -448,8 +456,14 @@ const MapContainer = ({
           setSceneMinimized(false);
           console.log("User location found and navigated to MeView.");
         },
-        (error) => console.error("Location error:", error)
+        (error) => {
+          console.error("Location error:", error);
+          // Optionally, provide user feedback here
+        }
       );
+    } else {
+      console.error("Geolocation is not supported by this browser.");
+      // Optionally, provide user feedback here
     }
   }, [map, navigateToView]);
 
@@ -521,6 +535,7 @@ const MapContainer = ({
     []
   );
 
+  // Adjust map bounds to include all stations and districts once data is loaded
   useEffect(() => {
     if (map && stations.length > 0 && districts.length > 0) {
       const bounds = new window.google.maps.LatLngBounds();
@@ -540,6 +555,7 @@ const MapContainer = ({
     console.log("Destination Station:", destinationStation);
   }, [userState, departureStation, destinationStation]);
 
+  // Render error messages if loading fails
   if (loadError) {
     return (
       <div className="error-message">
