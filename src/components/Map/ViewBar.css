@@ -4,7 +4,7 @@
   display: flex;
   flex-direction: row;
   align-items: center;
-  background-color: #1e1e1e; /* Surface Background */
+  background-color: rgba(31, 41, 55, 0.95); /* Lightened dark gray */
   padding: 8px 16px;
   border-radius: 50px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -24,18 +24,18 @@
 }
 
 .view-bar-title-pill {
-  background-color: #1e90ff; /* Primary Accent: Electric Blue */
+  background-color: #1f2937; /* Surface color */
   border-radius: 9999px;
-  padding: 6px 14px;
+  padding: 4px 12px;
   margin: 0 16px;
-  color: #ffffff; /* Primary Text */
+  color: #e5e5e5; /* Off-white text */
 }
 
 .view-bar-title-pill h2 {
   margin: 0;
   font-size: 1em;
   font-weight: 400;
-  color: #ffffff; /* Primary Text */
+  color: #e5e5e5; /* Ensure title text is off-white */
 }
 
 .view-bar-info {
@@ -49,7 +49,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #ffffff; /* Primary Text */
+  color: #e5e5e5; /* Ensure info text is off-white */
 }
 
 .view-bar-actions {
@@ -59,41 +59,30 @@
   margin-left: auto;
 }
 
-/* Primary Action Button */
 .view-all-stations-button {
-  background-color: #1e90ff; /* Primary Accent: Electric Blue */
-  border: none;
-  color: #ffffff; /* Primary Text */
-  padding: 10px 20px;
-  border-radius: 12px;
+  background-color: transparent; /* No background */
+  border: none; /* No border */
+  color: #6ee7b7; /* Soft cyan */
+  padding: 0.6em; /* Increased padding for better touch target */
+  border-radius: 0.5em; /* Rounded corners */
   cursor: pointer;
   font-size: 0.9em;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition: background-color 0.3s ease, color 0.3s ease, border 0.3s ease;
 }
 
 .view-all-stations-button:hover {
-  background-color: #1c86ee; /* Primary Accent Hover: Dodger Blue Darker */
-  color: #ffffff; /* Maintain White Text */
+  background-color: #1e3a8a; /* Deep blue on hover */
+  color: #fff; /* White text on hover */
 }
 
 /* Media Queries */
 @media (max-width: 767px) {
   .view-bar {
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
   }
 
   .view-bar-info {
     margin-top: 0.5em;
-  }
-
-  .view-bar-actions {
-    margin-left: 0;
-    margin-top: 0.5em;
-  }
-
-  .view-all-stations-button {
-    width: 100%;
-    padding: 12px 0;
   }
 }
