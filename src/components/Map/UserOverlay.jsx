@@ -5,21 +5,21 @@ import styled from "@emotion/styled";
 const PulsingDot = styled.div`
   width: 24px;
   height: 24px;
-  background-color: #1B6CFB;
+  background-color: #1b6cfb;
   border-radius: 50%;
-  border: 2px solid #FFFFFF;
+  border: 2px solid #ffffff;
   position: relative;
   transform: translate(-50%, -50%);
-  
+
   &::after {
-    content: '';
+    content: "";
     position: absolute;
     top: -2px;
     left: -2px;
     right: -2px;
     bottom: -2px;
     border-radius: 50%;
-    background-color: #1B6CFB;
+    background-color: #1b6cfb;
     opacity: 0.4;
     z-index: -1;
     animation: pulse 10s ease-in-out infinite;
