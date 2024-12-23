@@ -22,6 +22,8 @@ const DistrictMarkerSVG = React.memo(
       width={rectWidth}
       height={rectHeight}
       xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+      focusable="false"
     >
       <defs>
         <filter
@@ -64,6 +66,8 @@ const DistrictMarkerSVG = React.memo(
   )
 );
 
+DistrictMarkerSVG.displayName = "DistrictMarkerSVG";
+
 DistrictMarkerSVG.propTypes = {
   rectWidth: PropTypes.number.isRequired,
   rectHeight: PropTypes.number.isRequired,
@@ -83,11 +87,11 @@ DistrictMarkerSVG.propTypes = {
  * - onDistrictClick: Function to handle click events on a district marker.
  */
 const DistrictMarkers = React.memo(({ districts, onDistrictClick }) => {
+  const rectHeight = 30; // Fixed height for the rectangles
+  const padding = 10; // Padding around the text
+
   // Define predefined position offsets to prevent overlaps
   const positionOffsets = useMemo(() => {
-    // Define small offsets for districts that are geographically close
-    // The offsets are in decimal degrees (approximately)
-    // Adjust these values based on your specific map's scale and district positions
     return {
       "district-1": { latOffset: 0.0002, lngOffset: -0.0002 },
       "district-2": { latOffset: -0.0001, lngOffset: 0.0001 },
@@ -186,40 +190,9 @@ const DistrictMarkers = React.memo(({ districts, onDistrictClick }) => {
   }, [processedDistricts, onDistrictClick, padding, rectHeight]);
 
   return <>{markers}</>;
-}, areEqual);
+});
 
-/**
- * Custom comparison function for React.memo to prevent unnecessary re-renders.
- * Performs a deep comparison of districts array and shallow comparison of onDistrictClick.
- */
-function areEqual(prevProps, nextProps) {
-  // Shallow compare onDistrictClick function
-  if (prevProps.onDistrictClick !== nextProps.onDistrictClick) {
-    return false;
-  }
-
-  // Shallow compare districts array length
-  if (prevProps.districts.length !== nextProps.districts.length) {
-    return false;
-  }
-
-  // Deep compare each district's properties
-  for (let i = 0; i < prevProps.districts.length; i++) {
-    const prevDistrict = prevProps.districts[i];
-    const nextDistrict = nextProps.districts[i];
-    if (
-      prevDistrict.id !== nextDistrict.id ||
-      prevDistrict.name !== nextDistrict.name ||
-      prevDistrict.position.lat !== nextDistrict.position.lat ||
-      prevDistrict.position.lng !== nextDistrict.position.lng ||
-      prevDistrict.description !== nextDistrict.description
-    ) {
-      return false;
-    }
-  }
-
-  return true;
-}
+DistrictMarkers.displayName = "DistrictMarkers";
 
 DistrictMarkers.propTypes = {
   districts: PropTypes.arrayOf(
