@@ -1,46 +1,101 @@
-/* src/components/Map/InfoBox.css */
 .info-box {
   display: flex;
   margin-left: 10px;
   align-items: center;
   justify-content: space-between;
-  /* Using a darker background with slight transparency for depth */
-  background-color: rgba(39, 110, 241, 0.08);
-  /* Matching border color with primary blue */
-  border: 1px solid rgba(39, 110, 241, 0.2);
+  /* Dark background with subtle transparency */
+  background-color: rgba(33, 33, 33, 0.95);
+  /* Subtle border for depth */
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
   padding: 10px 14px;
   width: 300px;
-  /* Enhanced shadow for better depth perception */
-  box-shadow: 0 2px 8px rgba(39, 110, 241, 0.1);
+  /* Animated breathing shadow effect */
+  animation: shadowPulse 4s ease-in-out infinite;
+  /* Smooth transitions for hover effects */
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Breathing shadow animation */
+@keyframes shadowPulse {
+  0% {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2),
+      0 1px 3px rgba(255, 255, 255, 0.05);
+  }
+  50% {
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25),
+      0 2px 4px rgba(255, 255, 255, 0.08);
+  }
+  100% {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2),
+      0 1px 3px rgba(255, 255, 255, 0.05);
+  }
+}
+
+.info-box:hover {
+  /* Subtle scale and shadow enhancement on hover */
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3), 0 2px 5px rgba(255, 255, 255, 0.1);
 }
 
 .info-text {
   font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-size: 0.95em;
-  /* Using a darker shade for better contrast */
-  color: #1a1a1a;
+  font-weight: 400;
+  /* High contrast white text */
+  color: rgba(255, 255, 255, 0.95);
+  /* Smooth font rendering */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  letter-spacing: 0.2px;
 }
 
 .departure-time {
   font-size: 0.95em;
-  /* Using secondary color for visual hierarchy */
-  color: #4d4d4d;
+  /* Slightly muted white for hierarchy */
+  color: rgba(255, 255, 255, 0.85);
   margin-left: 10px;
+  font-weight: 300;
 }
 
 .clear-button {
   background: none;
   border: none;
-  /* Using a more subtle red that matches the blue theme */
-  color: #e63946;
+  /* Bright accent color for clear action */
+  color: #ff4d4d;
   cursor: pointer;
   font-size: 0.85em;
-  text-decoration: underline;
-  transition: color 0.2s ease;
+  font-weight: 500;
+  text-decoration: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  /* Prevent text selection */
+  user-select: none;
 }
 
 .clear-button:hover {
-  /* Darker shade for hover state */
-  color: #d62828;
+  /* Lighter shade on hover with subtle background */
+  color: #ff6666;
+  background-color: rgba(255, 77, 77, 0.1);
+}
+
+/* Focus states for accessibility */
+.clear-button:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(255, 77, 77, 0.4);
+}
+
+/* Active state */
+.clear-button:active {
+  transform: scale(0.98);
+}
+
+/* Ensure text remains crisp on high-DPI displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .info-text,
+  .departure-time,
+  .clear-button {
+    -webkit-font-smoothing: subpixel-antialiased;
+  }
 }
