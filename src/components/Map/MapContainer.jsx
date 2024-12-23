@@ -41,7 +41,7 @@ if (!GOOGLE_MAPS_API_KEY) {
 }
 
 const mapId = "94527c02bbb6243"; // Ensure this is valid
-const libraries = ["places"]; // 'geometry' removed if not used
+const libraries = ["places"]; // Removed 'geometry' as it's no longer used
 const containerStyle = { width: "100%", height: "100vh" };
 const BASE_CITY_CENTER = { lat: 22.236, lng: 114.191 };
 
@@ -61,7 +61,7 @@ const USER_STATES = {
   SELECTED_DEPARTURE: "SelectedDeparture",
   SELECTING_ARRIVAL: "SelectingArrival",
   SELECTED_ARRIVAL: "SelectedArrival",
-  DISPLAY_FARE: "DisplayFare", // State used when opening the trip info side-sheet
+  DISPLAY_FARE: "DisplayFare",
 };
 
 const PEAK_HOURS = [
@@ -85,12 +85,10 @@ const reducer = (state, action) => {
   switch (action.type) {
     case "SET_DEPARTURE":
       // Overwrite the departure station regardless of existing departure
-      // so user can pick another station directly.
       return {
         ...state,
         userState: USER_STATES.SELECTED_DEPARTURE,
         departureStation: action.payload,
-        // Keep destination station if previously set or remain null
       };
 
     case "SET_DESTINATION":
@@ -632,10 +630,10 @@ const MapContainer = ({
         onLocateMe={locateMe}
         isMeView={currentView.name === "MeView"}
         isDistrictView={currentView.name === "DistrictView"}
-        // We now want "View all stations" visible also in SELECTING_ARRIVAL
         isStationView={
           userState === USER_STATES.SELECTED_DEPARTURE ||
-          userState === USER_STATES.SELECTING_ARRIVAL
+          userState === USER_STATES.SELECTING_ARRIVAL ||
+          userState === USER_STATES.SELECTED_ARRIVAL
         }
       />
 
@@ -645,7 +643,7 @@ const MapContainer = ({
           <InfoBox
             type="Departure"
             location={departureStation.place}
-            departureTime={departureTime}
+            departureTime={departureTime} // Pass the selected departure time
             onClear={handleClearDeparture}
           />
         )}
@@ -656,19 +654,10 @@ const MapContainer = ({
             type="Arrival"
             location={destinationStation.place}
             onClear={handleClearArrival}
-            // (ii) A circle shaped "trip info" button next to arrival infobox
-            // We'll place a button in InfoBox or here after the infobox
           />
         )}
 
-        {/* (ii) If user selected a departureTime => display it in departure InfoBox
-            That is handled by InfoBox if you pass departureTime prop (done above).
-        */}
-
-        {/* 
-          (i) If userState=SELECTED_DEPARTURE => show "Choose Departure Time" button
-          (iv) If userState=SELECTED_ARRIVAL => show "Confirm trip" button 
-        */}
+        {/* "Choose Departure Time" or "Confirm trip" button */}
         {userState === USER_STATES.SELECTED_DEPARTURE && (
           <button
             className="choose-destination-button-lower"
@@ -681,8 +670,8 @@ const MapContainer = ({
 
         {userState === USER_STATES.SELECTED_ARRIVAL && (
           <button
-            className="choose-destination-button-lower"
-            onClick={() => console.log("TODO: Confirm trip")}
+            className="confirm-trip-button-lower"
+            onClick={() => console.log("Confirm trip clicked")}
             aria-label="Confirm trip"
           >
             Confirm trip
@@ -702,6 +691,9 @@ const MapContainer = ({
               fontSize: 18,
               marginTop: "10px",
               cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
             }}
             onClick={handleOpenTripInfo}
             aria-label="Open Trip Info"
@@ -717,6 +709,9 @@ const MapContainer = ({
               <button
                 className="toggle-scene-button"
                 onClick={() => setSceneMinimized((prev) => !prev)}
+                aria-label={
+                  sceneMinimized ? "Expand 3D Map" : "Minimize 3D Map"
+                }
               >
                 {sceneMinimized ? "Expand 3D Map" : "Minimize 3D Map"}
               </button>
@@ -731,10 +726,7 @@ const MapContainer = ({
           </div>
         )}
 
-        {/* 4) If user is in SELECTED_ARRIVAL => old MotionMenu was shown
-            We'll keep it for reference but not auto-open => We'll rely on the "trip info" side-sheet.
-            If you prefer using MotionMenu as the side-sheet content, you can do so here or remove it.
-        */}
+        {/* MotionMenu bottom sheet */}
         {false && // disable auto-render of MotionMenu
           userState === USER_STATES.SELECTED_ARRIVAL &&
           destinationStation &&
@@ -816,6 +808,7 @@ const MapContainer = ({
               cursor: "pointer",
             }}
             onClick={handleCloseTripInfo}
+            aria-label="Close Trip Info"
           >
             Close
           </button>
