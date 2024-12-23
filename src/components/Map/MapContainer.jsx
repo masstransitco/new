@@ -146,8 +146,18 @@ const MapContainer = ({
     libraries,
   });
 
-  const { data: stationsData = [] } = useFetchGeoJSON("/stations.geojson");
-  const { data: districtsData = [] } = useFetchGeoJSON("/districts.geojson");
+  // Retrieve data and rename for clarity
+  const {
+    data: stationsData = [],
+    loading: stationsLoading,
+    error: stationsError,
+  } = useFetchGeoJSON("/stations.geojson");
+
+  const {
+    data: districtsData = [],
+    loading: districtsLoading,
+    error: districtsError,
+  } = useFetchGeoJSON("/districts.geojson");
 
   const stations = useMemo(() => {
     return stationsData.map((feature, index) => ({
@@ -299,8 +309,8 @@ const MapContainer = ({
     departureStation,
     destinationStation,
     calculateFare,
-    navigateToView,
     onFareInfo,
+    navigateToView,
   ]);
 
   const handleStationSelection = useCallback(
@@ -442,7 +452,7 @@ const MapContainer = ({
     if (map && userState === USER_STATES.SELECTING_DEPARTURE && !userLocation) {
       locateMe();
     }
-  }, [map, locateMe, userState, userLocation]);
+  }, [map, userState, userLocation, locateMe]);
 
   const displayedStations = useMemo(() => {
     if (currentView.name === "CityView") return [];
@@ -462,10 +472,12 @@ const MapContainer = ({
       case USER_STATES.SELECTED_DEPARTURE:
         if (currentView.name === "CityView") return [];
         return stations;
+
       case USER_STATES.SELECTING_ARRIVAL:
       case USER_STATES.SELECTED_ARRIVAL:
       case USER_STATES.DISPLAY_FARE:
         return [departureStation, destinationStation].filter(Boolean);
+
       default:
         return stations;
     }
@@ -632,7 +644,7 @@ const MapContainer = ({
           </div>
         )}
 
-        {false && // disable auto-render of MotionMenu
+        {false && // If we want to re-enable MotionMenu, set this to true or remove the condition
           userState === USER_STATES.SELECTED_ARRIVAL &&
           destinationStation &&
           directions && (
