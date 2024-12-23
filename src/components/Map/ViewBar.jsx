@@ -26,7 +26,7 @@ const ViewBar = ({
         <div className="view-bar-title-pill">
           <h2>{viewBarText}</h2>
         </div>
-        {/* Removed departure and arrival info lines here */}
+        {/* Optionally, you can display departure and arrival here if needed */}
       </div>
 
       <div className="view-bar-actions">

@@ -41,7 +41,7 @@ if (!GOOGLE_MAPS_API_KEY) {
 }
 
 const mapId = "94527c02bbb6243"; // Ensure this is valid
-const libraries = ["places"]; // Removed 'geometry' as it's no longer used
+const libraries = ["places"]; // 'geometry' removed if not used
 const containerStyle = { width: "100%", height: "100vh" };
 const BASE_CITY_CENTER = { lat: 22.236, lng: 114.191 };
 
@@ -61,7 +61,7 @@ const USER_STATES = {
   SELECTED_DEPARTURE: "SelectedDeparture",
   SELECTING_ARRIVAL: "SelectingArrival",
   SELECTED_ARRIVAL: "SelectedArrival",
-  DISPLAY_FARE: "DisplayFare",
+  DISPLAY_FARE: "DisplayFare", // State used when opening the trip info side-sheet
 };
 
 const PEAK_HOURS = [
@@ -84,40 +84,59 @@ const initialState = {
 const reducer = (state, action) => {
   switch (action.type) {
     case "SET_DEPARTURE":
-      console.log(`Action: SET_DEPARTURE, Payload: ${action.payload.place}`);
+      // Overwrite the departure station regardless of existing departure
+      // so user can pick another station directly.
       return {
         ...state,
         userState: USER_STATES.SELECTED_DEPARTURE,
         departureStation: action.payload,
+        // Keep destination station if previously set or remain null
       };
+
     case "SET_DESTINATION":
-      console.log(`Action: SET_DESTINATION, Payload: ${action.payload.place}`);
+      // Overwrite the arrival station
       return {
         ...state,
         userState: USER_STATES.SELECTED_ARRIVAL,
         destinationStation: action.payload,
       };
+
     case "CHOOSE_DESTINATION":
-      console.log("Action: CHOOSE_DESTINATION");
+      // Transition from SELECTED_DEPARTURE => SELECTING_ARRIVAL
       return {
         ...state,
         userState: USER_STATES.SELECTING_ARRIVAL,
       };
+
     case "CLEAR_DEPARTURE":
-      console.log("Action: CLEAR_DEPARTURE");
       return {
         ...state,
         userState: USER_STATES.SELECTING_DEPARTURE,
         departureStation: null,
         destinationStation: null,
       };
+
     case "CLEAR_DESTINATION":
-      console.log("Action: CLEAR_DESTINATION");
       return {
         ...state,
         userState: USER_STATES.SELECTING_ARRIVAL,
         destinationStation: null,
       };
+
+    // NEW: For opening the side-sheet to display trip info
+    case "OPEN_TRIP_INFO":
+      return {
+        ...state,
+        userState: USER_STATES.DISPLAY_FARE,
+      };
+
+    // NEW: For closing the side-sheet and returning to SELECTED_ARRIVAL
+    case "CLOSE_TRIP_INFO":
+      return {
+        ...state,
+        userState: USER_STATES.SELECTED_ARRIVAL,
+      };
+
     default:
       console.warn(`Unhandled action type: ${action.type}`);
       return state;
@@ -143,6 +162,9 @@ const MapContainer = ({
   // States for managing DepartTime modal and selected departure time
   const [isDepartTimeOpen, setIsDepartTimeOpen] = useState(false);
   const [departureTime, setDepartureTime] = useState(null);
+
+  // NEW: Side-sheet for trip info
+  const [showTripInfoSheet, setShowTripInfoSheet] = useState(false);
 
   // useReducer for managing userState, departureStation, destinationStation
   const [state, dispatch] = useReducer(reducer, initialState);
@@ -190,6 +212,7 @@ const MapContainer = ({
     }));
   }, [districtsData]);
 
+  // Custom gesture hook
   useMapGestures(map);
 
   // Memoized current view
@@ -206,14 +229,14 @@ const MapContainer = ({
   // Fare calculation logic
   const calculateFare = useCallback(
     (distance, durationInSeconds) => {
-      const baseTaxi = 24; // Base fare
-      const extraMeters = Math.max(0, distance - 2000); // Assuming first 2000 meters are covered by base fare
-      const increments = Math.floor(extraMeters / 200); // Every additional 200 meters
+      const baseTaxi = 24;
+      const extraMeters = Math.max(0, distance - 2000);
+      const increments = Math.floor(extraMeters / 200);
       const taxiFareEstimate = baseTaxi + increments;
 
       const peak = isPeakHour(new Date());
-      const startingFare = peak ? 65 : 35; // Starting fare based on peak hours
-      const ourFare = Math.max(taxiFareEstimate * 0.7, startingFare); // 70% of taxi fare or starting fare, whichever is higher
+      const startingFare = peak ? 65 : 35;
+      const ourFare = Math.max(taxiFareEstimate * 0.7, startingFare);
 
       const distanceKm = (distance / 1000).toFixed(2);
       const hrs = Math.floor(durationInSeconds / 3600);
@@ -235,29 +258,33 @@ const MapContainer = ({
       setViewHistory((prev) => [...prev, view]);
       map.panTo(view.center);
       map.setZoom(view.zoom);
+
       if (view.tilt !== undefined) map.setTilt(view.tilt);
       if (view.heading !== undefined) map.setHeading(view.heading);
 
       switch (view.name) {
         case "CityView":
           setViewBarText("All Districts");
+          // When user goes back to CityView, automatically minimize scene container
+          setSceneMinimized(true);
           break;
         case "DistrictView":
           setViewBarText(view.districtName || "District");
+          // Also minimize scene container
+          setSceneMinimized(true);
           break;
         case "StationView":
           setViewBarText(view.stationName || "Station");
           break;
         case "MeView":
           setViewBarText("Stations near me");
+          setSceneMinimized(true);
           break;
         case "DriveView":
-          // On DriveView, the viewBarText is set based on directions
           break;
         default:
           setViewBarText("");
       }
-
       console.log(`Navigated to ${view.name}`);
     },
     [map]
@@ -275,7 +302,6 @@ const MapContainer = ({
       },
       (result, status) => {
         if (status === "OK") {
-          // Changed from window.google.maps.DirectionsStatus.OK to "OK"
           setDirections(result);
           const route = result.routes[0]?.legs[0];
           if (!route) return;
@@ -318,41 +344,52 @@ const MapContainer = ({
     onFareInfo,
   ]);
 
-  // Handle station selection
+  // 1) ALLOW REPLACEMENT OF SELECTED DEPARTURE OR ARRIVAL DIRECTLY
+  // handleStationSelection
   const handleStationSelection = useCallback(
     (station) => {
-      if (userState === USER_STATES.SELECTING_DEPARTURE) {
+      // If user is picking or replacing the departure
+      if (
+        userState === USER_STATES.SELECTING_DEPARTURE ||
+        userState === USER_STATES.SELECTED_DEPARTURE
+      ) {
+        // Overwrite the departure station
         dispatch({ type: "SET_DEPARTURE", payload: station });
         if (onStationSelect) onStationSelect(station);
+
         navigateToView({
           name: "StationView",
           center: station.position,
           zoom: STATION_VIEW_ZOOM,
           stationName: station.place,
         });
-        console.log(
-          `Navigated to StationView for departure station: ${station.place}`
-        );
+        console.log(`Selected/Updated departure station: ${station.place}`);
         setSceneMinimized(false);
-      } else if (userState === USER_STATES.SELECTING_ARRIVAL) {
+      }
+      // If user is picking or replacing the arrival
+      else if (
+        userState === USER_STATES.SELECTING_ARRIVAL ||
+        userState === USER_STATES.SELECTED_ARRIVAL
+      ) {
         dispatch({ type: "SET_DESTINATION", payload: station });
-        console.log(
-          `Navigated to DriveView for arrival station: ${station.place}`
-        );
+        console.log(`Selected/Updated arrival station: ${station.place}`);
+        // For arrival, automatically recalc drive route
         navigateToDriveView();
       }
     },
     [userState, navigateToView, navigateToDriveView, onStationSelect]
   );
 
-  // Handle district click
+  // 2) WHEN IN SELECTING_DEPARTURE or SELECTED_DEPARTURE => user can do things
+  //    same for SELECTING_ARRIVAL/SELECTED_ARRIVAL => user can pick another station
+
+  // District click
   const handleDistrictClick = useCallback(
     (district) => {
       if (!map) {
         console.warn("Map not ready.");
         return;
       }
-
       const stationsInDistrict = stations.filter(
         (st) =>
           st.district &&
@@ -365,7 +402,6 @@ const MapContainer = ({
       if (stationsInDistrict.length === 0) {
         bounds.extend(district.position);
       }
-
       map.fitBounds(bounds);
       map.setTilt(45);
 
@@ -391,52 +427,63 @@ const MapContainer = ({
     console.log("Map loaded.");
   }, []);
 
-  // Handle Home button click
+  // Home button => CityView
   const handleHomeClick = useCallback(() => {
+    // If user is in StationView or DistrictView or MeView => go CityView
     navigateToView(CITY_VIEW);
-    setSceneMinimized(false);
-    // Do NOT change userState here to maintain SELECTED_DEPARTURE
-    console.log(
-      "Home button clicked. Navigated to CityView without altering userState."
-    );
+    // No userState changes => keep userState
+    console.log("Home button clicked => CityView");
   }, [navigateToView]);
 
-  // Handle clearing the departure station
+  // CLEAR departure
   const handleClearDeparture = useCallback(() => {
     dispatch({ type: "CLEAR_DEPARTURE" });
     if (onStationDeselect) onStationDeselect();
     navigateToView(CITY_VIEW);
-    setSceneMinimized(false);
-    setDirections(null); // Clear directions when clearing departure
-    console.log("Cleared departure station and navigated to CityView.");
+    setSceneMinimized(true);
+    setDirections(null);
+    console.log("Cleared departure => CityView");
   }, [navigateToView, onStationDeselect]);
 
-  // Handle clearing the arrival station
+  // CLEAR arrival
   const handleClearArrival = useCallback(() => {
     dispatch({ type: "CLEAR_DESTINATION" });
     navigateToView(CITY_VIEW);
-    setSceneMinimized(false);
-    setDirections(null); // Clear directions when clearing destination
-    console.log("Cleared arrival station and navigated to CityView.");
+    setSceneMinimized(true);
+    setDirections(null);
+    console.log("Cleared arrival => CityView");
   }, [navigateToView]);
 
-  // Handle choosing destination via DepartTime modal
+  // DEPARTTIME => user picks time => from SELECTED_DEPARTURE => SELECTING_ARRIVAL
   const handleDepartureTimeConfirm = useCallback(
-    (selectedTime) => {
-      setDepartureTime(selectedTime); // Store the selected departure time
-      dispatch({ type: "CHOOSE_DESTINATION" }); // Transition to SELECTING_ARRIVAL state
-      setIsDepartTimeOpen(false); // Close the modal
-      console.log("Departure time selected:", selectedTime);
+    ({ selectedTime, bookingType }) => {
+      // We store the departureTime
+      setDepartureTime(selectedTime);
+
+      // bookingType can be "pay-as-you-go" or "station-to-station"
+      if (bookingType === "pay-as-you-go") {
+        console.log(
+          "Confirmed Pay-As-You-Go booking, departureTime:",
+          selectedTime
+        );
+      } else {
+        console.log(
+          "User pressed 'Choose Destination' after picking departure time"
+        );
+      }
+
+      dispatch({ type: "CHOOSE_DESTINATION" }); // SELECTING_ARRIVAL
+      setIsDepartTimeOpen(false);
     },
-    [dispatch]
+    []
   );
 
-  // Handle choosing destination button click to open DepartTime modal
+  // "Choose Destination" => open DepartTime modal
   const handleChooseDestination = useCallback(() => {
-    setIsDepartTimeOpen(true); // Open the DepartTime modal
+    setIsDepartTimeOpen(true);
   }, []);
 
-  // Handle user location (Locate Me)
+  // Locate Me
   const locateMe = useCallback(() => {
     setDirections(null);
     if (!map) return;
@@ -454,68 +501,61 @@ const MapContainer = ({
             zoom: 15,
           });
           setShowCircles(true);
-          setSceneMinimized(false);
-          console.log("User location found and navigated to MeView.");
+          console.log("Located user => MeView");
         },
         (error) => {
           console.error("Location error:", error);
-          // Optionally, provide user feedback here
         }
       );
     } else {
-      console.error("Geolocation is not supported by this browser.");
-      // Optionally, provide user feedback here
+      console.error("Geolocation not supported");
     }
   }, [map, navigateToView]);
 
-  // Trigger locateMe when in SELECTING_DEPARTURE and no userLocation
+  // Auto-locate if SELECTING_DEPARTURE with no userLocation
   useEffect(() => {
     console.log("User state changed:", userState);
     if (map && userState === USER_STATES.SELECTING_DEPARTURE && !userLocation) {
-      console.log(
-        "Triggering locateMe due to userState being SELECTING_DEPARTURE and no userLocation."
-      );
       locateMe();
     }
   }, [map, locateMe, userState, userLocation]);
 
-  // Determine which stations to display based on current view and user state
+  // Determine which stations to display
   const displayedStations = useMemo(() => {
-    // If CityView: only districts shown, no stations
-    if (currentView.name === "CityView") {
-      return [];
-    }
+    // If CityView => only districts => no stations
+    if (currentView.name === "CityView") return [];
 
-    // If DistrictView or MeView: show all stations
+    // DistrictView / MeView => show all stations
     if (currentView.name === "DistrictView" || currentView.name === "MeView") {
       return stations;
     }
 
-    // If StationView: only selected station’s marker
+    // StationView => only selected station’s marker
     if (currentView.name === "StationView") {
       if (departureStation) return [departureStation];
       if (destinationStation) return [destinationStation];
       return [];
     }
 
-    // If DriveView: only departure & arrival station markers
+    // DriveView => departure & arrival
     if (currentView.name === "DriveView") {
       return [departureStation, destinationStation].filter(Boolean);
     }
 
-    // Handle based on user state
+    // Otherwise, fallback to userState logic
     switch (userState) {
-      case USER_STATES.SELECTING_ARRIVAL:
-        return [departureStation, ...stations].filter(Boolean);
-
-      case USER_STATES.SELECTED_DEPARTURE:
-        return [departureStation].filter(Boolean);
-
       case USER_STATES.SELECTING_DEPARTURE:
-        return currentView.name === "CityView" ? [] : stations; // Show all stations unless in CityView
+      case USER_STATES.SELECTED_DEPARTURE:
+        // Show all stations unless in CityView
+        if (currentView.name === "CityView") {
+          return [];
+        }
+        return stations;
 
+      case USER_STATES.SELECTING_ARRIVAL:
       case USER_STATES.SELECTED_ARRIVAL:
       case USER_STATES.DISPLAY_FARE:
+        // Show departure plus arrival if set
         return [departureStation, destinationStation].filter(Boolean);
 
       default:
@@ -523,7 +563,7 @@ const MapContainer = ({
     }
   }, [currentView, userState, departureStation, destinationStation, stations]);
 
-  // Memoized directions options
+  // Directions Options
   const directionsOptions = useMemo(
     () => ({
       suppressMarkers: true,
@@ -536,7 +576,7 @@ const MapContainer = ({
     []
   );
 
-  // Adjust map bounds to include all stations and districts once data is loaded
+  // Fit map bounds
   useEffect(() => {
     if (map && stations.length > 0 && districts.length > 0) {
       const bounds = new window.google.maps.LatLngBounds();
@@ -545,87 +585,133 @@ const MapContainer = ({
         (district) => district && bounds.extend(district.position)
       );
       map.fitBounds(bounds);
-      console.log("Map bounds adjusted to include all stations and districts.");
+      console.log("Fit map bounds => all stations and districts");
     }
   }, [map, stations, districts]);
 
-  // Debugging Logs for userState and Stations
+  // Debug logs
   useEffect(() => {
-    console.log("Current userState:", userState);
-    console.log("Departure Station:", departureStation);
-    console.log("Destination Station:", destinationStation);
+    console.log("userState:", userState);
+    console.log("departureStation:", departureStation);
+    console.log("destinationStation:", destinationStation);
   }, [userState, departureStation, destinationStation]);
 
-  // Render error messages if loading fails
-  if (loadError) {
-    return (
-      <div className="error-message">
-        Error loading maps. Please check your API key and network connection.
-      </div>
-    );
-  }
-
-  if (!isLoaded) return <div className="loading-message">Loading map...</div>;
-
-  if (stationsLoading || districtsLoading)
-    return <div className="loading-message">Loading map data...</div>;
-
-  if (stationsError || districtsError) {
-    return (
-      <div className="error-message">
-        Error loading map data. Please try again later.
-      </div>
-    );
-  }
+  // Scene container class
+  // SCENE is visible if userState=SELECTED_DEPARTURE or userState=SELECTED_ARRIVAL
+  // plus if we have a station
+  const showSceneContainer =
+    (userState === USER_STATES.SELECTED_DEPARTURE && departureStation) ||
+    (userState === USER_STATES.SELECTED_ARRIVAL && destinationStation);
 
   const sceneVisibleClass =
-    userState === USER_STATES.SELECTED_DEPARTURE && !sceneMinimized
-      ? "visible"
-      : "minimized";
+    showSceneContainer && !sceneMinimized ? "visible" : "minimized";
+
+  // SIDE-SHEET for trip info => userState=DISPLAY_FARE
+  const handleOpenTripInfo = () => {
+    // Switch to userState=DISPLAY_FARE
+    dispatch({ type: "OPEN_TRIP_INFO" });
+    setShowTripInfoSheet(true);
+  };
+  const handleCloseTripInfo = () => {
+    setShowTripInfoSheet(false);
+    // Return to SELECTED_ARRIVAL
+    dispatch({ type: "CLOSE_TRIP_INFO" });
+  };
+
+  // Conditionally show the side-sheet (trip info)
+  const showTripSheet =
+    userState === USER_STATES.DISPLAY_FARE && showTripInfoSheet;
 
   return (
     <div className="map-container">
       <ViewBar
-        departure={null} // no departure text line
-        arrival={null} // no arrival text line
+        departure={null}
+        arrival={null}
         viewBarText={viewBarText}
         onHome={handleHomeClick}
         onLocateMe={locateMe}
         isMeView={currentView.name === "MeView"}
         isDistrictView={currentView.name === "DistrictView"}
-        isStationView={userState === USER_STATES.SELECTED_DEPARTURE}
+        // We now want "View all stations" visible also in SELECTING_ARRIVAL
+        isStationView={
+          userState === USER_STATES.SELECTED_DEPARTURE ||
+          userState === USER_STATES.SELECTING_ARRIVAL
+        }
       />
 
       <div className="lower-panel">
+        {/* DEPARTURE InfoBox */}
         {departureStation && (
           <InfoBox
             type="Departure"
             location={departureStation.place}
-            departureTime={departureTime} // Pass the selected departure time
+            departureTime={departureTime}
             onClear={handleClearDeparture}
           />
         )}
 
+        {/* ARRIVAL InfoBox */}
         {destinationStation && (
           <InfoBox
             type="Arrival"
             location={destinationStation.place}
             onClear={handleClearArrival}
+            // (ii) A circle shaped "trip info" button next to arrival infobox
+            // We'll place a button in InfoBox or here after the infobox
           />
         )}
 
+        {/* (ii) If user selected a departureTime => display it in departure InfoBox
+            That is handled by InfoBox if you pass departureTime prop (done above).
+        */}
+
+        {/* 
+          (i) If userState=SELECTED_DEPARTURE => show "Choose Departure Time" button
+          (iv) If userState=SELECTED_ARRIVAL => show "Confirm trip" button 
+        */}
         {userState === USER_STATES.SELECTED_DEPARTURE && (
           <button
             className="choose-destination-button-lower"
-            onClick={handleChooseDestination} // Open DepartTime modal
+            onClick={handleChooseDestination}
             aria-label="Choose Departure Time"
           >
             Choose Departure Time
           </button>
         )}
 
-        {/* SceneContainer bottom sheet */}
-        {userState === USER_STATES.SELECTED_DEPARTURE && departureStation && (
+        {userState === USER_STATES.SELECTED_ARRIVAL && (
+          <button
+            className="choose-destination-button-lower"
+            onClick={() => console.log("TODO: Confirm trip")}
+            aria-label="Confirm trip"
+          >
+            Confirm trip
+          </button>
+        )}
+
+        {/* (v) "trip info" button (circle shaped with an icon) => only in SELECTED_ARRIVAL */}
+        {userState === USER_STATES.SELECTED_ARRIVAL && destinationStation && (
+          <button
+            style={{
+              width: 48,
+              height: 48,
+              borderRadius: "50%",
+              border: "none",
+              backgroundColor: "#4B5563",
+              color: "#fff",
+              fontSize: 18,
+              marginTop: "10px",
+              cursor: "pointer",
+            }}
+            onClick={handleOpenTripInfo}
+            aria-label="Open Trip Info"
+          >
+            i
+          </button>
+        )}
+
+        {/* SceneContainer bottom sheet => either departure or arrival station */}
+        {showSceneContainer && (
           <div className={`scene-wrapper ${sceneVisibleClass}`}>
             <div className="scene-container-header">
               <button
@@ -635,12 +721,22 @@ const MapContainer = ({
                 {sceneMinimized ? "Expand 3D Map" : "Minimize 3D Map"}
               </button>
             </div>
-            <SceneContainer center={departureStation.position} />
+            <SceneContainer
+              center={
+                userState === USER_STATES.SELECTED_DEPARTURE
+                  ? departureStation.position
+                  : destinationStation.position
+              }
+            />
           </div>
         )}
 
-        {/* MotionMenu bottom sheet */}
-        {userState === USER_STATES.SELECTED_ARRIVAL &&
+        {/* 4) If user is in SELECTED_ARRIVAL => old MotionMenu was shown
+            We'll keep it for reference but not auto-open => We'll rely on the "trip info" side-sheet.
+            If you prefer using MotionMenu as the side-sheet content, you can do so here or remove it.
+        */}
+        {false && // disable auto-render of MotionMenu
+          userState === USER_STATES.SELECTED_ARRIVAL &&
           destinationStation &&
           directions && (
             <div className="scene-wrapper visible" style={{ height: "40vh" }}>
@@ -650,9 +746,7 @@ const MapContainer = ({
                 directions={directions}
                 calculateFare={calculateFare}
                 onContinue={() => {
-                  // "Choose departure time" action
                   console.log("User chose departure time");
-                  // Future logic can be implemented here
                 }}
                 buttonText="Choose departure time"
               />
@@ -660,11 +754,79 @@ const MapContainer = ({
           )}
       </div>
 
+      {/* RENDER THE Trip Info SIDE-SHEET => If userState=DISPLAY_FARE */}
+      {showTripSheet && directions && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "75vw",
+            maxWidth: "400px",
+            height: "100vh",
+            background: "#2E2E2E",
+            color: "#fff",
+            padding: "16px",
+            boxShadow: "2px 0 8px rgba(0,0,0,0.3)",
+            transition: "transform 0.4s ease-in-out",
+            zIndex: 2000,
+          }}
+        >
+          <h3 style={{ marginTop: 0 }}>Trip Info</h3>
+          {/* Reuse logic from MotionMenu to calculate fare */}
+          {(() => {
+            const route = directions?.routes[0]?.legs[0];
+            if (!route) return <p>No route found.</p>;
+            const fareInfo = calculateFare(
+              route.distance.value,
+              route.duration.value
+            );
+            return (
+              <>
+                <p>
+                  <strong>Departure:</strong> {departureStation?.place}
+                </p>
+                <p>
+                  <strong>Arrival:</strong> {destinationStation?.place}
+                </p>
+                <p>
+                  <strong>Distance:</strong> {fareInfo.distanceKm} km
+                </p>
+                <p>
+                  <strong>Estimated Time:</strong> {fareInfo.estTime}
+                </p>
+                <p>
+                  <strong>Your Fare:</strong> HK${fareInfo.ourFare.toFixed(2)}
+                </p>
+                <p>
+                  <strong>Taxi Fare Estimate:</strong> HK$
+                  {fareInfo.taxiFareEstimate.toFixed(2)}
+                </p>
+              </>
+            );
+          })()}
+          <button
+            style={{
+              marginTop: "20px",
+              backgroundColor: "#1F2937",
+              color: "#fff",
+              border: "1px solid #374151",
+              borderRadius: "8px",
+              padding: "10px 16px",
+              cursor: "pointer",
+            }}
+            onClick={handleCloseTripInfo}
+          >
+            Close
+          </button>
+        </div>
+      )}
+
       {/* Render DepartTime Modal */}
       <DepartTime
         open={isDepartTimeOpen}
         onClose={() => setIsDepartTimeOpen(false)}
-        onConfirm={handleDepartureTimeConfirm} // Handle departure time selection
+        onConfirm={handleDepartureTimeConfirm} // For departure time selection
       />
 
       <GoogleMap
@@ -734,7 +896,7 @@ const MapContainer = ({
           />
         )}
 
-        {/* DistrictView and MeView: all station markers */}
+        {/* DistrictView / MeView => show all station markers */}
         {(currentView.name === "DistrictView" ||
           currentView.name === "MeView") && (
           <StationMarkers
@@ -743,7 +905,7 @@ const MapContainer = ({
           />
         )}
 
-        {/* Other Views: StationMarkers based on displayedStations */}
+        {/* Other Views => station markers based on displayedStations */}
         {currentView.name !== "CityView" &&
           currentView.name !== "DistrictView" &&
           currentView.name !== "MeView" && (

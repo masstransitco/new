@@ -1,32 +1,46 @@
 /* src/components/Map/InfoBox.css */
-
 .info-box {
   display: flex;
+  margin-left: 10px;
   align-items: center;
   justify-content: space-between;
-  background-color: rgba(255, 255, 255, 0.95);
-  border: 1px solid #ccc;
+  /* Using a darker background with slight transparency for depth */
+  background-color: rgba(39, 110, 241, 0.08);
+  /* Matching border color with primary blue */
+  border: 1px solid rgba(39, 110, 241, 0.2);
   border-radius: 8px;
   padding: 10px 14px;
-  width: 300px; /* Fixed width */
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  width: 300px;
+  /* Enhanced shadow for better depth perception */
+  box-shadow: 0 2px 8px rgba(39, 110, 241, 0.1);
 }
 
 .info-text {
   font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-size: 0.95em;
-  color: #333;
+  /* Using a darker shade for better contrast */
+  color: #1a1a1a;
+}
+
+.departure-time {
+  font-size: 0.95em;
+  /* Using secondary color for visual hierarchy */
+  color: #4d4d4d;
+  margin-left: 10px;
 }
 
 .clear-button {
   background: none;
   border: none;
-  color: #d9534f; /* Red color for clear buttons */
+  /* Using a more subtle red that matches the blue theme */
+  color: #e63946;
   cursor: pointer;
   font-size: 0.85em;
   text-decoration: underline;
+  transition: color 0.2s ease;
 }
 
 .clear-button:hover {
-  color: #c9302c;
+  /* Darker shade for hover state */
+  color: #d62828;
 }
