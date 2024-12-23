@@ -246,6 +246,13 @@ const MapContainer = ({
     [isPeakHour]
   );
 
+  // Debug logs
+  useEffect(() => {
+    console.log("userState:", userState);
+    console.log("departureStation:", departureStation);
+    console.log("destinationStation:", destinationStation);
+  }, [userState, departureStation, destinationStation]);
+
   // Navigation to different views
   const navigateToView = useCallback(
     (view) => {
@@ -377,9 +384,6 @@ const MapContainer = ({
     },
     [userState, navigateToView, navigateToDriveView, onStationSelect]
   );
-
-  // 2) WHEN IN SELECTING_DEPARTURE or SELECTED_DEPARTURE => user can do things
-  //    same for SELECTING_ARRIVAL/SELECTED_ARRIVAL => user can pick another station
 
   // District click
   const handleDistrictClick = useCallback(
@@ -587,6 +591,22 @@ const MapContainer = ({
     }
   }, [map, stations, districts]);
 
+  // SIDE-SHEET for trip info => userState=DISPLAY_FARE
+  const handleOpenTripInfo = () => {
+    // Switch to userState=DISPLAY_FARE
+    dispatch({ type: "OPEN_TRIP_INFO" });
+    setShowTripInfoSheet(true);
+  };
+  const handleCloseTripInfo = () => {
+    setShowTripInfoSheet(false);
+    // Return to SELECTED_ARRIVAL
+    dispatch({ type: "CLOSE_TRIP_INFO" });
+  };
+
+  // Conditionally show the side-sheet (trip info)
+  const showTripSheet =
+    userState === USER_STATES.DISPLAY_FARE && showTripInfoSheet;
+
   // Handle Google Maps API load error
   if (loadError) {
     return (
@@ -614,39 +634,6 @@ const MapContainer = ({
       </div>
     );
   }
-
-  // Debug logs
-  useEffect(() => {
-    console.log("userState:", userState);
-    console.log("departureStation:", departureStation);
-    console.log("destinationStation:", destinationStation);
-  }, [userState, departureStation, destinationStation]);
-
-  // Scene container class
-  // SCENE is visible if userState=SELECTED_DEPARTURE or userState=SELECTED_ARRIVAL
-  // plus if we have a station
-  const showSceneContainer =
-    (userState === USER_STATES.SELECTED_DEPARTURE && departureStation) ||
-    (userState === USER_STATES.SELECTED_ARRIVAL && destinationStation);
-
-  const sceneVisibleClass =
-    showSceneContainer && !sceneMinimized ? "visible" : "minimized";
-
-  // SIDE-SHEET for trip info => userState=DISPLAY_FARE
-  const handleOpenTripInfo = () => {
-    // Switch to userState=DISPLAY_FARE
-    dispatch({ type: "OPEN_TRIP_INFO" });
-    setShowTripInfoSheet(true);
-  };
-  const handleCloseTripInfo = () => {
-    setShowTripInfoSheet(false);
-    // Return to SELECTED_ARRIVAL
-    dispatch({ type: "CLOSE_TRIP_INFO" });
-  };
-
-  // Conditionally show the side-sheet (trip info)
-  const showTripSheet =
-    userState === USER_STATES.DISPLAY_FARE && showTripInfoSheet;
 
   return (
     <div className="map-container">
@@ -706,7 +693,7 @@ const MapContainer = ({
           </button>
         )}
 
-        {/* (v) "trip info" button (circle shaped with an icon) => only in SELECTED_ARRIVAL */}
+        {/* "trip info" button (circle shaped with an icon) => only in SELECTED_ARRIVAL */}
         {userState === USER_STATES.SELECTED_ARRIVAL && destinationStation && (
           <button
             style={{
