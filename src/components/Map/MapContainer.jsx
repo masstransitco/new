@@ -587,6 +587,34 @@ const MapContainer = ({
     }
   }, [map, stations, districts]);
 
+  // Handle Google Maps API load error
+  if (loadError) {
+    return (
+      <div className="error-message">
+        Error loading maps. Please check your API key and network connection.
+      </div>
+    );
+  }
+
+  // Handle Google Maps API loading state
+  if (!isLoaded) {
+    return <div className="loading-message">Loading map...</div>;
+  }
+
+  // Handle stations data loading state
+  if (stationsLoading || districtsLoading) {
+    return <div className="loading-message">Loading map data...</div>;
+  }
+
+  // Handle stations or districts data error
+  if (stationsError || districtsError) {
+    return (
+      <div className="error-message">
+        Error loading map data. Please try again later.
+      </div>
+    );
+  }
+
   // Debug logs
   useEffect(() => {
     console.log("userState:", userState);
