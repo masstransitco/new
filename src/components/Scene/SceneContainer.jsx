@@ -1,3 +1,5 @@
+// src/components/Scene/SceneContainer.jsx
+
 import React, { useEffect, useState, useRef } from "react";
 import PropTypes from "prop-types";
 import "./SceneContainer.css";
@@ -5,12 +7,11 @@ import "./SceneContainer.css";
 const SceneContainer = ({ center }) => {
   const [isMapsLoaded, setIsMapsLoaded] = useState(false);
   const [loadError, setLoadError] = useState(null);
-  const mapContainerRef = useRef(null); // Reference to the map container div
-  const mapInstanceRef = useRef(null); // Reference to the Map3DElement instance
+  const mapContainerRef = useRef(null);
+  const mapInstanceRef = useRef(null);
 
-  // Effect to check if Google Maps API is loaded
+  // 1) Check if Google Maps API is loaded
   useEffect(() => {
-    // Function to check API availability
     const checkGoogleMapsAPI = () => {
       if (
         window.google &&
@@ -23,16 +24,13 @@ const SceneContainer = ({ center }) => {
       return false;
     };
 
-    // Initial check
     if (!checkGoogleMapsAPI()) {
-      // Poll every second to check if Google Maps API has loaded
       const interval = setInterval(() => {
         if (checkGoogleMapsAPI()) {
           clearInterval(interval);
         }
       }, 1000);
 
-      // Timeout after 10 seconds
       const timeout = setTimeout(() => {
         if (!isMapsLoaded) {
           setLoadError("Google Maps API failed to load.");
@@ -40,7 +38,6 @@ const SceneContainer = ({ center }) => {
         }
       }, 10000);
 
-      // Cleanup function
       return () => {
         clearInterval(interval);
         clearTimeout(timeout);
@@ -48,49 +45,31 @@ const SceneContainer = ({ center }) => {
     }
   }, [isMapsLoaded]);
 
-  // Effect to initialize the map once the API is loaded
+  // 2) Initialize the Map3D once API is ready
   useEffect(() => {
-    if (!isMapsLoaded || loadError || !center || !mapContainerRef.current)
-      return;
+    if (!isMapsLoaded || loadError || !mapContainerRef.current) return;
 
     const initMap = async () => {
       try {
-        // Import the Map3DElement library
         const { Map3DElement } = await window.google.maps.importLibrary(
           "maps3d"
         );
 
-        // Define camera options
-        const camera = {
-          center: { lat: center.lat, lng: center.lng, altitude: 150 },
-          tilt: 45,
-          range: 1500, // Adjust as needed
-        };
-
-        // Create a new Map3DElement with the defined camera settings
-        const map = new Map3DElement({
-          ...camera,
-          defaultLabelsDisabled: true, // Disable labels as per the sample
-          // Removed 'defaultUiDisabled' as it's not a valid property
-        });
-
-        // Append the map to the container div
-        mapContainerRef.current.appendChild(map);
-        mapInstanceRef.current = map; // Store the map instance for potential future use
-
-        // Define fly-around animation options
-        const flyOptions = {
-          camera: {
-            center: { lat: center.lat, lng: center.lng },
+        // Create a 3D map instance if it doesn’t already exist
+        if (!mapInstanceRef.current) {
+          const defaultCamera = {
+            center: { lat: 22.236, lng: 114.191, altitude: 200 },
             tilt: 45,
-            altitude: 150,
-          },
-          durationMillis: 6000, // 60 seconds for one complete rotation
-          rounds: 1,
-        };
+            range: 1500,
+          };
+          const map = new Map3DElement({
+            ...defaultCamera,
+            defaultLabelsDisabled: true,
+          });
 
-        // Start the fly-around animation
-        map.flyCameraAround(flyOptions);
+          mapContainerRef.current.appendChild(map);
+          mapInstanceRef.current = map;
+        }
       } catch (error) {
         console.error("Error initializing Map3DElement:", error);
         setLoadError("Failed to initialize 3D Map.");
@@ -98,14 +77,35 @@ const SceneContainer = ({ center }) => {
     };
 
     initMap();
-  }, [isMapsLoaded, loadError, center]);
+  }, [isMapsLoaded, loadError]);
 
-  // Cleanup effect to remove the map instance when the component unmounts
+  // 3) Whenever `center` changes, fly the camera around
+  useEffect(() => {
+    if (!mapInstanceRef.current || !center) return;
+
+    try {
+      // Adjust camera and animate to the new center
+      mapInstanceRef.current.flyCameraAround({
+        camera: {
+          center: { lat: center.lat, lng: center.lng, altitude: 200 }, // Consistent altitude
+          tilt: 45,
+          range: 1500,
+        },
+        durationMillis: 60000, // 60 seconds for one complete rotation
+        rounds: 1,
+      });
+    } catch (error) {
+      console.error("Error re-flying camera:", error);
+      setLoadError("Fly camera error.");
+    }
+  }, [center]);
+
+  // 4) Cleanup when component unmounts
   useEffect(() => {
     return () => {
       if (
         mapInstanceRef.current &&
-        mapContainerRef.current.contains(mapInstanceRef.current)
+        mapContainerRef.current?.contains(mapInstanceRef.current)
       ) {
         mapContainerRef.current.removeChild(mapInstanceRef.current);
       }
@@ -114,14 +114,14 @@ const SceneContainer = ({ center }) => {
 
   // Render error or loading states
   if (loadError) {
-    return <p>Error loading Google Maps API: {loadError}</p>;
+    return <p>Error loading Google Maps 3D API: {loadError}</p>;
   }
 
   if (!isMapsLoaded) {
-    return <p>Loading Google Maps...</p>;
+    return <p>Loading 3D Map...</p>;
   }
 
-  // Render the map container
+  // Render the 3D map container
   return (
     <div className="scene-container">
       <div
@@ -129,7 +129,7 @@ const SceneContainer = ({ center }) => {
         ref={mapContainerRef}
         className="scene-map"
         style={{ height: "400px", width: "800px" }}
-      ></div>
+      />
     </div>
   );
 };
@@ -138,7 +138,7 @@ SceneContainer.propTypes = {
   center: PropTypes.shape({
     lat: PropTypes.number.isRequired,
     lng: PropTypes.number.isRequired,
-  }).isRequired,
+  }),
 };
 
 export default React.memo(SceneContainer);
