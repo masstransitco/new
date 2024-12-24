@@ -8,16 +8,27 @@ const SceneContainer = ({ center }) => {
   const mapRef = useRef(null);
 
   useEffect(() => {
-    if (window.google && window.google.maps && window.google.maps.maps3d) {
+    // Check if Google Maps API is already loaded
+    if (
+      window.google &&
+      window.google.maps &&
+      window.google.maps.importLibrary
+    ) {
       setIsMapsLoaded(true);
     } else {
+      // Poll every second to check if Google Maps API has loaded
       const interval = setInterval(() => {
-        if (window.google && window.google.maps && window.google.maps.maps3d) {
+        if (
+          window.google &&
+          window.google.maps &&
+          window.google.maps.importLibrary
+        ) {
           setIsMapsLoaded(true);
           clearInterval(interval);
         }
       }, 1000);
 
+      // Timeout after 10 seconds
       const timeout = setTimeout(() => {
         if (!isMapsLoaded) {
           setLoadError("Google Maps API failed to load.");
@@ -35,44 +46,60 @@ const SceneContainer = ({ center }) => {
   useEffect(() => {
     if (!isMapsLoaded || loadError || !center || !mapRef.current) return;
 
-    const hkBounds = {
-      north: 22.58,
-      south: 22.15,
-      west: 113.8,
-      east: 114.5,
-    };
+    const initMap = async () => {
+      try {
+        // Import the Map3DElement library
+        const { Map3DElement } = await window.google.maps.importLibrary(
+          "maps3d"
+        );
 
-    const map = mapRef.current;
-
-    // Set bounds, center, and tilt
-    map.bounds = hkBounds;
-    map.center = {
-      lat: center.lat,
-      lng: center.lng,
-      altitude: 150,
-    };
-    map.tilt = 45;
-
-    // Initialize FlyCameraAroundAnimation
-    try {
-      const animation = new window.google.maps.maps3d.FlyCameraAroundAnimation({
-        camera: {
-          center: {
-            lat: center.lat,
-            lng: center.lng,
-          },
+        // Define camera options
+        const camera = {
+          center: { lat: center.lat, lng: center.lng, altitude: 150 },
           tilt: 45,
-          altitude: 150,
-        },
-        durationMillis: 1500, // 15 seconds for one complete rotation
-        rounds: 1,
-      });
+          range: 1500, // Adjust as needed
+        };
 
-      map.startAnimation(animation);
-    } catch (error) {
-      console.error("FlyCameraAroundAnimation initialization failed:", error);
-      setLoadError("FlyCameraAroundAnimation is not available.");
-    }
+        // Configure the map element
+        const map = mapRef.current;
+
+        // Set initial camera settings
+        map.camera = {
+          center: { lat: center.lat, lng: center.lng, altitude: 150 },
+          tilt: 45,
+          range: 1500,
+        };
+
+        // Disable default labels and UI
+        map.defaultLabelsDisabled = true;
+        map.defaultUiDisabled = true;
+
+        // Append the map to the DOM if not already appended
+        if (!map.isInitialized) {
+          document.querySelector(".scene-container").appendChild(map);
+          map.isInitialized = true;
+        }
+
+        // Define fly-around animation options
+        const flyOptions = {
+          camera: {
+            center: { lat: center.lat, lng: center.lng },
+            tilt: 45,
+            altitude: 150,
+          },
+          durationMillis: 60000, // 60 seconds for one complete rotation
+          rounds: 1,
+        };
+
+        // Start the fly-around animation
+        map.flyCameraAround(flyOptions);
+      } catch (error) {
+        console.error("Error initializing Map3DElement:", error);
+        setLoadError("Failed to initialize 3D Map.");
+      }
+    };
+
+    initMap();
   }, [isMapsLoaded, loadError, center]);
 
   if (loadError) {
@@ -89,8 +116,8 @@ const SceneContainer = ({ center }) => {
         id="three-d-map"
         ref={mapRef}
         className="scene-map"
-        default-labels-disabled
-        default-ui-disabled
+        style={{ height: "400px", width: "800px" }}
+        // Initial camera settings can be set via props or attributes if supported
       ></gmp-map-3d>
     </div>
   );
