@@ -87,7 +87,7 @@ const SceneContainer = ({ center }) => {
             tilt: 45,
             altitude: 150,
           },
-          durationMillis: 60000, // 60 seconds for one complete rotation
+          durationMillis: 1800, // 60 seconds for one complete rotation
           rounds: 1,
         };
 
