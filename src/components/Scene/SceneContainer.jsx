@@ -1,5 +1,3 @@
-// src/components/Scene/SceneContainer.jsx
-
 import React, { useEffect, useState, useRef } from "react";
 import PropTypes from "prop-types";
 import "./SceneContainer.css";
@@ -36,7 +34,7 @@ const SceneContainer = ({ center }) => {
 
   useEffect(() => {
     if (!isMapsLoaded || loadError || !center || !mapRef.current) return;
-    // Set center with altitude 150 and HK bounds
+
     const hkBounds = {
       north: 22.58,
       south: 22.15,
@@ -50,6 +48,23 @@ const SceneContainer = ({ center }) => {
       lng: center.lng,
       altitude: 150,
     };
+    mapRef.current.tilt = 45;
+
+    // Start fly-around animation
+    const animation = new window.google.maps.maps3d.FlyAroundAnimation({
+      camera: {
+        center: {
+          lat: center.lat,
+          lng: center.lng,
+        },
+        tilt: 45,
+        altitude: 150,
+      },
+      durationMillis: 15000, // 30 seconds for one complete rotation
+      rounds: 1,
+    });
+
+    mapRef.current.startAnimation(animation);
   }, [isMapsLoaded, loadError, center]);
 
   if (loadError) {
