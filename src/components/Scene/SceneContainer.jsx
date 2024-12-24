@@ -70,8 +70,8 @@ const SceneContainer = ({ center }) => {
         // Create a new Map3DElement with the defined camera settings
         const map = new Map3DElement({
           ...camera,
-          defaultLabelsDisabled: true,
-          defaultUiDisabled: true,
+          defaultLabelsDisabled: true, // Disable labels as per the sample
+          // Removed 'defaultUiDisabled' as it's not a valid property
         });
 
         // Append the map to the container div
@@ -85,7 +85,7 @@ const SceneContainer = ({ center }) => {
             tilt: 45,
             altitude: 150,
           },
-          durationMillis: 60000, // 60 seconds for one complete rotation
+          durationMillis: 6000, // 60 seconds for one complete rotation
           rounds: 1,
         };
 
