@@ -5,25 +5,29 @@ import "./SceneContainer.css";
 const SceneContainer = ({ center }) => {
   const [isMapsLoaded, setIsMapsLoaded] = useState(false);
   const [loadError, setLoadError] = useState(null);
-  const mapRef = useRef(null);
+  const mapContainerRef = useRef(null); // Reference to the map container div
+  const mapInstanceRef = useRef(null); // Reference to the Map3DElement instance
 
+  // Effect to check if Google Maps API is loaded
   useEffect(() => {
-    // Check if Google Maps API is already loaded
-    if (
-      window.google &&
-      window.google.maps &&
-      window.google.maps.importLibrary
-    ) {
-      setIsMapsLoaded(true);
-    } else {
+    // Function to check API availability
+    const checkGoogleMapsAPI = () => {
+      if (
+        window.google &&
+        window.google.maps &&
+        window.google.maps.importLibrary
+      ) {
+        setIsMapsLoaded(true);
+        return true;
+      }
+      return false;
+    };
+
+    // Initial check
+    if (!checkGoogleMapsAPI()) {
       // Poll every second to check if Google Maps API has loaded
       const interval = setInterval(() => {
-        if (
-          window.google &&
-          window.google.maps &&
-          window.google.maps.importLibrary
-        ) {
-          setIsMapsLoaded(true);
+        if (checkGoogleMapsAPI()) {
           clearInterval(interval);
         }
       }, 1000);
@@ -36,6 +40,7 @@ const SceneContainer = ({ center }) => {
         }
       }, 10000);
 
+      // Cleanup function
       return () => {
         clearInterval(interval);
         clearTimeout(timeout);
@@ -43,8 +48,10 @@ const SceneContainer = ({ center }) => {
     }
   }, [isMapsLoaded]);
 
+  // Effect to initialize the map once the API is loaded
   useEffect(() => {
-    if (!isMapsLoaded || loadError || !center || !mapRef.current) return;
+    if (!isMapsLoaded || loadError || !center || !mapContainerRef.current)
+      return;
 
     const initMap = async () => {
       try {
@@ -60,25 +67,16 @@ const SceneContainer = ({ center }) => {
           range: 1500, // Adjust as needed
         };
 
-        // Configure the map element
-        const map = mapRef.current;
+        // Create a new Map3DElement with the defined camera settings
+        const map = new Map3DElement({
+          ...camera,
+          defaultLabelsDisabled: true,
+          defaultUiDisabled: true,
+        });
 
-        // Set initial camera settings
-        map.camera = {
-          center: { lat: center.lat, lng: center.lng, altitude: 150 },
-          tilt: 45,
-          range: 1500,
-        };
-
-        // Disable default labels and UI
-        map.defaultLabelsDisabled = true;
-        map.defaultUiDisabled = true;
-
-        // Append the map to the DOM if not already appended
-        if (!map.isInitialized) {
-          document.querySelector(".scene-container").appendChild(map);
-          map.isInitialized = true;
-        }
+        // Append the map to the container div
+        mapContainerRef.current.appendChild(map);
+        mapInstanceRef.current = map; // Store the map instance for potential future use
 
         // Define fly-around animation options
         const flyOptions = {
@@ -87,7 +85,7 @@ const SceneContainer = ({ center }) => {
             tilt: 45,
             altitude: 150,
           },
-          durationMillis: 1800, // 60 seconds for one complete rotation
+          durationMillis: 60000, // 60 seconds for one complete rotation
           rounds: 1,
         };
 
@@ -102,6 +100,19 @@ const SceneContainer = ({ center }) => {
     initMap();
   }, [isMapsLoaded, loadError, center]);
 
+  // Cleanup effect to remove the map instance when the component unmounts
+  useEffect(() => {
+    return () => {
+      if (
+        mapInstanceRef.current &&
+        mapContainerRef.current.contains(mapInstanceRef.current)
+      ) {
+        mapContainerRef.current.removeChild(mapInstanceRef.current);
+      }
+    };
+  }, []);
+
+  // Render error or loading states
   if (loadError) {
     return <p>Error loading Google Maps API: {loadError}</p>;
   }
@@ -110,15 +121,15 @@ const SceneContainer = ({ center }) => {
     return <p>Loading Google Maps...</p>;
   }
 
+  // Render the map container
   return (
     <div className="scene-container">
-      <gmp-map-3d
+      <div
         id="three-d-map"
-        ref={mapRef}
+        ref={mapContainerRef}
         className="scene-map"
         style={{ height: "400px", width: "800px" }}
-        // Initial camera settings can be set via props or attributes if supported
-      ></gmp-map-3d>
+      ></div>
     </div>
   );
 };
