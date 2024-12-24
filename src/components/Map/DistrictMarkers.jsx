@@ -57,8 +57,8 @@ const DistrictMarkerSVG = React.memo(
         y={rectHeight / 2}
         alignmentBaseline="middle"
         fill="#000000" // Text color
-        fontSize="14"
-        fontFamily="Arial"
+        fontSize="12"
+        fontFamily="Helvetica, Arial, sans-serif"
       >
         {name} {/* Displaying district name */}
       </text>
@@ -88,7 +88,7 @@ DistrictMarkerSVG.propTypes = {
  */
 const DistrictMarkers = React.memo(({ districts, onDistrictClick }) => {
   const rectHeight = 30; // Fixed height for the rectangles
-  const padding = 10; // Padding around the text
+  const padding = 5; // Padding around the text
 
   // Define predefined position offsets to prevent overlaps
   const positionOffsets = useMemo(() => {
