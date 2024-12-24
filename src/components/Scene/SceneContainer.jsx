@@ -8,11 +8,11 @@ const SceneContainer = ({ center }) => {
   const mapRef = useRef(null);
 
   useEffect(() => {
-    if (window.google && window.google.maps) {
+    if (window.google && window.google.maps && window.google.maps.maps3d) {
       setIsMapsLoaded(true);
     } else {
       const interval = setInterval(() => {
-        if (window.google && window.google.maps) {
+        if (window.google && window.google.maps && window.google.maps.maps3d) {
           setIsMapsLoaded(true);
           clearInterval(interval);
         }
@@ -42,33 +42,41 @@ const SceneContainer = ({ center }) => {
       east: 114.5,
     };
 
-    mapRef.current.bounds = hkBounds;
-    mapRef.current.center = {
+    const map = mapRef.current;
+
+    // Set bounds, center, and tilt
+    map.bounds = hkBounds;
+    map.center = {
       lat: center.lat,
       lng: center.lng,
       altitude: 150,
     };
-    mapRef.current.tilt = 45;
+    map.tilt = 45;
 
-    // Start fly-around animation
-    const animation = new window.google.maps.maps3d.FlyAroundAnimation({
-      camera: {
-        center: {
-          lat: center.lat,
-          lng: center.lng,
+    // Initialize FlyCameraAroundAnimation
+    try {
+      const animation = new window.google.maps.maps3d.FlyCameraAroundAnimation({
+        camera: {
+          center: {
+            lat: center.lat,
+            lng: center.lng,
+          },
+          tilt: 45,
+          altitude: 150,
         },
-        tilt: 45,
-        altitude: 150,
-      },
-      durationMillis: 15000, // 30 seconds for one complete rotation
-      rounds: 1,
-    });
+        durationMillis: 1500, // 15 seconds for one complete rotation
+        rounds: 1,
+      });
 
-    mapRef.current.startAnimation(animation);
+      map.startAnimation(animation);
+    } catch (error) {
+      console.error("FlyCameraAroundAnimation initialization failed:", error);
+      setLoadError("FlyCameraAroundAnimation is not available.");
+    }
   }, [isMapsLoaded, loadError, center]);
 
   if (loadError) {
-    return <p>Error loading Google Maps API.</p>;
+    return <p>Error loading Google Maps API: {loadError}</p>;
   }
 
   if (!isMapsLoaded) {
