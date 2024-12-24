@@ -30,6 +30,7 @@ import PropTypes from "prop-types";
 
 import "./MapContainer.css";
 
+// Hard-coded Google Maps API key
 const GOOGLE_MAPS_API_KEY = "AIzaSyA8rDrxBzMRlgbA7BQ2DoY31gEXzZ4Ours";
 if (!GOOGLE_MAPS_API_KEY) {
   throw new Error("Google Maps API key is missing.");
